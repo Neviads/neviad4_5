@@ -1,0 +1,16 @@
+"use client";
+
+import { useState } from "react";
+import { AppIcon } from "@/components/app-icon";
+import { AutoTextarea } from "@/components/auto-textarea";
+
+export default function SimuGenPage() {
+  const [prompt, setPrompt] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  return <div className="mx-auto flex min-h-[calc(100vh-7rem)] max-w-5xl flex-col">
+    <header className="flex items-center justify-between border-b border-[var(--line)] pb-5"><div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-[#272321] text-white"><AppIcon name="sparkles" className="size-5" /></span><div><h1 className="text-lg font-semibold">Agent workspace</h1><p className="text-xs text-[var(--muted)]">Placeholder cho luồng tạo nội dung tương tác</p></div></div><button type="button" onClick={() => { setPrompt(""); setSubmitted(false); }} className="rounded-lg px-3 py-2 text-xs font-medium text-[var(--muted)] hover:bg-[#eee9e4]">Tạo mới</button></header>
+    <section className="flex flex-1 flex-col justify-center py-10 sm:py-14">{submitted ? <div className="mx-auto w-full max-w-3xl space-y-5"><div className="flex justify-end"><p className="max-w-[82%] rounded-2xl rounded-tr-md bg-[#272321] px-4 py-3 text-sm leading-6 text-white">{prompt}</p></div><div className="flex gap-3"><span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><AppIcon name="sparkles" className="size-4" /></span><p className="max-w-[82%] rounded-2xl rounded-tl-md border border-[var(--line)] bg-white px-4 py-3 text-sm leading-6">Kết quả từ agent sẽ xuất hiện sau khi kết nối dữ liệu thật.</p></div></div> : <div className="mx-auto max-w-2xl text-center"><div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-[#f1c5b4] bg-[var(--accent-soft)] text-[var(--accent)]"><AppIcon name="sparkles" className="size-8" /></div><p className="mt-6 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Agent placeholder</p><h2 className="mt-3 font-serif text-3xl font-semibold sm:text-4xl">Bắt đầu từ một yêu cầu</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">Mô tả mục tiêu hoặc nội dung bạn muốn tạo. Đây là vùng trống chờ agent thật.</p></div>}</section>
+    <div className="mx-auto w-full max-w-3xl pb-2"><div className="rounded-2xl border border-[#d8d1c9] bg-white p-2 shadow-[0_10px_30px_rgba(43,41,38,0.08)]"><AutoTextarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onEnterSubmit={() => { if (prompt.trim()) setSubmitted(true); }} rows={3} placeholder="Mô tả yêu cầu..." className="block w-full resize-none border-0 bg-transparent px-3 py-2 text-sm leading-6 outline-none placeholder:text-[#a49c95]" /><div className="flex justify-end px-1 pt-1"><button type="button" disabled={!prompt.trim()} onClick={() => setSubmitted(true)} className="flex size-9 items-center justify-center rounded-xl bg-[#272321] text-white disabled:opacity-35" aria-label="Gửi yêu cầu"><AppIcon name="send" className="size-4" /></button></div></div><p className="mt-3 text-center text-[11px] text-[#9a918a]">Nội dung placeholder cần được kiểm tra trước khi dùng trong lớp.</p></div>
+  </div>;
+}

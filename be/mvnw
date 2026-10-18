@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+set -eu
+
+if command -v mvn >/dev/null 2>&1; then
+  exec mvn "$@"
+fi
+
+maven_version="3.9.11"
+maven_cache_dir="${MAVEN_USER_HOME:-${HOME}/.m2}/wrapper/dists/apache-maven-${maven_version}"
+maven_home="${maven_cache_dir}/apache-maven-${maven_version}"
+
+if [ ! -x "${maven_home}/bin/mvn" ]; then
+  archive_dir="${maven_cache_dir}/download"
+  archive_file="${archive_dir}/apache-maven-${maven_version}-bin.tar.gz"
+  mkdir -p "${archive_dir}"
+  if [ ! -f "${archive_file}" ]; then
+    curl -fsSL "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${maven_version}/apache-maven-${maven_version}-bin.tar.gz" -o "${archive_file}"
+  fi
+  mkdir -p "${maven_cache_dir}"
+  tar -xzf "${archive_file}" -C "${maven_cache_dir}"
+fi
+
+exec "${maven_home}/bin/mvn" "$@"

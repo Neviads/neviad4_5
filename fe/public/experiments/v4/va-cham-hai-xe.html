@@ -1,0 +1,529 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root { --neviad-accent: #176b63; --neviad-accent-soft: #d7eee9; }:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #302b3c; background: #f4f6fb; }
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; min-height: 0; overflow: hidden; background: #f4f6fb; }
+body { padding: 18px; }
+.neviad-shell { width: 100%; max-width: 980px; height: 100%; min-height: 0; display: flex; flex-direction: column; margin: 0 auto; overflow: hidden; border: 1px solid #dedbea; border-radius: 14px; background: #fff; box-shadow: 0 12px 36px #302b3c12; }
+.neviad-header { min-height: 64px; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #e9e6ef; }
+.neviad-title-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.neviad-badge { display: grid; width: 34px; height: 34px; flex: none; place-items: center; border-radius: 9px; color: var(--neviad-accent, #6854d7); background: var(--neviad-accent-soft, #efeaff); font-size: 18px; }
+.neviad-title small { display: block; margin-bottom: 4px; color: #898396; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.neviad-title h1 { margin: 0; font-size: 16px; line-height: 1.3; }
+.neviad-status { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--neviad-accent-soft, #e5ddff); border-radius: 999px; color: var(--neviad-accent, #6854d7); background: #faf8ff; font-size: 10px; white-space: nowrap; }
+.neviad-status i { width: 6px; height: 6px; border-radius: 50%; background: #69b88f; }
+.neviad-body { flex: 1; display: grid; grid-template-columns: 198px minmax(0, 1fr); min-height: 0; overflow: hidden; }
+.neviad-controls { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; padding: 20px 16px; border-right: 1px solid #e9e6ef; background: #faf9fd; }
+.neviad-eyebrow { margin: 0 0 18px; color: #898396; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.neviad-parameter-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #c9c3d9 transparent; }
+.neviad-parameter-list::-webkit-scrollbar { width: 6px; }
+.neviad-parameter-list::-webkit-scrollbar-thumb { border-radius: 999px; background: #c9c3d9; }
+.neviad-parameter { display: block; margin: 0 0 18px; color: #5d5868; font-size: 11px; }
+.neviad-parameter span { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 7px; }
+.neviad-parameter output { color: #302b3c; font-weight: 700; white-space: nowrap; }
+.neviad-parameter input { width: 100%; accent-color: var(--neviad-accent, #6854d7); }
+.neviad-actions { flex: none; display: grid; gap: 8px; }
+.neviad-actions button { min-height: 36px; border-radius: 7px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.neviad-play { border: 0; color: #fff; background: var(--neviad-accent, #6854d7); }
+.neviad-secondary { border: 1px solid #ddd9e7; color: #4d4858; background: #fff; }
+.neviad-hint { margin: 0; color: #8f899b; font-size: 9px; line-height: 1.5; }
+.neviad-main { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; min-width: 0; min-height: 0; overflow: hidden; padding: 18px; }
+.neviad-viewport { position: relative; width: 100%; height: auto; min-height: 0; overflow: hidden; border: 1px solid #e4e1eb; border-radius: 9px; background: linear-gradient(#f6f5fa 1px, transparent 1px), linear-gradient(90deg, #f6f5fa 1px, transparent 1px), #fff; background-size: 25px 25px; }
+#simulation-canvas { display: block; width: 100%; height: 100%; min-height: 0; }
+.neviad-displays { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; min-width: 0; }
+.neviad-displays > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; min-width: 0; padding: 8px 10px; border: 1px solid #e4e1eb; border-left: 3px solid var(--neviad-accent, #176b63); border-radius: 7px; background: #fff; }
+.neviad-displays strong { grid-column: 1 / -1; overflow: hidden; color: #5d5868; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.neviad-displays output { color: #302b3c; font-size: 15px; font-weight: 700; }
+.neviad-displays span { color: #7f7988; font-size: 9px; white-space: nowrap; }
+@media (max-width: 680px) { body { padding: 8px; } .neviad-body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, .7fr); } .neviad-controls { order: 2; border-top: 1px solid #e9e6ef; border-right: 0; } .neviad-main { order: 1; padding: 12px; } }
+</style></head><body><article class="neviad-shell"><header class="neviad-header"><div class="neviad-title-group"><span class="neviad-badge" aria-hidden="true">✦</span><div class="neviad-title"><small>PHYSICS EXPERIMENT</small><h1>Va chạm mềm giữa hai xe hàng</h1></div></div><span class="neviad-status"><i></i>Bản mô phỏng</span></header><div class="neviad-body"><aside class="neviad-controls"><p class="neviad-eyebrow">THÔNG SỐ</p><div class="neviad-parameter-list"><label class="neviad-parameter"><span><b>Khối lượng xe 1 (kg)</b><output data-parameter-value="mass1">2.0</output></span><input type="range" data-parameter-id="mass1" min="0.5" max="10.0" step="0.01" value="2.0"></label><label class="neviad-parameter"><span><b>Khối lượng xe 2 (kg)</b><output data-parameter-value="mass2">3.0</output></span><input type="range" data-parameter-id="mass2" min="0.5" max="10.0" step="0.01" value="3.0"></label><label class="neviad-parameter"><span><b>Vận tốc ban đầu xe 1 (m/s)</b><output data-parameter-value="velocity1">2.0</output></span><input type="range" data-parameter-id="velocity1" min="-5.0" max="5.0" step="0.01" value="2.0"></label><label class="neviad-parameter"><span><b>Vận tốc ban đầu xe 2 (m/s)</b><output data-parameter-value="velocity2">-1.0</output></span><input type="range" data-parameter-id="velocity2" min="-5.0" max="5.0" step="0.01" value="-1.0"></label></div><div class="neviad-actions"><button class="neviad-secondary" type="button" data-command="run_experiment">Chạy thí nghiệm</button><button class="neviad-secondary" type="button" data-command="reset_experiment">Đặt lại thí nghiệm</button><p class="neviad-hint">Điều chỉnh khối lượng và vận tốc ban đầu của từng xe bằng các điều khiển.</p></div></aside><main class="neviad-main"><section class="neviad-viewport" id="simulation-viewport" aria-label="Vùng mô phỏng"><canvas id="simulation-canvas" aria-label="Hai xe hàng chuyển động trên cùng đường ray, va chạm mềm rồi dính vào nhau; vận tốc chung sau va chạm phụ thuộc vào khối lượng và vận tốc ban đầu."></canvas></section><section class="neviad-displays" aria-label="Kết quả mô phỏng"><div id="display-mass1_readout" data-display-id="mass1_readout" data-display-kind="numeric_readout" aria-label="Khối lượng xe hàng thứ nhất, kilôgam"><strong>Khối lượng xe 1</strong><output data-display-value="mass1_readout">—</output><span>kg</span></div><div id="display-mass2_readout" data-display-id="mass2_readout" data-display-kind="numeric_readout" aria-label="Khối lượng xe hàng thứ hai, kilôgam"><strong>Khối lượng xe 2</strong><output data-display-value="mass2_readout">—</output><span>kg</span></div><div id="display-velocity1_readout" data-display-id="velocity1_readout" data-display-kind="numeric_readout" aria-label="Vận tốc ban đầu của xe hàng thứ nhất, mét trên giây"><strong>Vận tốc ban đầu xe 1</strong><output data-display-value="velocity1_readout">—</output><span>m/s</span></div><div id="display-velocity2_readout" data-display-id="velocity2_readout" data-display-kind="numeric_readout" aria-label="Vận tốc ban đầu của xe hàng thứ hai, mét trên giây"><strong>Vận tốc ban đầu xe 2</strong><output data-display-value="velocity2_readout">—</output><span>m/s</span></div><div id="display-shared_velocity_readout" data-display-id="shared_velocity_readout" data-display-kind="numeric_readout" aria-label="Vận tốc chung của hai xe sau va chạm, mét trên giây; dấu cho biết hướng chuyển động"><strong>Vận tốc chung sau va chạm</strong><output data-display-value="shared_velocity_readout">—</output><span>m/s</span></div></section></main></div></article><script data-source-file="src/physics-model.js">
+(function () {
+  "use strict";
+  var api = window.NEVIADExperiment || (window.NEVIADExperiment = {});
+  var defaults = { mass1: 2, mass2: 3, velocity1: 2, velocity2: -1 };
+  var bounds = { mass1: [0.5, 10], mass2: [0.5, 10], velocity1: [-5, 5], velocity2: [-5, 5] };
+  var ids = ["straight_rail", "left_rail_supports", "cargo_cart_1", "cart1_load_stack", "cart1_bumper", "cargo_cart_2", "cart2_load_stack", "cart2_bumper", "cart_coupling_latch", "cart2_coupling_socket"];
+  function finite(n, fallback) { n = Number(n); return Number.isFinite(n) ? n : fallback; }
+  function params(p) {
+    p = p || {};
+    var r = {};
+    Object.keys(defaults).forEach(function (k) {
+      var b = bounds[k], v = finite(p[k], defaults[k]);
+      r[k] = Math.max(b[0], Math.min(b[1], v));
+    });
+    return r;
+  }
+  function object(id, kind, x, y, angle, vx, vy) { return { id: id, kind: kind, x: x, y: y, angle: angle, vx: vx, vy: vy }; }
+  function setObjects(s) {
+    var x1 = s.x1, x2 = s.x2, y = 0;
+    s.objects = [
+      object("straight_rail", "rail", 0, 0, 0, 0, 0),
+      object("left_rail_supports", "supports", 0, 0, 0, 0, 0),
+      object("cargo_cart_1", "cart", x1, y, 0, s.v1, 0),
+      object("cart1_load_stack", "load", x1, y, 0, s.v1, 0),
+      object("cart1_bumper", "bumper", x1 + 0.9, y, 0, s.v1, 0),
+      object("cargo_cart_2", "cart", x2, y, 0, s.v2, 0),
+      object("cart2_load_stack", "load", x2, y, 0, s.v2, 0),
+      object("cart2_bumper", "bumper", x2 - 0.9, y, 0, s.v2, 0),
+      object("cart_coupling_latch", "latch", (x1 + x2) / 2, y, 0, s.v1, 0),
+      object("cart2_coupling_socket", "socket", x2 - 0.95, y, 0, s.v2, 0)
+    ];
+    return s;
+  }
+  function createInitialState(p) {
+    var q = params(p);
+    return setObjects(Object.assign({}, q, { time: 0, isRunning: false, phase: "ready", shared_velocity: null, x1: -2.2, x2: 2.2, v1: 0, v2: 0, collided: false }));
+  }
+  function start(old, p) {
+    var q = params(p || old || {}), s = Object.assign({}, old || createInitialState(q));
+    if (s.phase === "approaching" || s.phase === "stuck_together") { s.isRunning = true; return setObjects(s); }
+    Object.assign(s, q, { time: 0, isRunning: true, phase: "approaching", shared_velocity: null, x1: -2.2, x2: 2.2, v1: q.velocity1, v2: q.velocity2, collided: false });
+    return setObjects(s);
+  }
+  function step(old, dt, p) {
+    var s = Object.assign({}, old || createInitialState(p));
+    if (!s.isRunning) return setObjects(s);
+    var q = params(p || s), t = Math.max(0, Math.min(0.1, finite(dt, 0)));
+    s.time = finite(s.time, 0) + t;
+    if (s.phase === "approaching") {
+      var gap = (s.x2 - s.x1) - 2.2, rel = s.v1 - s.v2;
+      if (rel > 0 && gap <= rel * t) {
+        var hit = Math.max(0, Math.min(t, gap / rel));
+        s.x1 += s.v1 * hit; s.x2 -= 0; // preserve integration ordering below
+        s.x2 += s.v2 * hit;
+        var contactCenter = (s.x1 + s.x2) / 2;
+        s.x1 = contactCenter - 1.1; s.x2 = contactCenter + 1.1;
+        var total = q.mass1 + q.mass2;
+        s.shared_velocity = (q.mass1 * q.velocity1 + q.mass2 * q.velocity2) / total;
+        s.v1 = s.shared_velocity; s.v2 = s.shared_velocity; s.phase = "stuck_together"; s.collided = true;
+        var rest = t - hit; s.x1 += s.shared_velocity * rest; s.x2 += s.shared_velocity * rest;
+      } else { s.x1 += s.v1 * t; s.x2 += s.v2 * t; }
+    } else if (s.phase === "stuck_together") { s.x1 += s.v1 * t; s.x2 += s.v2 * t; }
+    return setObjects(s);
+  }
+  function calculateOutputs(s, p) {
+    var q = params(p || s || {}), result = { mass1: q.mass1, mass2: q.mass2, velocity1: q.velocity1, velocity2: q.velocity2 };
+    result.shared_velocity = s && s.phase === "stuck_together" && Number.isFinite(s.shared_velocity) ? s.shared_velocity : null;
+    return result;
+  }
+  api.physicsModel = { createInitialState: createInitialState, start: start, step: step, calculateOutputs: calculateOutputs };
+})();
+
+</script><script data-source-file="src/simulation-state.js">
+(function () {
+  "use strict";
+
+  var experiment = window.NEVIADExperiment = window.NEVIADExperiment || {};
+
+  function copyParameters(parameters) {
+    return {
+      mass1: Number(parameters.mass1),
+      mass2: Number(parameters.mass2),
+      velocity1: Number(parameters.velocity1),
+      velocity2: Number(parameters.velocity2)
+    };
+  }
+
+  function outputsFor(physical, parameters, model) {
+    var result = model.calculateOutputs(physical, parameters) || {};
+    return Object.assign({}, result);
+  }
+
+  function create(parameters, model) {
+    var values = copyParameters(parameters || {});
+    var physical = model.createInitialState(values);
+    return {
+      time: 0,
+      parameters: values,
+      physicalState: physical,
+      outputs: outputsFor(physical, values, model),
+      isRunning: false
+    };
+  }
+
+  function step(state, dt, model) {
+    if (!state.isRunning) return Object.assign({}, state);
+    var physical = model.step(state.physicalState, dt, state.parameters);
+    var running = physical.isRunning !== false;
+    return {
+      time: state.time + dt,
+      parameters: Object.assign({}, state.parameters),
+      physicalState: physical,
+      outputs: outputsFor(physical, state.parameters, model),
+      isRunning: running
+    };
+  }
+
+  function setParameter(state, id, value, model) {
+    var number = Number(value);
+    if (!isFinite(number) || !Object.prototype.hasOwnProperty.call(state.parameters, id)) return Object.assign({}, state);
+    var parameters = Object.assign({}, state.parameters);
+    parameters[id] = number;
+    return {
+      time: state.time,
+      parameters: parameters,
+      physicalState: state.physicalState,
+      outputs: outputsFor(state.physicalState, parameters, model),
+      isRunning: state.isRunning
+    };
+  }
+
+  function reset(state, model) {
+    var parameters = Object.assign({}, state.parameters);
+    var physical = model.createInitialState(parameters);
+    return {
+      time: 0,
+      parameters: parameters,
+      physicalState: physical,
+      outputs: outputsFor(physical, parameters, model),
+      isRunning: false
+    };
+  }
+
+  function setRunning(state, running) {
+    return Object.assign({}, state, { isRunning: !!running });
+  }
+
+  function dispatch(state, commandId, model) {
+    if (commandId === "run_experiment") {
+      var base = reset(state, model);
+      var physical = model.start(base.physicalState, base.parameters);
+      return {
+        time: 0,
+        parameters: base.parameters,
+        physicalState: physical,
+        outputs: outputsFor(physical, base.parameters, model),
+        isRunning: true
+      };
+    }
+    if (commandId === "reset_experiment") return reset(state, model);
+    return Object.assign({}, state);
+  }
+
+  experiment.simulation = {
+    create: create,
+    step: step,
+    setParameter: setParameter,
+    reset: reset,
+    setRunning: setRunning,
+    dispatch: dispatch
+  };
+}());
+
+</script><script data-source-file="src/renderer.js">
+(function () {
+  'use strict';
+
+  var COLORS = {
+    skyTop: '#edf4f2', skyBottom: '#dce7e3', floor: '#c8c8bf', floorLine: '#aaa99f',
+    steel: '#53636b', steelLight: '#aab8bd', steelDark: '#35434a', rail: '#56636a',
+    accent: '#176b63', accentSoft: '#d7eee9', rubber: '#292e31', iron: '#41494c',
+    ironHi: '#687276', wheel: '#252d31', brass: '#c49b58', white: '#f9fbfa', ink: '#233238'
+  };
+  var WORLD_W = 1000;
+  var WORLD_H = 560;
+
+  function finite(value, fallback) {
+    return typeof value === 'number' && isFinite(value) ? value : fallback;
+  }
+  function clamp(value, low, high) { return Math.max(low, Math.min(high, value)); }
+  function roundedRect(ctx, x, y, w, h, r) {
+    var radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+  function fillGradient(ctx, x, y, w, h, stops) {
+    var g = ctx.createLinearGradient(0, y, 0, y + h);
+    for (var i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+  }
+  function line(ctx, x1, y1, x2, y2, color, width) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+  }
+  function text(ctx, value, x, y, size, color, align, weight) {
+    ctx.fillStyle = color; ctx.font = (weight || '600') + ' ' + size + 'px system-ui, sans-serif';
+    ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle'; ctx.fillText(value, x, y);
+  }
+  function objectById(objects, id) {
+    for (var i = 0; i < objects.length; i++) if (objects[i] && objects[i].id === id) return objects[i];
+    return null;
+  }
+  function objectValue(object, key, fallback) { return finite(object && object[key], fallback); }
+  function pathPoly(ctx, points, fill, stroke, width) {
+    ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
+    for (var i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width || 1; ctx.stroke(); }
+  }
+  function drawBackdrop(ctx) {
+    fillGradient(ctx, 0, 0, WORLD_W, WORLD_H, [[0, COLORS.skyTop], [0.72, COLORS.skyBottom], [1, '#d4ddd8']]);
+    // Quiet workshop wall and distant structural panels.
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(0, 58, WORLD_W, 250);
+    for (var x = 28; x < WORLD_W; x += 116) {
+      line(ctx, x, 78, x, 298, 'rgba(76,98,99,0.08)', 1);
+      line(ctx, x + 9, 88, x + 38, 88, 'rgba(255,255,255,0.38)', 2);
+    }
+    fillGradient(ctx, 0, 312, WORLD_W, 248, [[0, '#d7d7ce'], [0.12, '#c9c9bf'], [1, '#b9bbb4']]);
+    line(ctx, 0, 313, WORLD_W, 313, '#a6aaa3', 2);
+    // Floor seams establish scale without competing with equipment.
+    for (var gx = 20; gx < WORLD_W; gx += 100) line(ctx, gx, 316, gx - 25, WORLD_H, 'rgba(95,101,97,0.09)', 1);
+    for (var gy = 365; gy < WORLD_H; gy += 62) line(ctx, 0, gy, WORLD_W, gy, 'rgba(255,255,255,0.13)', 1);
+    // Soft apparatus shadow.
+    ctx.fillStyle = 'rgba(37,49,49,0.12)'; ctx.beginPath(); ctx.ellipse(500, 404, 370, 18, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  function drawSupports(ctx) {
+    var positions = [110, 258, 406, 554, 702, 850];
+    for (var i = 0; i < positions.length; i++) {
+      var x = positions[i];
+      pathPoly(ctx, [[x - 19, 371], [x + 19, 371], [x + 12, 398], [x - 12, 398]], '#626d70', '#445055', 1.4);
+      roundedRect(ctx, x - 25, 396, 50, 8, 3); fillGradient(ctx, x - 25, 396, 50, 8, [[0, '#b4bec0'], [1, '#59666b']]);
+      roundedRect(ctx, x - 27, 401, 54, 5, 2); ctx.fillStyle = '#4e5a5e'; ctx.fill();
+      line(ctx, x - 12, 378, x + 12, 378, 'rgba(235,241,241,0.55)', 1.5);
+    }
+  }
+  function drawRails(ctx) {
+    // Continuous twin rails, with raised polished running faces and dark web.
+    for (var j = 0; j < 2; j++) {
+      var y = j === 0 ? 346 : 366;
+      ctx.fillStyle = 'rgba(22,32,35,0.12)'; ctx.fillRect(34, y + 7, 932, 5);
+      fillGradient(ctx, 30, y, 940, 9, [[0, '#3d484c'], [0.28, '#79868a'], [0.52, '#4d5b60'], [1, '#313e43']]);
+      ctx.fillStyle = '#b2bec0'; ctx.fillRect(30, y, 940, 2);
+      ctx.fillStyle = 'rgba(230,237,236,0.42)'; ctx.fillRect(30, y + 2, 940, 1);
+      for (var x = 48; x < 960; x += 38) {
+        roundedRect(ctx, x, y + 8, 8, 4, 1); ctx.fillStyle = '#7b8586'; ctx.fill();
+      }
+    }
+    // Cross ties beneath the rails, visible in the open spaces between supports.
+    for (var k = 0; k < 23; k++) {
+      var tx = 43 + k * 41;
+      roundedRect(ctx, tx, 356, 26, 15, 3);
+      fillGradient(ctx, tx, 356, 26, 15, [[0, '#967d61'], [0.45, '#726451'], [1, '#4e514b']]);
+      ctx.strokeStyle = 'rgba(47,52,49,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+  }
+  function wheel(ctx, x, y) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(20,27,29,0.25)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 2;
+    var g = ctx.createRadialGradient(x - 3, y - 4, 2, x, y, 15);
+    g.addColorStop(0, '#879397'); g.addColorStop(0.26, '#4a565b'); g.addColorStop(0.72, '#283136'); g.addColorStop(1, '#131b1e');
+    ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    ctx.beginPath(); ctx.arc(x, y, 8.5, 0, Math.PI * 2); ctx.strokeStyle = '#101719'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fillStyle = '#aab2b2'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fillStyle = '#3d484c'; ctx.fill();
+    line(ctx, x - 9, y + 1, x + 9, y + 1, 'rgba(205,216,216,0.3)', 1);
+  }
+  function drawLoad(ctx, centerX, deckY, mass, isFirst) {
+    var count = Math.max(1, Math.min(5, Math.round(mass / 1.85)));
+    var blockW = Math.min(36, 128 / count);
+    var total = count * blockW + (count - 1) * 4;
+    var start = centerX - total / 2;
+    for (var i = 0; i < count; i++) {
+      var h = 24 + (i % 2) * 5;
+      var x = start + i * (blockW + 4), y = deckY - h;
+      roundedRect(ctx, x, y, blockW, h, 3);
+      fillGradient(ctx, x, y, blockW, h, [[0, '#737c7d'], [0.18, '#4e585b'], [0.58, '#323a3d'], [1, '#222a2d']]);
+      ctx.fill(); ctx.strokeStyle = '#222a2d'; ctx.lineWidth = 1.2; ctx.stroke();
+      line(ctx, x + 4, y + 3, x + blockW - 4, y + 3, 'rgba(216,225,224,0.28)', 1);
+      // Foundry ribs make the cargo read as solid iron ingots.
+      for (var rib = 1; rib < 3; rib++) line(ctx, x + rib * blockW / 3, y + 7, x + rib * blockW / 3, y + h - 5, 'rgba(16,22,24,0.3)', 1);
+      roundedRect(ctx, x + 3, y + h - 8, blockW - 6, 3, 1); ctx.fillStyle = 'rgba(160,171,171,0.18)'; ctx.fill();
+    }
+    text(ctx, (isFirst ? 'm₁ ' : 'm₂ ') + mass.toFixed(1) + ' kg', centerX, deckY - 43, 12, '#f3f6f4', 'center', '700');
+  }
+  function drawCart(ctx, object, mass, id, isFirst, stuck) {
+    if (!object) return;
+    var x = objectValue(object, 'x', isFirst ? 320 : 650);
+    var y = objectValue(object, 'y', 0);
+    var angle = objectValue(object, 'angle', 0);
+    var px = 500 + x * 58;
+    var py = 0;
+    // World coordinates from the model are interpreted by a fixed scale only.
+    // The scene baseline is fixed; only the model record controls horizontal position.
+    px = clamp(px, 145, 855);
+    ctx.save(); ctx.translate(px, py); ctx.rotate(angle);
+    var deckY = 315;
+    // Delicate shadow is attached to the cart's record position.
+    ctx.fillStyle = 'rgba(22,31,33,0.2)'; ctx.beginPath(); ctx.ellipse(0, 352, 91, 10, 0, 0, Math.PI * 2); ctx.fill();
+    // Chassis side rails and end cross members.
+    roundedRect(ctx, -82, 300, 164, 22, 5);
+    fillGradient(ctx, -82, 300, 164, 22, [[0, '#b3bec0'], [0.2, '#6f7d82'], [0.56, '#46545a'], [1, '#2e3a40']]);
+    ctx.strokeStyle = '#2a373d'; ctx.lineWidth = 2; ctx.stroke();
+    line(ctx, -72, 304, 70, 304, 'rgba(239,245,243,0.55)', 1.5);
+    // Structural underframe, visible below deck.
+    roundedRect(ctx, -69, 321, 138, 10, 3); fillGradient(ctx, -69, 321, 138, 10, [[0, '#354248'], [0.4, '#849095'], [1, '#374349']]); ctx.fill();
+    roundedRect(ctx, -54, 329, 108, 7, 2); ctx.fillStyle = '#4c595d'; ctx.fill();
+    // Four wheels, paired in depth; slight offset suggests the far axle.
+    wheel(ctx, -52, 346); wheel(ctx, 52, 346);
+    ctx.globalAlpha = 0.67; wheel(ctx, -52, 337); wheel(ctx, 52, 337); ctx.globalAlpha = 1;
+    // Axles and suspension brackets.
+    for (var ax = -52; ax <= 52; ax += 104) {
+      roundedRect(ctx, ax - 5, 324, 10, 19, 2); ctx.fillStyle = '#59676b'; ctx.fill();
+      ctx.beginPath(); ctx.arc(ax, 346, 3, 0, Math.PI * 2); ctx.fillStyle = '#c2cbca'; ctx.fill();
+    }
+    // Cargo deck with repeated anti-slip ribs.
+    roundedRect(ctx, -72, 292, 144, 12, 3); fillGradient(ctx, -72, 292, 144, 12, [[0, '#d2d9d8'], [0.36, '#819094'], [1, '#47565b']]); ctx.fill();
+    ctx.strokeStyle = '#3d494e'; ctx.lineWidth = 1.4; ctx.stroke();
+    for (var rib = -60; rib <= 60; rib += 12) line(ctx, rib, 295, rib, 301, 'rgba(39,49,53,0.5)', 1);
+    // Corner stanchions and bolted steel frame.
+    for (var side = -1; side <= 1; side += 2) {
+      roundedRect(ctx, side * 72 - 5, 271, 10, 21, 2); fillGradient(ctx, side * 72 - 5, 271, 10, 21, [[0, '#b8c3c4'], [1, '#536267']]); ctx.fill();
+      ctx.beginPath(); ctx.arc(side * 72, 307, 2.5, 0, Math.PI * 2); ctx.fillStyle = '#d5dedc'; ctx.fill();
+    }
+    drawLoad(ctx, 0, 290, mass, isFirst);
+    // Identification plate, rivets, and cart number.
+    roundedRect(ctx, -20, 309, 40, 12, 2); ctx.fillStyle = '#e1e5e2'; ctx.fill();
+    text(ctx, isFirst ? '01' : '02', 0, 315, 8, '#35434a', 'center', '800');
+    // Reinforced impact face and elastomer bumper, situated at the inward-facing end.
+    var bumperX = isFirst ? 82 : -82;
+    roundedRect(ctx, bumperX - 5, 282, 11, 28, 3);
+    fillGradient(ctx, bumperX - 5, 282, 11, 28, [[0, '#50575a'], [0.3, '#202629'], [0.7, '#343b3e'], [1, '#161d20']]); ctx.fill();
+    ctx.strokeStyle = '#11181b'; ctx.lineWidth = 1.2; ctx.stroke();
+    line(ctx, bumperX + (isFirst ? 1 : -1), 286, bumperX + (isFirst ? 1 : -1), 306, 'rgba(187,194,193,0.3)', 1);
+    // Visible velocity glyphs while moving; arrows communicate sign, never substitute for the carts.
+    var velocity = finite(object.velocity, 0);
+    if (Math.abs(velocity) > 0.04) {
+      var direction = velocity > 0 ? 1 : -1;
+      var arrowX = direction * 42;
+      line(ctx, arrowX - direction * 19, 257, arrowX + direction * 19, 257, COLORS.accent, 3);
+      pathPoly(ctx, [[arrowX + direction * 22, 257], [arrowX + direction * 12, 251], [arrowX + direction * 12, 263]], COLORS.accent, null, 0);
+    }
+    ctx.restore();
+    return { x: px, y: py, bumperX: px + (isFirst ? 82 : -82), stuck: stuck };
+  }
+  function drawSocketAndLatch(ctx, cart1, cart2, state) {
+    if (!cart1 || !cart2) return;
+    var cx = (cart1.bumperX + cart2.bumperX) / 2;
+    var y = 293;
+    // Socket cup is fixed on cart 2's inward face and remains visible while open.
+    roundedRect(ctx, cart2.bumperX - (cart2.bumperX > cart1.bumperX ? 9 : -1), y - 8, 12, 16, 3);
+    fillGradient(ctx, cx - 6, y - 8, 12, 16, [[0, '#d5b678'], [0.5, '#8b6e3f'], [1, '#594a34']]);
+    ctx.strokeStyle = '#50442f'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, y, 4, 0, Math.PI * 2); ctx.fillStyle = '#263237'; ctx.fill();
+    if (state === 'stuck_together') {
+      // Hooked steel latch visibly bridges the contact point only when model says joined.
+      ctx.save(); ctx.translate(cx, y);
+      roundedRect(ctx, -20, -3, 40, 6, 3); fillGradient(ctx, -20, -3, 40, 6, [[0, '#e4c47c'], [0.5, '#b38a49'], [1, '#74572e']]); ctx.fill();
+      ctx.strokeStyle = '#564327'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(18, 0, 7, -Math.PI / 2, Math.PI / 2); ctx.strokeStyle = '#b99151'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.beginPath(); ctx.arc(-15, 0, 3, 0, Math.PI * 2); ctx.fillStyle = '#efe0b9'; ctx.fill(); ctx.restore();
+    }
+  }
+  function drawVelocityLegend(ctx, state, cart1, cart2) {
+    var status = state.interactionState || state.status || state.phase || 'ready';
+    var running = status === 'approaching' || state.isRunning === true;
+    var joined = status === 'stuck_together';
+    if (!running && !joined) return;
+    var v1 = finite(state.velocity1, 0), v2 = finite(state.velocity2, 0);
+    var y = 131;
+    function arrowAt(x, velocity, label, color) {
+      if (Math.abs(velocity) < 0.015) {
+        line(ctx, x - 14, y, x + 14, y, '#73817f', 2);
+        text(ctx, label + ' = 0 m/s', x, y - 15, 11, COLORS.ink, 'center', '700'); return;
+      }
+      var dir = velocity > 0 ? 1 : -1;
+      line(ctx, x - dir * 22, y, x + dir * 22, y, color, 2.5);
+      pathPoly(ctx, [[x + dir * 26, y], [x + dir * 17, y - 5], [x + dir * 17, y + 5]], color, null, 0);
+      text(ctx, label + ' ' + (velocity > 0 ? '→' : '←'), x, y - 16, 11, COLORS.ink, 'center', '700');
+    }
+    if (!joined) {
+      arrowAt(cart1.x, v1, 'v₁', COLORS.accent);
+      arrowAt(cart2.x, v2, 'v₂', '#a45839');
+    } else {
+      var combined = finite(state.shared_velocity, 0);
+      var mid = (cart1.x + cart2.x) / 2;
+      arrowAt(mid, combined, 'v chung', COLORS.accent);
+    }
+  }
+  function drawRailLabels(ctx) {
+    roundedRect(ctx, 42, 82, 194, 34, 8); ctx.fillStyle = 'rgba(250,252,250,0.79)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(70,94,93,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+    text(ctx, 'MÔ HÌNH VA CHẠM MỀM', 139, 99, 12, '#33474a', 'center', '800');
+    roundedRect(ctx, 752, 82, 206, 34, 8); ctx.fillStyle = 'rgba(250,252,250,0.79)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(70,94,93,0.18)'; ctx.stroke();
+    text(ctx, 'CHIỀU DƯƠNG  →', 855, 99, 12, COLORS.accent, 'center', '800');
+  }
+  function draw(ctx, state, layout) {
+    if (!ctx || !state || !layout) return;
+    var width = finite(layout.width, ctx.canvas ? ctx.canvas.clientWidth : WORLD_W);
+    var height = finite(layout.height, ctx.canvas ? ctx.canvas.clientHeight : WORLD_H);
+    if (width <= 0 || height <= 0) return;
+    var objects = state.physicalState && Array.isArray(state.physicalState.objects) ? state.physicalState.objects : [];
+    var rail = objectById(objects, 'straight_rail');
+    var supports = objectById(objects, 'left_rail_supports');
+    var c1 = objectById(objects, 'cargo_cart_1');
+    var c2 = objectById(objects, 'cargo_cart_2');
+    var load1 = objectById(objects, 'cart1_load_stack');
+    var load2 = objectById(objects, 'cart2_load_stack');
+    var bumper1 = objectById(objects, 'cart1_bumper');
+    var bumper2 = objectById(objects, 'cart2_bumper');
+    var latch = objectById(objects, 'cart_coupling_latch');
+    var socket = objectById(objects, 'cart2_coupling_socket');
+    var sceneStatus = state.interactionState || state.status || state.phase || 'ready';
+    var joined = sceneStatus === 'stuck_together' || !!(latch && latch.joined === true) || !!(c1 && c1.joined === true);
+    var mass1 = finite(state.mass1, 2), mass2 = finite(state.mass2, 3);
+    var scale = Math.min(width / WORLD_W, height / WORLD_H);
+    var offsetX = (width - WORLD_W * scale) / 2, offsetY = (height - WORLD_H * scale) / 2;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, width, height);
+    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+    drawBackdrop(ctx);
+    // Approved static object records are checked explicitly; fixed scenic geometry is tied to their presence.
+    if (supports || rail) drawSupports(ctx);
+    if (rail) drawRails(ctx);
+    drawRailLabels(ctx);
+    var cart1Draw = drawCart(ctx, c1, finite(load1 && load1.mass, mass1), 'cargo_cart_1', true, joined);
+    var cart2Draw = drawCart(ctx, c2, finite(load2 && load2.mass, mass2), 'cargo_cart_2', false, joined);
+    // The bumper and coupling records provide joined/contact truth; object locations always come from cart records.
+    var joinedRecord = (latch && latch.joined === true) || (socket && socket.engaged === true) || joined;
+    drawSocketAndLatch(ctx, cart1Draw, cart2Draw, joinedRecord ? 'stuck_together' : sceneStatus);
+    drawVelocityLegend(ctx, state, cart1Draw || { x: 320 }, cart2Draw || { x: 650 });
+    // Contact glint makes the model-owned joined transition conspicuous without suggesting deformation.
+    if (joinedRecord && cart1Draw && cart2Draw) {
+      var contact = (cart1Draw.bumperX + cart2Draw.bumperX) / 2;
+      ctx.beginPath(); ctx.arc(contact, 293, 13, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(196,155,88,0.55)'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    // Subtle floor scale marks anchor the fixed camera and apparatus.
+    for (var mark = 0; mark <= 10; mark++) {
+      var mx = 90 + mark * 82;
+      line(ctx, mx, 414, mx, mark % 2 === 0 ? 424 : 420, 'rgba(54,68,66,0.3)', 1);
+    }
+    ctx.restore();
+  }
+
+  window.NEVIADExperiment = window.NEVIADExperiment || {};
+  window.NEVIADExperiment.renderer = { draw: draw };
+})();
+
+</script><script data-source-file="runtime-adapter.js">
+(function(){
+  const config={"manifest":{"title":"Va chạm mềm giữa hai xe hàng","phenomenon":"Hai xe hàng chuyển động trên cùng đường ray, va chạm mềm rồi dính vào nhau; vận tốc chung sau va chạm phụ thuộc vào khối lượng và vận tốc ban đầu.","locale":"vi-VN","gradeBand":null,"learningObjectives":["Khám phá sự bảo toàn động lượng bằng cách thay đổi khối lượng và vận tốc ban đầu của hai xe rồi quan sát vận tốc chung sau va chạm.","Nhận biết chiều chuyển động qua dấu của vận tốc theo quy ước chiều dương từ trái sang phải."],"instructions":["Điều chỉnh khối lượng và vận tốc ban đầu của từng xe bằng các điều khiển.","Chọn Chạy thí nghiệm để quan sát hai xe tiến lại gần nhau, va chạm và dính vào nhau.","Sau khi va chạm, đọc vận tốc chung; giá trị dương chỉ chiều sang phải, giá trị âm chỉ chiều sang trái.","Thay đổi một hoặc nhiều giá trị rồi chạy lại để so sánh kết quả. Chọn Đặt lại thí nghiệm để đưa xe về vị trí xuất phát và xóa kết quả."],"assumptions":["Hai xe chuyển động trên cùng một đường ray thẳng; ngoại lực theo phương ray không đáng kể trong thời gian va chạm.","Va chạm mềm hoàn toàn: hai xe dính vào nhau ngay sau va chạm.","Khối lượng không đổi và bảo toàn động lượng áp dụng trong va chạm."],"safetyNotes":["Đây là mô phỏng giáo dục; không hướng dẫn thực hiện va chạm xe hàng thật.","Giữ các giá trị khối lượng dương trong phạm vi điều khiển để phép tính và mô hình có nghĩa."],"parameters":[{"id":"mass1","label":"Khối lượng xe 1","type":"number","unit":"kg","min":0.5,"max":10.0,"step":null,"defaultValue":2.0,"required":true},{"id":"mass2","label":"Khối lượng xe 2","type":"number","unit":"kg","min":0.5,"max":10.0,"step":null,"defaultValue":3.0,"required":true},{"id":"velocity1","label":"Vận tốc ban đầu xe 1","type":"number","unit":"m/s","min":-5.0,"max":5.0,"step":null,"defaultValue":2.0,"required":true},{"id":"velocity2","label":"Vận tốc ban đầu xe 2","type":"number","unit":"m/s","min":-5.0,"max":5.0,"step":null,"defaultValue":-1.0,"required":true}],"outputs":[{"id":"shared_velocity","label":"Vận tốc chung sau va chạm","kind":"value","unit":"m/s"}],"interactions":[{"id":"mass1","kind":"control","label":"Khối lượng xe 1"},{"id":"mass2","kind":"control","label":"Khối lượng xe 2"},{"id":"velocity1","kind":"control","label":"Vận tốc ban đầu xe 1"},{"id":"velocity2","kind":"control","label":"Vận tốc ban đầu xe 2"},{"id":"run_experiment","kind":"command","label":"Chạy thí nghiệm"},{"id":"reset_experiment","kind":"command","label":"Đặt lại thí nghiệm"}],"requiredSlots":["simulationViewport","controls","instructions","scene:straight_rail","scene:left_rail_supports","scene:cargo_cart_1","scene:cart1_load_stack","scene:cart1_bumper","scene:cargo_cart_2","scene:cart2_load_stack","scene:cart2_bumper","scene:cart_coupling_latch","scene:cart2_coupling_socket"],"optionalSlots":[]},"plan":{"physicsPlan":{"variables":[{"id":"mass1","label":"Khối lượng xe 1","unit":"kg","min":0.5,"max":10.0,"defaultValue":2.0},{"id":"mass2","label":"Khối lượng xe 2","unit":"kg","min":0.5,"max":10.0,"defaultValue":3.0},{"id":"velocity1","label":"Vận tốc ban đầu xe 1","unit":"m/s","min":-5.0,"max":5.0,"defaultValue":2.0},{"id":"velocity2","label":"Vận tốc ban đầu xe 2","unit":"m/s","min":-5.0,"max":5.0,"defaultValue":-1.0}],"signConvention":"Chọn chiều dọc ray từ trái sang phải là chiều dương; vận tốc dương hướng sang phải, vận tốc âm hướng sang trái.","assumptions":["Hai xe chuyển động trên cùng một đường ray thẳng; ngoại lực theo phương ray không đáng kể trong thời gian va chạm.","Va chạm mềm hoàn toàn: hai xe dính vào nhau ngay sau va chạm.","Khối lượng không đổi và bảo toàn động lượng áp dụng trong va chạm."],"initialState":{"mass1":2.0,"mass2":3.0,"velocity1":2.0,"velocity2":-1.0},"formulas":[{"id":"momentum_conservation_sticky","equation":"v_{after}=(m_1v_1+m_2v_2)/(m_1+m_2)","inputIds":["mass1","mass2","velocity1","velocity2"],"outputIds":["shared_velocity"]}],"derivedOutputs":[{"id":"shared_velocity","label":"Vận tốc chung sau va chạm","unit":"m/s","formulaId":"momentum_conservation_sticky"}]},"interactionPlan":{"controls":[{"id":"mass1","label":"Khối lượng xe 1","unit":"kg","binding":"mass1","min":0.5,"max":10.0,"defaultValue":2.0},{"id":"mass2","label":"Khối lượng xe 2","unit":"kg","binding":"mass2","min":0.5,"max":10.0,"defaultValue":3.0},{"id":"velocity1","label":"Vận tốc ban đầu xe 1","unit":"m/s","binding":"velocity1","min":-5.0,"max":5.0,"defaultValue":2.0},{"id":"velocity2","label":"Vận tốc ban đầu xe 2","unit":"m/s","binding":"velocity2","min":-5.0,"max":5.0,"defaultValue":-1.0}],"commands":[{"id":"run_experiment","label":"Chạy thí nghiệm"},{"id":"reset_experiment","label":"Đặt lại thí nghiệm"}],"transitions":[{"id":"start_collision_run","fromState":"ready","toState":"approaching","condition":"run_experiment được kích hoạt; hai xe bắt đầu chuyển động theo vận tốc ban đầu đã đặt","resetState":"Xóa kết quả lần chạy trước, đưa xe về vị trí xuất phát và dùng giá trị điều khiển hiện tại"},{"id":"carts_collide","fromState":"approaching","toState":"stuck_together","condition":"Hai xe gặp nhau trên ray; va chạm mềm làm chúng dính vào nhau và chuyển động cùng vận tốc","resetState":"Không áp dụng"},{"id":"reset_to_ready","fromState":"approaching|stuck_together","toState":"ready","condition":"Lệnh Đặt lại thí nghiệm được kích hoạt","resetState":"Đưa xe về vị trí xuất phát, xóa trạng thái va chạm và kết quả; giữ các giá trị điều khiển hiện tại"}],"pausedConditions":["Tạm dừng khi người dùng yêu cầu tạm dừng; giữ nguyên vị trí, vận tốc và trạng thái hiện tại.","Khi đang tạm dừng, không cập nhật chuyển động cho đến khi tiếp tục hoặc đặt lại."],"successConditions":["Hai xe đã va chạm mềm và dính vào nhau; hiển thị vận tốc chung sau va chạm được tính theo bảo toàn động lượng: (mass1*velocity1 + mass2*velocity2)/(mass1+mass2).","Người học thay đổi ít nhất một khối lượng hoặc vận tốc ban đầu, chạy lại thí nghiệm và quan sát được vận tốc chung tương ứng."],"failureConditions":["Không xác định được thời điểm va chạm hoặc hai xe không tiến lại gần nhau trong cấu hình mô phỏng; không báo kết quả va chạm thành công.","Tổng khối lượng không dương hoặc dữ liệu điều khiển không hợp lệ; không tính vận tốc chung."]},"scenePlan":{"objects":[{"id":"straight_rail","parentId":"","role":"Đường ray thẳng bằng hai thanh thép song song, làm mặt lăn chung cho hai xe hàng","relativeLayout":"Nằm ngang, chạy xuyên suốt bên dưới cả hai xe; hai thanh ray cách nhau vừa khít với bánh xe","visibilityCondition":"Luôn hiển thị","stateBinding":"Tĩnh; giả định ngoại lực dọc ray không đáng kể trong va chạm","motionBinding":"Đứng yên trong mọi trạng thái thí nghiệm","requiredObject":true},{"id":"left_rail_supports","parentId":"straight_rail","role":"Các chân đỡ kim loại giữ ray ổn định","relativeLayout":"Đỡ bên dưới hai thanh ray, phân bố đều dọc đường ray","visibilityCondition":"Luôn hiển thị","stateBinding":"Tĩnh","motionBinding":"Đứng yên trong mọi trạng thái thí nghiệm","requiredObject":true},{"id":"cargo_cart_1","parentId":"straight_rail","role":"Xe hàng thứ nhất có khung thép, sàn chở hàng và bốn bánh có rãnh chạy trên ray","relativeLayout":"Ở phía trái xe thứ hai khi sẵn sàng; mặt va chạm hướng sang phải; sau va chạm nằm sát và dính với xe thứ hai","visibilityCondition":"Hiển thị trong mọi trạng thái thí nghiệm","stateBinding":"Khối lượng gắn với mass1; vận tốc ban đầu gắn với velocity1; trạng thái chuyển động theo ready, approaching, stuck_together và reset_to_ready","motionBinding":"Đứng yên ở vị trí xuất phát khi ready; khi approaching chuyển động dọc ray theo velocity1; sau va chạm chuyển động cùng xe thứ hai theo shared_velocity","requiredObject":true},{"id":"cart1_load_stack","parentId":"cargo_cart_1","role":"Các thỏi tải bằng gang có thể nhận biết, biểu diễn phần khối lượng của xe thứ nhất","relativeLayout":"Xếp gọn trên sàn xe hàng thứ nhất; số lượng hoặc độ dày biểu diễn nhất quán với mass1","visibilityCondition":"Hiển thị cùng xe hàng thứ nhất","stateBinding":"Khối lượng tải điều chỉnh theo mass1","motionBinding":"Di chuyển cùng xe hàng thứ nhất","requiredObject":true},{"id":"cart1_bumper","parentId":"cargo_cart_1","role":"Tấm đệm va chạm bọc cao su ở đầu xe thứ nhất","relativeLayout":"Gắn ở đầu bên phải của xe thứ nhất, đối diện tấm đệm xe thứ hai","visibilityCondition":"Hiển thị cùng xe hàng thứ nhất","stateBinding":"Tĩnh tương đối với khung xe; tiếp xúc khi carts_collide","motionBinding":"Tiến đến tấm đệm xe thứ hai khi approaching; giữ tiếp xúc khi stuck_together","requiredObject":true},{"id":"cargo_cart_2","parentId":"straight_rail","role":"Xe hàng thứ hai có khung thép, sàn chở hàng và bốn bánh có rãnh chạy trên ray","relativeLayout":"Ở bên phải xe thứ nhất khi sẵn sàng; mặt va chạm hướng sang trái; sau va chạm nằm sát và dính với xe thứ nhất","visibilityCondition":"Hiển thị trong mọi trạng thái thí nghiệm","stateBinding":"Khối lượng gắn với mass2; vận tốc ban đầu gắn với velocity2; trạng thái chuyển động theo ready, approaching, stuck_together và reset_to_ready","motionBinding":"Đứng yên ở vị trí xuất phát khi ready; khi approaching chuyển động dọc ray theo velocity2; sau va chạm chuyển động cùng xe thứ nhất theo shared_velocity","requiredObject":true},{"id":"cart2_load_stack","parentId":"cargo_cart_2","role":"Các thỏi tải bằng gang có thể nhận biết, biểu diễn phần khối lượng của xe thứ hai","relativeLayout":"Xếp gọn trên sàn xe hàng thứ hai; số lượng hoặc độ dày biểu diễn nhất quán với mass2","visibilityCondition":"Hiển thị cùng xe hàng thứ hai","stateBinding":"Khối lượng tải điều chỉnh theo mass2","motionBinding":"Di chuyển cùng xe hàng thứ hai","requiredObject":true},{"id":"cart2_bumper","parentId":"cargo_cart_2","role":"Tấm đệm va chạm bọc cao su ở đầu xe thứ hai","relativeLayout":"Gắn ở đầu bên trái của xe thứ hai, đối diện tấm đệm xe thứ nhất","visibilityCondition":"Hiển thị cùng xe hàng thứ hai","stateBinding":"Tĩnh tương đối với khung xe; tiếp xúc khi carts_collide","motionBinding":"Tiến đến tấm đệm xe thứ nhất khi approaching; giữ tiếp xúc khi stuck_together","requiredObject":true},{"id":"cart_coupling_latch","parentId":"cargo_cart_1","role":"Chốt móc cơ khí nối hai xe sau va chạm mềm","relativeLayout":"Nằm giữa hai tấm đệm đối diện; móc vào ngàm trên xe thứ hai khi va chạm","visibilityCondition":"Ẩn khi ready và approaching; hiện khi hai xe dính vào nhau","stateBinding":"Trạng thái khớp với interaction state: chưa khóa trước va chạm, khóa khi stuck_together, mở khi reset_to_ready","motionBinding":"Đi cùng cụm hai xe sau khi khóa; đứng yên cùng xe khi cụm chuyển động theo shared_velocity","requiredObject":true},{"id":"cart2_coupling_socket","parentId":"cargo_cart_2","role":"Ngàm thép tiếp nhận chốt nối xe hàng thứ nhất","relativeLayout":"Gắn ở mặt va chạm bên trái xe thứ hai, thẳng hàng với cart_coupling_latch","visibilityCondition":"Luôn hiển thị; điểm ăn khớp được chốt che một phần sau va chạm","stateBinding":"Chưa ăn khớp khi ready và approaching; ăn khớp khi stuck_together","motionBinding":"Di chuyển cùng xe hàng thứ hai","requiredObject":true}]},"displayPlan":{"displays":[{"id":"mass1_readout","label":"Khối lượng xe 1","kind":"numeric_readout","unit":"kg","binding":"mass1","accessibilityName":"Khối lượng xe hàng thứ nhất, kilôgam","visibilityCondition":"Luôn hiển thị"},{"id":"mass2_readout","label":"Khối lượng xe 2","kind":"numeric_readout","unit":"kg","binding":"mass2","accessibilityName":"Khối lượng xe hàng thứ hai, kilôgam","visibilityCondition":"Luôn hiển thị"},{"id":"velocity1_readout","label":"Vận tốc ban đầu xe 1","kind":"numeric_readout","unit":"m/s","binding":"velocity1","accessibilityName":"Vận tốc ban đầu của xe hàng thứ nhất, mét trên giây","visibilityCondition":"Luôn hiển thị"},{"id":"velocity2_readout","label":"Vận tốc ban đầu xe 2","kind":"numeric_readout","unit":"m/s","binding":"velocity2","accessibilityName":"Vận tốc ban đầu của xe hàng thứ hai, mét trên giây","visibilityCondition":"Luôn hiển thị"},{"id":"shared_velocity_readout","label":"Vận tốc chung sau va chạm","kind":"numeric_readout","unit":"m/s","binding":"shared_velocity","accessibilityName":"Vận tốc chung của hai xe sau va chạm, mét trên giây; dấu cho biết hướng chuyển động","visibilityCondition":"Chỉ hiển thị sau khi hai xe dính vào nhau ở trạng thái stuck_together"}]},"experimentStory":{"initialScene":{"description":"Hai xe hàng đặt trên đường ray thép nằm ngang, xe 1 ở bên trái xe 2 và các tấm đệm cao su đối diện nhau. Các thỏi gang biểu diễn khối lượng từng xe; chốt nối và ngàm đang tách rời. Khi sẵn sàng, cả hai xe đứng yên ở vị trí xuất phát.","elements":[{"elementId":"straight_rail","description":"Hai thanh ray thép song song tạo thành đường lăn chung, nằm ngang bên dưới hai xe.","position":"Chạy xuyên suốt cảnh, bên dưới cả hai xe.","appearance":"Ray thép thật, song song và đủ rộng cho bánh xe có rãnh.","stateBinding":"Đứng yên; ngoại lực dọc ray được xem là không đáng kể trong va chạm."},{"elementId":"left_rail_supports","description":"Các chân đỡ kim loại giữ đường ray ổn định.","position":"Phân bố đều bên dưới hai thanh ray.","appearance":"Chân đỡ kim loại chắc chắn, tiếp xúc với mặt sàn.","stateBinding":"Tĩnh trong mọi trạng thái thí nghiệm."},{"elementId":"cargo_cart_1","description":"Xe hàng thứ nhất, có khung thép, sàn chở hàng và bốn bánh chạy trên ray.","position":"Bên trái xe thứ hai, mặt va chạm hướng sang phải.","appearance":"Xe hàng bằng thép với bánh có rãnh ôm ray; mang tải tương ứng với mass1.","stateBinding":"Khối lượng lấy từ mass1; vận tốc ban đầu lấy từ velocity1; chuyển động theo các trạng thái ready, approaching và stuck_together."},{"elementId":"cart1_load_stack","description":"Các thỏi tải bằng gang biểu diễn phần khối lượng của xe thứ nhất.","position":"Xếp gọn trên sàn cargo_cart_1.","appearance":"Thỏi gang tối màu, số lượng hoặc độ dày thể hiện mass1.","stateBinding":"Tải thay đổi theo mass1 và di chuyển cùng cargo_cart_1."},{"elementId":"cart1_bumper","description":"Tấm đệm cao su ở đầu va chạm của xe thứ nhất.","position":"Gắn ở đầu bên phải cargo_cart_1, đối diện xe thứ hai.","appearance":"Đệm cao su dày, dễ nhận biết.","stateBinding":"Giữ nguyên vị trí tương đối trên xe; tiến đến cart2_bumper và tiếp xúc khi hai xe va chạm."},{"elementId":"cargo_cart_2","description":"Xe hàng thứ hai, có khung thép, sàn chở hàng và bốn bánh chạy trên ray.","position":"Bên phải xe thứ nhất, mặt va chạm hướng sang trái.","appearance":"Xe hàng bằng thép với bánh có rãnh ôm ray; mang tải tương ứng với mass2.","stateBinding":"Khối lượng lấy từ mass2; vận tốc ban đầu lấy từ velocity2; chuyển động theo các trạng thái ready, approaching và stuck_together."},{"elementId":"cart2_load_stack","description":"Các thỏi tải bằng gang biểu diễn phần khối lượng của xe thứ hai.","position":"Xếp gọn trên sàn cargo_cart_2.","appearance":"Thỏi gang tối màu, số lượng hoặc độ dày thể hiện mass2.","stateBinding":"Tải thay đổi theo mass2 và di chuyển cùng cargo_cart_2."},{"elementId":"cart2_bumper","description":"Tấm đệm cao su ở đầu va chạm của xe thứ hai.","position":"Gắn ở đầu bên trái cargo_cart_2, đối diện xe thứ nhất.","appearance":"Đệm cao su dày, dễ nhận biết.","stateBinding":"Giữ nguyên vị trí tương đối trên xe; tiến đến cart1_bumper và tiếp xúc khi hai xe va chạm."},{"elementId":"cart_coupling_latch","description":"Chốt móc cơ khí nối hai xe sau va chạm mềm.","position":"Giữa hai tấm đệm đối diện, thẳng hàng với ngàm của xe thứ hai.","appearance":"Chốt kim loại đang mở và ẩn khi thí nghiệm sẵn sàng.","stateBinding":"Chưa khóa khi ready hoặc approaching; khóa và đi cùng cụm xe khi stuck_together; mở lại khi đặt lại."},{"elementId":"cart2_coupling_socket","description":"Ngàm thép tiếp nhận chốt nối của xe thứ nhất.","position":"Trên mặt va chạm bên trái cargo_cart_2, thẳng hàng với chốt.","appearance":"Ngàm thép lộ rõ, sẵn sàng tiếp nhận chốt.","stateBinding":"Chưa ăn khớp trước va chạm; ăn khớp khi stuck_together và di chuyển cùng cargo_cart_2."}]},"activities":[{"id":"run_initial_collision","order":1,"story":"Tôi thao tác Chạy thí nghiệm thì phần cargo_cart_1 thay đổi theo hướng sang phải; hai xe tiến lại gần nhau trên ray và dính vào nhau sau va chạm.","action":"Kích hoạt lệnh run_experiment với giá trị ban đầu mass1=2.0 kg, mass2=3.0 kg, velocity1=2.0 m/s và velocity2=-1.0 m/s.","precondition":"Thí nghiệm ở trạng thái ready; các giá trị điều khiển hợp lệ và hai xe được đặt tại vị trí xuất phát.","visualChanges":[{"elementId":"cargo_cart_1","property":"vị trí và chuyển động","direction":"sang phải","description":"Xe 1 bắt đầu chuyển động theo velocity1, tiến đến xe 2.","stateBinding":"approaching; velocity1=2.0 m/s"},{"elementId":"cargo_cart_2","property":"vị trí và chuyển động","direction":"sang trái","description":"Xe 2 bắt đầu chuyển động theo velocity2, tiến đến xe 1.","stateBinding":"approaching; velocity2=-1.0 m/s"},{"elementId":"cart1_load_stack","property":"chuyển động","direction":"cùng xe 1","description":"Các thỏi tải di chuyển cùng cargo_cart_1.","stateBinding":"mass1=2.0 kg; chuyển động theo cargo_cart_1"},{"elementId":"cart2_load_stack","property":"chuyển động","direction":"cùng xe 2","description":"Các thỏi tải di chuyển cùng cargo_cart_2.","stateBinding":"mass2=3.0 kg; chuyển động theo cargo_cart_2"}],"expectedOutcome":"Hai xe tiến lại gần nhau; sau va chạm mềm chúng dính thành một cụm và có vận tốc chung 0.2 m/s hướng sang phải, theo (2×2+3×−1)/(2+3)."},{"id":"observe_sticky_collision","order":2,"story":"Tôi thao tác theo dõi va chạm thì phần cart_coupling_latch thay đổi theo hướng khóa vào ngàm; hai xe dính với nhau và chuyển động chung sang phải với vận tốc 0.2 m/s.","action":"Quan sát diễn biến va chạm mềm trong lần chạy đang tiến hành.","precondition":"Lệnh run_experiment đã đưa hai xe vào trạng thái approaching và chúng đang tiến lại gần nhau trên cùng ray.","visualChanges":[{"elementId":"cargo_cart_1","property":"trạng thái và chuyển động","direction":"cùng cargo_cart_2 sang phải","description":"Xe 1 dừng chuyển động độc lập, áp sát xe 2 và tiếp tục cùng xe 2 sau va chạm.","stateBinding":"stuck_together; vận tốc chung shared_velocity được tính từ mass1, mass2, velocity1, velocity2"},{"elementId":"cargo_cart_2","property":"trạng thái và chuyển động","direction":"cùng cargo_cart_1 sang phải","description":"Xe 2 áp sát xe 1 và cả cụm chuyển động với cùng vận tốc.","stateBinding":"stuck_together; shared_velocity=(mass1*velocity1+mass2*velocity2)/(mass1+mass2)"},{"elementId":"cart_coupling_latch","property":"khớp nối","direction":"khóa vào cart2_coupling_socket","description":"Chốt hiện ra và móc vào ngàm để giữ hai xe dính với nhau.","stateBinding":"interaction state chuyển sang stuck_together"},{"elementId":"cart2_coupling_socket","property":"trạng thái ăn khớp","direction":"nhận chốt nối","description":"Ngàm tiếp nhận cart_coupling_latch, giữ hai xe nối liền.","stateBinding":"Ăn khớp khi stuck_together"}],"expectedOutcome":"Hai xe dính vào nhau ngay sau va chạm; vận tốc chung được hiển thị là 0.2 m/s hướng sang phải và phù hợp với bảo toàn động lượng."},{"id":"change_masses_and_velocities","order":3,"story":"Tôi thao tác điều chỉnh các điều khiển mass1, mass2, velocity1 và velocity2 thì phần cart1_load_stack thay đổi theo hướng tăng khối lượng xe 1; lần chạy kế tiếp cho phép so sánh vận tốc chung ứng với cấu hình mới.","action":"Điều chỉnh các điều khiển mass1, mass2, velocity1 và velocity2 trong phạm vi cho phép, chẳng hạn đặt mass1=4.0 kg, mass2=3.0 kg, velocity1=2.0 m/s và velocity2=-1.0 m/s.","precondition":"Các điều khiển khối lượng và vận tốc ban đầu khả dụng; giá trị mới nằm trong giới hạn đã quy định.","visualChanges":[{"elementId":"cart1_load_stack","property":"khối lượng tải biểu diễn","direction":"tăng tương ứng với mass1","description":"Các thỏi gang trên xe 1 tăng độ dày hoặc số lượng để thể hiện khối lượng mới.","stateBinding":"mass1=4.0 kg"},{"elementId":"cart2_load_stack","property":"khối lượng tải biểu diễn","direction":"theo giá trị mass2 đã đặt","description":"Tải trên xe 2 biểu diễn khối lượng mới đã chọn.","stateBinding":"mass2=3.0 kg"},{"elementId":"cargo_cart_1","property":"vận tốc ban đầu được áp dụng","direction":"theo velocity1 đã đặt","description":"Ở lần chạy kế tiếp, xe 1 chuyển động theo giá trị vận tốc ban đầu mới.","stateBinding":"velocity1=2.0 m/s"},{"elementId":"cargo_cart_2","property":"vận tốc ban đầu được áp dụng","direction":"theo velocity2 đã đặt","description":"Ở lần chạy kế tiếp, xe 2 chuyển động theo giá trị vận tốc ban đầu mới.","stateBinding":"velocity2=-1.0 m/s"}],"expectedOutcome":"Cấu hình mới được lưu để lần chạy tiếp theo tính lại vận tốc chung theo khối lượng và vận tốc ban đầu đã điều chỉnh."},{"id":"rerun_and_compare","order":4,"story":"Tôi thao tác Chạy thí nghiệm thì phần cargo_cart_1 thay đổi theo hướng sang phải; sau va chạm hai xe dính với nhau và vận tốc chung đổi thành 0.714 m/s sang phải.","action":"Kích hoạt lệnh run_experiment sau khi điều chỉnh các giá trị điều khiển.","precondition":"Các giá trị mới hợp lệ; lệnh chạy đưa xe về vị trí xuất phát, xóa kết quả lần trước và bắt đầu lần chạy mới.","visualChanges":[{"elementId":"cargo_cart_1","property":"chuyển động","direction":"sang phải rồi cùng cụm xe sang phải","description":"Xe 1 tiến đến xe 2 rồi dính vào xe 2 sau va chạm.","stateBinding":"approaching rồi stuck_together; dùng mass1=4.0 kg và velocity1=2.0 m/s"},{"elementId":"cargo_cart_2","property":"chuyển động","direction":"sang trái rồi cùng cụm xe sang phải","description":"Xe 2 tiến đến xe 1 rồi cùng cụm xe chuyển động theo vận tốc chung mới.","stateBinding":"approaching rồi stuck_together; dùng mass2=3.0 kg và velocity2=-1.0 m/s"},{"elementId":"cart_coupling_latch","property":"khớp nối","direction":"khóa khi va chạm","description":"Chốt nối hai xe khi chúng tiếp xúc và dính lại.","stateBinding":"Ẩn trước va chạm; khóa khi stuck_together"},{"elementId":"cart1_load_stack","property":"chuyển động","direction":"cùng cụm xe","description":"Tải xe 1 đi cùng cụm sau va chạm mềm.","stateBinding":"mass1=4.0 kg; chuyển động theo cargo_cart_1"},{"elementId":"cart2_load_stack","property":"chuyển động","direction":"cùng cụm xe","description":"Tải xe 2 đi cùng cụm sau va chạm mềm.","stateBinding":"mass2=3.0 kg; chuyển động theo cargo_cart_2"}],"expectedOutcome":"Hai xe dính vào nhau; vận tốc chung sau va chạm là (4×2+3×−1)/(4+3)=5/7≈0.714 m/s hướng sang phải, khác kết quả lần đầu do khối lượng xe 1 đã tăng."},{"id":"reset_experiment","order":5,"story":"Tôi thao tác Đặt lại thí nghiệm thì phần cargo_cart_1 thay đổi theo hướng trở về vị trí xuất phát; trạng thái va chạm và kết quả vận tốc chung được xóa.","action":"Kích hoạt lệnh reset_experiment.","precondition":"Thí nghiệm đang ở trạng thái approaching hoặc stuck_together.","visualChanges":[{"elementId":"cargo_cart_1","property":"vị trí và trạng thái","direction":"về vị trí xuất phát, đứng yên","description":"Xe 1 tách khỏi cụm đã dính và trở về trạng thái sẵn sàng.","stateBinding":"ready; giữ nguyên giá trị điều khiển hiện tại"},{"elementId":"cargo_cart_2","property":"vị trí và trạng thái","direction":"về vị trí xuất phát, đứng yên","description":"Xe 2 trở về phía bên phải xe 1 và đứng yên.","stateBinding":"ready; giữ nguyên giá trị điều khiển hiện tại"},{"elementId":"cart_coupling_latch","property":"trạng thái khóa","direction":"mở và ẩn","description":"Chốt nhả khỏi ngàm, không còn nối hai xe.","stateBinding":"ready; khớp nối được mở"},{"elementId":"cart2_coupling_socket","property":"trạng thái ăn khớp","direction":"nhả chốt","description":"Ngàm không còn giữ chốt nối.","stateBinding":"ready; chưa ăn khớp"}],"expectedOutcome":"Hai xe đứng riêng tại vị trí xuất phát, kết quả va chạm và vận tốc chung được xóa; các giá trị điều khiển hiện tại được giữ nguyên."}]},"acceptanceMatrix":[{"requirement":"Hai xe hàng dễ nhận biết, không phải các hình khối hình học chung chung.","planElement":"visual-objects.cargo_cart_1","assertion":"Hiển thị xe hàng có khung thép, sàn chở hàng và bốn bánh có rãnh; có tải tương ứng với mass1.","fixtureState":"ready"},{"requirement":"Hai xe cùng chuyển động trên một đường ray hoặc bề mặt lăn chung, tiến lại gần nhau rồi dính vào nhau sau va chạm.","planElement":"visual-objects.straight_rail","assertion":"Một đường ray thẳng chung nằm dưới cả hai xe; khi chạy, hai xe tiến lại gần nhau và sau va chạm nằm sát, dính thành cụm.","fixtureState":"approaching rồi stuck_together"},{"requirement":"Thể hiện nhất quán khối lượng, hướng và chuyển động trước/sau va chạm.","planElement":"visual-objects.cart1_load_stack","assertion":"Tải xe 1 biểu diễn mass1; xe 1 chuyển động theo velocity1 trước va chạm và cùng xe 2 theo shared_velocity sau va chạm.","fixtureState":"mass1=2.0 kg, velocity1=2.0 m/s; sau va chạm stuck_together"},{"requirement":"Cho phép thay đổi khối lượng mỗi xe.","planElement":"interaction-plan.mass1","assertion":"Có thể điều chỉnh mass1 trong giới hạn 0.5–10.0 kg và giá trị được phản ánh trong readout khối lượng xe 1.","fixtureState":"mass1=4.0 kg"},{"requirement":"Cho phép thay đổi vận tốc ban đầu mỗi xe.","planElement":"interaction-plan.velocity1","assertion":"Có thể điều chỉnh velocity1 trong giới hạn -5.0–5.0 m/s và giá trị được phản ánh trong readout vận tốc ban đầu xe 1.","fixtureState":"velocity1=2.0 m/s"},{"requirement":"Có điều khiển Chạy thí nghiệm.","planElement":"interaction-plan.run_experiment","assertion":"Kích hoạt lệnh đưa thí nghiệm từ ready sang approaching và bắt đầu chuyển động theo các vận tốc ban đầu đã đặt.","fixtureState":"ready với mass1=2.0 kg, mass2=3.0 kg, velocity1=2.0 m/s, velocity2=-1.0 m/s"},{"requirement":"Có điều khiển Đặt lại thí nghiệm.","planElement":"interaction-plan.reset_experiment","assertion":"Kích hoạt lệnh đưa xe về vị trí xuất phát, xóa trạng thái va chạm và kết quả, đồng thời giữ các giá trị điều khiển hiện tại.","fixtureState":"stuck_together trước khi đặt lại; ready sau khi đặt lại"},{"requirement":"Quan sát vận tốc chung của hai xe sau va chạm.","planElement":"displayPlan.shared_velocity_readout","assertion":"Sau khi hai xe dính vào nhau, hiển thị shared_velocity theo m/s; dấu biểu thị hướng chuyển động.","fixtureState":"mass1=2.0 kg, mass2=3.0 kg, velocity1=2.0 m/s, velocity2=-1.0 m/s; trạng thái stuck_together"},{"requirement":"Học sinh khám phá sự bảo toàn động lượng bằng cách thay đổi khối lượng và vận tốc ban đầu, rồi quan sát vận tốc chung sau va chạm.","planElement":"physics-plan.shared_velocity","assertion":"Thay đổi ít nhất một khối lượng hoặc vận tốc ban đầu, chạy lại, rồi quan sát readout shared_velocity thay đổi tương ứng với cấu hình mới.","fixtureState":"Lần đầu: mass1=2.0 kg, mass2=3.0 kg, velocity1=2.0 m/s, velocity2=-1.0 m/s; lần sau: mass1=4.0 kg, mass2=3.0 kg, velocity1=2.0 m/s, velocity2=-1.0 m/s; stuck_together"}]},"parameters":{"mass1":2.0,"mass2":3.0,"velocity1":2.0,"velocity2":-1.0}};
+  const namespace=window.NEVIADExperiment||{},model=namespace.physicsModel,simulation=namespace.simulation,renderer=namespace.renderer;
+  if(!model||!simulation||!renderer||typeof simulation.create!=='function'||typeof simulation.step!=='function'||typeof simulation.setParameter!=='function'||typeof simulation.reset!=='function'||typeof simulation.dispatch!=='function'||typeof renderer.draw!=='function'){
+    window.__neviadSimulation=window.__neviadSimulation||{};
+    window.__neviadSimulation.getState=window.__neviadSimulation.getState||(()=>({time:0,parameters:{...config.parameters},physicalState:{},outputs:{},isRunning:false}));
+    window.__neviadSimulation.setParameter=window.__neviadSimulation.setParameter||(()=>false);
+    window.__neviadSimulation.reset=window.__neviadSimulation.reset||(()=>{});
+    window.parent.postMessage({source:'neviad-simulation',type:'simulation.error',protocolVersion:'neviad.simulation-runtime/v1',payload:{message:'Thiếu module mô phỏng bắt buộc'}},'*');return;
+  }
+  const canvas=document.querySelector('#simulation-canvas'),ctx=canvas&&canvas.getContext('2d');let state;
+  const finite=(value,fallback=0)=>{const n=Number(value);return Number.isFinite(n)?n:fallback};
+  const outputsFor=(s)=>{let raw={};try{raw=model.calculateOutputs(s.physicalState,s.parameters)||{}}catch{};const outputs={};Object.keys(raw).forEach(key=>{const value=Number(raw[key]);if(Number.isFinite(value))outputs[key]=value});return outputs};
+  const normalize=(s)=>{s=s&&typeof s==='object'?s:{};s.parameters={...config.parameters,...(s.parameters&&typeof s.parameters==='object'?s.parameters:{})};s.physicalState=s.physicalState||model.createInitialState(s.parameters)||{};s.outputs=outputsFor(s);s.time=Number.isFinite(s.time)?s.time:0;s.isRunning=!!s.isRunning;return s};
+  const sync=()=>{if(!state)return;document.querySelectorAll('input[data-parameter-id]').forEach(input=>{const id=input.dataset.parameterId;if(id in state.parameters)input.value=String(finite(state.parameters[id]));const output=document.querySelector('[data-parameter-value=\"'+CSS.escape(id)+'\"]');if(output&&id in state.parameters)output.textContent=String(finite(state.parameters[id]))});document.querySelectorAll('[data-display-id]').forEach(slot=>{const display=(config.plan.displayPlan?.displays||[]).find(item=>item.id===slot.dataset.displayId);if(!display)return;const value=state.outputs?.[display.binding]??state.parameters?.[display.binding];const target=slot.querySelector('[data-display-value]');if(target)target.textContent=value===undefined||!Number.isFinite(Number(value))?'—':typeof value==='number'?Number(value).toPrecision(4):String(value)})};
+  const draw=()=>{if(!canvas||!ctx||!state)return;const r=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;if(r.width<1||r.height<1)return;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);renderer.draw(ctx,state,{width:r.width,height:r.height})};
+  const setParameter=(id,value)=>{if(!(id in config.parameters))return false;const n=Number(value);if(!Number.isFinite(n))return false;state=normalize(simulation.setParameter(state,id,n,model));sync();draw();return true};
+  const reset=()=>{state=normalize(simulation.reset(state,model));if(typeof simulation.setRunning==='function')state=normalize(simulation.setRunning(state,false));else state.isRunning=false;sync();draw();return state};
+  const dispatch=(command)=>{const next=simulation.dispatch(state,command,model);if(!next||typeof next!=='object')return false;state=normalize(next);sync();draw();if(state.isRunning)requestAnimationFrame(frame);return true};
+  state=normalize(simulation.create({...config.parameters},model));if(typeof simulation.setRunning==='function')state=normalize(simulation.setRunning(state,false));else state.isRunning=false;
+  const supplied=window.__neviadSimulation||{};const getVisualState=()=>{const r=canvas&&canvas.getBoundingClientRect(),observed=typeof supplied.getVisualState==='function'?supplied.getVisualState()||[]:[];return (config.plan.scenePlan?.objects||[]).filter(object=>object.requiredObject!==false).map(object=>{const actual=observed.find(item=>item.id===object.id||item.stateBinding===object.stateBinding);return actual?{...actual,id:object.id}:{id:object.id,visible:!!(r&&r.width>0&&r.height>0),boundingBox:{x:0,y:0,width:r?.width||0,height:r?.height||0},stateBinding:object.stateBinding,label:object.role}})};window.__neviadSimulation={...supplied,getState:()=>state,setParameter,reset,dispatchCommand:dispatch,getVisualState};
+  document.querySelectorAll('input[data-parameter-id]').forEach(input=>{input.addEventListener('input',()=>setParameter(input.dataset.parameterId,input.value));input.addEventListener('change',()=>setParameter(input.dataset.parameterId,input.value))});
+  document.querySelectorAll('button[data-command]').forEach(button=>button.addEventListener('click',()=>{const command=button.dataset.command;dispatch(command);window.parent.postMessage({source:'neviad-simulation',type:'simulation.command',protocolVersion:'neviad.simulation-runtime/v1',payload:{command,state}},'*')}));
+  window.addEventListener('message',event=>{const m=event.data;if(event.source!==window.parent||!m||m.source!=='neviad'||m.protocolVersion!=='neviad.simulation-runtime/v1'||m.type!=='simulation.command')return;const p=m.payload||{};if(p.command==='setParameter')setParameter(p.id,p.value);else if(p.command==='getState')window.parent.postMessage({source:'neviad-simulation',type:'simulation.state',protocolVersion:'neviad.simulation-runtime/v1',payload:state},'*');else dispatch(p.command);sync();draw()});
+  const resize=()=>draw();if(typeof ResizeObserver==='function'&&canvas)new ResizeObserver(resize).observe(canvas);window.addEventListener('resize',resize);let last=0;const frame=(now)=>{if(!state.isRunning)return;const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;state=normalize(simulation.step(state,dt,model));sync();draw();if(state.isRunning)requestAnimationFrame(frame)};sync();draw();
+  window.parent.postMessage({source:'neviad-simulation',type:'simulation.ready',protocolVersion:'neviad.simulation-runtime/v1',payload:{state}},'*');
+})();
+</script></body></html>

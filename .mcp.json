@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "neviad-draw": {
+      "command": "node",
+      "args": ["fe/scripts/draw-bridge/mcp.mjs"]
+    },
+    "neviad-code": {
+      "command": "node",
+      "args": ["fe/scripts/code-bridge/mcp.mjs"]
+    }
+  }
+}

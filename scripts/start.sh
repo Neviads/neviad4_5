@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Based on Neviad-system/scripts/start-fedora.sh: cloud-database launcher for Linux.
+SKIP_BE=0
+SKIP_FE=0
+BE_PORT=8080
+FE_PORT=3000
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/start.sh [--skip-be] [--skip-fe]
+  --skip-be, -SkipBe   Skip Spring Boot and database validation.
+  --skip-fe, -SkipFe   Skip Next.js.
+  -h, --help           Show this help.
+EOF
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --skip-be|-SkipBe) SKIP_BE=1 ;;
+        --skip-fe|-SkipFe) SKIP_FE=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) printf 'Unknown argument: %s\n' "$arg" >&2; usage >&2; exit 2 ;;
+    esac
+done
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+BE_DIR="$ROOT_DIR/be"
+FE_DIR="$ROOT_DIR/fe"
+BE_URL="http://localhost:$BE_PORT"
+FE_URL="http://localhost:$FE_PORT"
+LOG_DIR="${TMPDIR:-/tmp}/neviad-start-$$"
+mkdir -p "$LOG_DIR"
+BG_PIDS=()
+BG_NAMES=()
+TAIL_PIDS=()
+TEARDOWN_DONE=0
+
+step() { printf '\n\033[36m>>> %s\033[0m\n' "$1"; }
+ok() { printf '\033[32m  [OK] %s\033[0m\n' "$1"; }
+warn() { printf '\033[33m  [WARN] %s\033[0m\n' "$1"; }
+fail() { printf '\033[31m  [ERROR] %s\033[0m\n' "$1" >&2; }
+info() { printf '\033[90m    %s\033[0m\n' "$1"; }
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 && return
+    fail "$1 is not installed or not in PATH. ${2:-Install it and retry.}"
+    exit 1
+}
+
+trim() {
+    local value="$1"
+    value="${value%$'\r'}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
+load_env() {
+    local env_file="$ROOT_DIR/.env"
+    [[ -f "$env_file" ]] || { warn ".env not found; using application defaults."; return; }
+    info "Loading .env"
+    local line key value
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"
+        [[ "$line" =~ ^[[:space:]]*$ || "$line" =~ ^[[:space:]]*# || "$line" != *=* ]] && continue
+        key="$(trim "${line%%=*}")"
+        value="$(trim "${line#*=}")"
+        [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { warn "Skipping invalid env key: $key"; continue; }
+        [[ "$value" == \"*\" && "$value" == *\" && ${#value} -ge 2 ]] && value="${value:1:${#value}-2}"
+        [[ "$value" == \'*\' && "$value" == *\' && ${#value} -ge 2 ]] && value="${value:1:${#value}-2}"
+        export "$key=$value"
+    done < "$env_file"
+}
+
+configure_ports() {
+    BE_PORT="${APP_PORT:-8080}"
+    FE_PORT="${NEXT_PORT:-3000}"
+    BE_URL="http://localhost:$BE_PORT"
+    FE_URL="http://localhost:$FE_PORT"
+}
+
+port_lines() { ss -ltnpH 2>/dev/null | awk -v port=":$1" '$4 ~ port "$" { print }'; }
+port_in_use() { [[ -n "$(port_lines "$1")" ]]; }
+port_pids() { port_lines "$1" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | sort -u; }
+
+port_process_info() {
+    local pid
+    local pids=()
+    mapfile -t pids < <(port_pids "$1")
+    if [[ ${#pids[@]} -eq 0 ]]; then port_lines "$1"; return; fi
+    for pid in "${pids[@]}"; do
+        ps -p "$pid" -o pid=,comm=,args= 2>/dev/null || printf 'PID %s (details unavailable)\n' "$pid"
+    done
+}
+
+confirm_kill_port() {
+    local port="$1" name="$2" answer pid
+    local pids=()
+    mapfile -t pids < <(port_pids "$port")
+    [[ ${#pids[@]} -gt 0 && -t 0 ]] || return 1
+    printf '\n'
+    warn "Port $port ($name) is in use by:"
+    port_process_info "$port" | sed 's/^/      /'
+    read -r -p "  Kill the process(es) above to free port $port? [y/N] " answer
+    [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]] || return 1
+    for pid in "${pids[@]}"; do
+        kill "$pid" 2>/dev/null && ok "Sent SIGTERM to PID $pid" || warn "Could not terminate PID $pid"
+    done
+    sleep 1
+    if port_in_use "$port"; then
+        for pid in "${pids[@]}"; do kill -KILL "$pid" 2>/dev/null || true; done
+        sleep 1
+    fi
+    ! port_in_use "$port"
+}
+
+check_ports() {
+    step "Checking required ports"
+    require_command ss "On Fedora: sudo dnf install iproute"
+    local errors=()
+    if [[ "$SKIP_BE" -eq 0 ]] && port_in_use "$BE_PORT" && ! confirm_kill_port "$BE_PORT" "Backend (Spring Boot)"; then
+        errors+=("$BE_PORT (Backend): $(port_process_info "$BE_PORT" | tr '\n' '; ')")
+    fi
+    if [[ "$SKIP_FE" -eq 0 ]] && port_in_use "$FE_PORT" && ! confirm_kill_port "$FE_PORT" "Frontend (Next.js)"; then
+        errors+=("$FE_PORT (Frontend): $(port_process_info "$FE_PORT" | tr '\n' '; ')")
+    fi
+    if [[ ${#errors[@]} -gt 0 ]]; then
+        fail "Required ports are blocked:"
+        printf '  %s\n' "${errors[@]}" >&2
+        exit 1
+    fi
+    ok "Required ports are free"
+}
+
+get_jdbc_host_port() {
+    local url="$1"
+    JDBC_HOST=""; JDBC_PORT=""
+    if [[ "$url" =~ ^jdbc:postgresql://([^/:?]+):([0-9]+)(/|$|\?) ]]; then
+        JDBC_HOST="${BASH_REMATCH[1]}"; JDBC_PORT="${BASH_REMATCH[2]}"; return 0
+    fi
+    if [[ "$url" =~ ^jdbc:postgresql://([^/:?]+)(/|$|\?) ]]; then
+        JDBC_HOST="${BASH_REMATCH[1]}"; JDBC_PORT=5432; return 0
+    fi
+    return 1
+}
+
+tcp_port_open() {
+    local host="$1" port="$2" address
+    # Supabase pooler hostnames can resolve to several load-balancer IPs. Bash's
+    # /dev/tcp tries one address in resolver order and may spend the whole
+    # timeout on an unreachable address even though another address is healthy.
+    # Probe each IPv4 address independently so the launcher does not reject a
+    # reachable transaction pooler on port 6543.
+    if command -v getent >/dev/null 2>&1; then
+        while read -r address; do
+            [[ -n "$address" ]] || continue
+            timeout 5 bash -c ':</dev/tcp/$1/$2' _ "$address" "$port" >/dev/null 2>&1 && return 0
+        done < <(getent ahostsv4 "$host" | awk '{print $1}' | sort -u)
+        return 1
+    fi
+    timeout 5 bash -c ':</dev/tcp/$1/$2' _ "$host" "$port" >/dev/null 2>&1
+}
+
+validate_database() {
+    [[ "$SKIP_BE" -eq 1 ]] && return
+    step "Validating Supabase database"
+    [[ -n "${DB_URL:-}" && -n "${DB_USERNAME:-}" && -n "${DB_PASSWORD:-}" ]] || { fail "DB_URL, DB_USERNAME, and DB_PASSWORD must be set in .env."; exit 1; }
+    get_jdbc_host_port "$DB_URL" || { fail "DB_URL must be a PostgreSQL JDBC URL."; exit 1; }
+    tcp_port_open "$JDBC_HOST" "$JDBC_PORT" || { fail "Cannot reach Supabase at $JDBC_HOST:$JDBC_PORT."; exit 1; }
+    ok "Supabase PostgreSQL is reachable ($JDBC_HOST:$JDBC_PORT)"
+}
+
+tail_with_prefix() {
+    tail -n +1 -F "$2" 2>/dev/null | while IFS= read -r line; do printf '  [%s] %s\n' "$1" "$line"; done &
+    TAIL_PIDS+=("$!")
+}
+
+cleanup() {
+    [[ "$TEARDOWN_DONE" -eq 1 ]] && return
+    TEARDOWN_DONE=1
+    local pid
+    for pid in "${TAIL_PIDS[@]:-}"; do kill "$pid" 2>/dev/null || true; done
+    for pid in "${BG_PIDS[@]:-}"; do kill -0 "$pid" 2>/dev/null && kill -- "-$pid" 2>/dev/null || true; done
+    sleep 1
+    for pid in "${BG_PIDS[@]:-}"; do kill -0 "$pid" 2>/dev/null && kill -KILL -- "-$pid" 2>/dev/null || true; done
+}
+
+stop_all() { printf '\n\033[33m  %s\033[0m\n' "${1:-Shutting down ...}"; cleanup; ok "All services stopped."; exit 1; }
+trap 'stop_all "Interrupted"' INT TERM
+trap cleanup EXIT
+
+wait_for_url() {
+    local url="$1" label="$2" timeout_seconds="$3" started now elapsed
+    info "Waiting for $label ($url) ..."
+    started="$(date +%s)"
+    while ! curl -fsS --max-time 3 "$url" >/dev/null 2>&1; do
+        now="$(date +%s)"; elapsed=$((now - started))
+        [[ "$elapsed" -ge "$timeout_seconds" ]] && return 1
+        sleep 2
+    done
+    ok "$label is ready"
+}
+
+start_backend() {
+    [[ "$SKIP_BE" -eq 1 ]] && return
+    step "Starting Backend - Spring Boot (port $BE_PORT)"
+    require_command java "Install JDK 21."
+    require_command setsid "Install util-linux."
+    require_command curl "Install curl."
+    local log_file="$LOG_DIR/backend.log"
+    : > "$log_file"
+    setsid bash -c 'cd "$1" && exec bash ./mvnw spring-boot:run' _ "$BE_DIR" >>"$log_file" 2>&1 &
+    BG_PIDS+=("$!"); BG_NAMES+=("Backend (Spring Boot)")
+    tail_with_prefix BE "$log_file"
+    wait_for_url "$BE_URL/api/health" "Backend" 180 || { fail "Backend did not start. Log: $log_file"; stop_all "Backend failed"; }
+}
+
+start_frontend() {
+    [[ "$SKIP_FE" -eq 1 ]] && return
+    step "Starting Frontend - Next.js dev (port $FE_PORT)"
+    require_command npm "Install Node.js/npm."
+    require_command setsid "Install util-linux."
+    require_command curl "Install curl."
+    if [[ ! -d "$FE_DIR/node_modules" ]]; then
+        info "Installing frontend dependencies ..."
+        (cd "$FE_DIR" && npm ci)
+    fi
+    local log_file="$LOG_DIR/frontend.log"
+    : > "$log_file"
+    setsid bash -c 'cd "$1" && exec npm run dev' _ "$FE_DIR" >>"$log_file" 2>&1 &
+    BG_PIDS+=("$!"); BG_NAMES+=("Frontend (Next.js)")
+    tail_with_prefix FE "$log_file"
+    wait_for_url "$FE_URL" "Frontend" 90 || { fail "Frontend did not start. Log: $log_file"; stop_all "Frontend failed"; }
+}
+
+monitor_processes() {
+    info "Logs: $LOG_DIR"
+    while true; do
+        sleep 3
+        local index pid name exit_code
+        for index in "${!BG_PIDS[@]}"; do
+            pid="${BG_PIDS[$index]}"; name="${BG_NAMES[$index]}"
+            if ! kill -0 "$pid" 2>/dev/null; then
+                set +e; wait "$pid"; exit_code=$?; set -e
+                fail "$name crashed (exit code $exit_code)."
+                stop_all "$name crashed"
+            fi
+        done
+    done
+}
+
+main() {
+    load_env
+    configure_ports
+    check_ports
+    validate_database
+    start_backend
+    start_frontend
+    printf '\n\033[32m========================================================\033[0m\n'
+    printf '\033[32m  All services are running!\033[0m\n'
+    printf '\033[32m========================================================\033[0m\n'
+    [[ "$SKIP_BE" -eq 0 ]] && printf '  Backend:  %s\n' "$BE_URL"
+    [[ "$SKIP_FE" -eq 0 ]] && printf '  Frontend: %s\n' "$FE_URL"
+    printf '\n\033[33m  Press Ctrl+C to stop all services.\033[0m\n\n'
+    monitor_processes
+}
+
+main

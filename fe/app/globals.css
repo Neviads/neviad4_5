@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/manrope";
+@import "@fontsource/dm-serif-display/400.css";
+@import "@fontsource/dm-serif-display/400-italic.css";
+
+:root {
+  --font-inter: "Inter Variable", Arial, sans-serif;
+  --font-body: "Manrope Variable", Arial, sans-serif;
+  --font-display: "DM Serif Display", Georgia, serif;
+  --paper: #f7f5f2;
+  --surface: #ffffff;
+  --ink: #262421;
+  --muted: #726d67;
+  --line: #ddd6cf;
+  --accent: #d97757;
+  --accent-soft: #fff1e9;
+  --blue-soft: #eef5fb;
+  --green-soft: #edf8f1;
+  --amber-soft: #fff8e5;
+  --danger-soft: #fff0ee;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wireframe-grid {
+  background-image: linear-gradient(to right, rgba(38, 36, 33, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(38, 36, 33, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.wireframe-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.wireframe-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cfc7bf;
+}
+
+.font-libertine {
+  font-family: var(--font-libertine), Georgia, serif;
+}

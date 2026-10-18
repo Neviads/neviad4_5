@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["dom", "esnext"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "noUnusedLocals": true
+  },
+  "include": ["./konva-global.d.ts", "../*.ts"]
+}

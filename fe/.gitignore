@@ -1,0 +1,18 @@
+node_modules/
+.next/
+out/
+.vercel/
+*.log
+.env*
+!.env.example
+*.tsbuildinfo
+
+# Old output of the removed scripts/build-vendor.mjs; safe to delete locally
+/public/vendor/
+
+# Local outputs of e2e and pipeline runs (screenshots, API responses, logs)
+/.pipeline/
+# Bảng vẽ chung giữa trang /ve-may-khong-duoc-thi-ve-tay và MCP server neviad-draw
+/.draw-bridge/
+# Xưởng tạo vật bằng code giữa trang /free-style-html-create và MCP server neviad-code
+/.code-bridge/

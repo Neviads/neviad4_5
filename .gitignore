@@ -1,0 +1,43 @@
+# Java / Maven
+be/target/
+be/logs/
+*.class
+*.log
+
+# Node / Next.js
+fe/node_modules/
+be/scripts/renderer/node_modules/
+fe/.next/
+fe/out/
+
+# Environment variables
+.env
+.deploy.env
+.env.local
+.env.production
+be/.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+*.swp
+.DS_Store
+Thumbs.db
+
+# Runtime dataca
+data/
+*.db
+*.sqlite3
+logs/
+
+# Next.js build output at repo root
+/.next/
+
+# Local e2e run outputs at repo root
+/neviad-e2e-*
+/neviad-claude-hand-pump.html
+/Bơm thủy lực tay nâng ô tô.html
+
+# Claude Code settings of this machine
+/.claude/settings.local.json

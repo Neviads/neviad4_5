@@ -1,0 +1,30 @@
+export type LibraryType = "LESSON_PLAN" | "SLIDE_DECK" | "TEST" | "SIMULATION";
+export const LIBRARY_TYPE_LABELS: Record<LibraryType, string> = { LESSON_PLAN: "Bài giảng", SLIDE_DECK: "Slide", TEST: "Bài tập về nhà", SIMULATION: "Mô phỏng" };
+export type LibrarySubject = "MATH" | "CHEMISTRY" | "PHYSICS";
+export type LibraryContent = { id: string; type: LibraryType; title: string; subject: LibrarySubject | null; grade: number | null; textbookCode: string | null; chapterCode: string | null; status: "PRIVATE" | "SUBMITTED" | "APPROVED" | "REJECTED"; thumbnailUrl: string | null; createdAt: string; updatedAt: string; submittedAt: string | null; rejectionReason: string | null; payload?: unknown };
+export type LibraryPage = { items: LibraryContent[]; page: number; size: number; total: number };
+async function unpack<T>(res: Response): Promise<T> { if (!res.ok) { const b = await res.json().catch(() => null) as { message?: string } | null; throw new Error(b?.message ?? "Không thể xử lý thư viện."); } return res.json() as Promise<T>; }
+export function listLibrary(authFetch: (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>, params: URLSearchParams) {
+  return authFetch(`/api/library/contents?${params}`)
+    .then(unpack<LibraryPage>)
+    .catch((err) => {
+      console.warn("Backend API timeout/unavailable, fallback to empty list:", err);
+      return { items: [], page: 0, size: 50, total: 0 };
+    });
+}
+export function getLibraryContent(authFetch: (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>, id: string) { return authFetch(`/api/library/contents/${id}`).then(unpack<LibraryContent>); }
+export function createLibraryContent(authFetch: (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>, body: { type: LibraryType; title: string; subject?: LibrarySubject; grade?: number; textbookCode?: string; chapterCode?: string; payload?: unknown; thumbnailUrl?: string }) { return authFetch("/api/library/contents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(unpack<LibraryContent>); }
+export function updateLibraryContent(
+  authFetch: (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  id: string,
+  body: { title?: string; subject?: LibrarySubject; grade?: number; textbookCode?: string; chapterCode?: string; payload?: unknown; thumbnailUrl?: string },
+) {
+  return authFetch(`/api/library/contents/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(unpack<LibraryContent>);
+}
+export async function deleteLibraryContent(authFetch: (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>, id: string) { const res = await authFetch(`/api/library/contents/${id}`, { method: "DELETE" }); if (!res.ok) throw new Error("Không thể xóa nội dung."); }
+export function submitLibraryContent(authFetch: (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>, id: string) { return authFetch(`/api/library/contents/${id}/submission`, { method: "POST" }).then(unpack<LibraryContent>); }
+export function unsubmitLibraryContent(authFetch: (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>, id: string) { return authFetch(`/api/library/contents/${id}/submission`, { method: "DELETE" }).then(unpack<LibraryContent>); }
