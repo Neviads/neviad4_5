@@ -5,16 +5,20 @@ be/logs/
 *.log
 
 # Node / Next.js
+node_modules/
 fe/node_modules/
 be/scripts/renderer/node_modules/
 fe/.next/
 fe/out/
 
+# TypeScript incremental build cache (any level)
+*.tsbuildinfo
+
 # Environment variables
 .env
+.env.*
+!.env.example
 .deploy.env
-.env.local
-.env.production
 be/.env
 
 # IDE / OS
