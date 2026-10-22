@@ -90,9 +90,9 @@ function Get-BackendPython {
     if ($env:NEVIAD_PYTHON) { return $env:NEVIAD_PYTHON }
     if (Get-Command conda -ErrorAction SilentlyContinue) {
         foreach ($line in (& conda env list 2>$null)) {
-            $parts = $line -split "\s+"
-            if ($parts[0] -eq "neviad-be") {
-                $candidate = Join-Path $parts[-1] "python.exe"
+            # "neviad-be   [*]   C:\Users\Some Name\anaconda3\envs\neviad-be": the path may contain spaces, and "*" marks the active env.
+            if ($line -match "^neviad-be\s+(?:\*\s+)?(.+?)\s*$") {
+                $candidate = Join-Path $Matches[1] "python.exe"
                 if (Test-Path $candidate) { return $candidate }
             }
         }
@@ -168,7 +168,10 @@ try {
     if (-not $SkipBe) {
         Write-Step "Starting Backend - FastAPI (port $bePort)"
         $python = Get-BackendPython
-        & $python -c "import beneviadsystem" 2>$null
+        # Windows PowerShell 5.1 turns a native command's stderr into a terminating error under "Stop"; this check reads only the exit code.
+        $ErrorActionPreference = "Continue"
+        & $python -c "import beneviadsystem" 2>$null | Out-Null
+        $ErrorActionPreference = "Stop"
         if ($LASTEXITCODE -ne 0) { throw "The backend is not installed for $python. Run: conda env create -f be/environment.yml (or pip install -e be)" }
         Write-Host "    Python: $python" -ForegroundColor DarkGray
         Start-ServiceProcess "backend" $beDir "`"$python`" -m beneviadsystem" "http://localhost:$bePort/api/health" 120
