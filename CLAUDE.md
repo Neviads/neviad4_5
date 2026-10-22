@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 NEVIAD Physics: a tool that turns a physics-experiment request into an interactive 2D simulation. AI agents (backend) draw the objects, write a scenario, and generate engine/renderer/experiment code that runs in the browser. UI text, prompts, and docs are mostly Vietnamese.
 
 Monorepo with no git repo at the root and an empty root `package.json`:
-- `be/` — Python 3.12, FastAPI (OpenAPI/Swagger), Pydantic, conda env `neviad-be` (`be/environment.yml`), PostgreSQL (Supabase) with Flyway-compatible migrations.
+- `be/` — Python 3.11+, FastAPI (OpenAPI/Swagger), Pydantic, conda env `neviad-be` (`be/environment.yml`), PostgreSQL (Supabase) with Flyway-compatible migrations.
 - `fe/` — Next.js 16 / React 19 / TypeScript, Konva, Matter.js, Three.js.
 - `scripts/` — `start.sh` / `start.ps1` launch both services. `setup.sh` is a stale leftover from another project (Python/uvicorn); ignore it.
 
@@ -17,7 +17,7 @@ Config is read from the root `.env` (copy `.env.example`; needs `DB_URL`, `DB_US
 
 ```
 scripts/start.ps1 [-SkipBe] [-SkipFe]     # Windows; scripts/start.sh on Linux. Loads .env, checks ports 8080/3000 and DB reachability, starts both.
-                                          # Needs only Python 3.12+ and Node 22: without conda it creates be/.venv and installs the backend there
+                                          # Needs only Python 3.11+ and Node 22: without conda it creates be/.venv and installs the backend there
 conda env create -f be/environment.yml   # optional dev env `neviad-be` (backend editable + pytest/ruff); the start scripts prefer it when present
 cd be && ruff check src tests && pytest   # backend lint + tests (CI), run inside the neviad-be env
 cd be && pytest tests/service/agent/codegen/test_agent_runner.py              # one test file

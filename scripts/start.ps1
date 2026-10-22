@@ -105,7 +105,7 @@ function Invoke-Visible([string]$Exe, [string[]]$Arguments) {
 }
 
 function Find-SystemPython {
-    # A Python 3.12+ installed on this machine, as @(exe, args...). The "py" launcher comes with the python.org installer; the
+    # A Python 3.11+ installed on this machine, as @(exe, args...). The "py" launcher comes with the python.org installer; the
     # "python" alias of the Microsoft Store that only opens the Store fails the version check and is skipped.
     $candidates = @()
     if (Get-Command py -ErrorAction SilentlyContinue) { $candidates += , @("py", "-3") }
@@ -114,7 +114,7 @@ function Find-SystemPython {
         if ($command) { $candidates += , @($command.Source) }
     }
     foreach ($candidate in $candidates) {
-        $arguments = @($candidate | Select-Object -Skip 1) + @("-c", "import sys, venv; sys.exit(0 if sys.version_info >= (3, 12) else 1)")
+        $arguments = @($candidate | Select-Object -Skip 1) + @("-c", "import sys, venv; sys.exit(0 if sys.version_info >= (3, 11) else 1)")
         if (Invoke-Quiet $candidate[0] $arguments) { return , $candidate }
     }
     return $null
@@ -140,7 +140,7 @@ function Get-VenvPython {
     if (-not (Test-Path $python)) {
         $system = Find-SystemPython
         if (-not $system) {
-            throw "Python 3.12 or newer is not installed. Install it from https://www.python.org/downloads/ (tick 'Add python.exe to PATH'), open a new terminal, and run this script again."
+            throw "Python 3.11 or newer is not installed. Install it from https://www.python.org/downloads/ (tick 'Add python.exe to PATH'), open a new terminal, and run this script again."
         }
         Write-Host "    Creating $venvDir with $($system -join ' ')" -ForegroundColor DarkGray
         Invoke-Visible $system[0] (@($system | Select-Object -Skip 1) + @("-m", "venv", $venvDir))

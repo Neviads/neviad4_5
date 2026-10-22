@@ -214,11 +214,11 @@ conda_python() {
 }
 
 system_python() {
-    # A Python 3.12+ with the venv module, installed on this machine, or nothing.
+    # A Python 3.11+ with the venv module, installed on this machine, or nothing.
     local candidate
-    for candidate in python3.13 python3.12 python3 python; do
+    for candidate in python3.13 python3.12 python3.11 python3 python; do
         command -v "$candidate" >/dev/null 2>&1 || continue
-        "$candidate" -c "import sys, venv, ensurepip; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >/dev/null 2>&1 \
+        "$candidate" -c "import sys, venv, ensurepip; sys.exit(0 if sys.version_info >= (3, 11) else 1)" >/dev/null 2>&1 \
             && { command -v "$candidate"; return 0; }
     done
     return 0
@@ -231,7 +231,7 @@ venv_python() {
     if [[ ! -x "$python" ]]; then
         system="$(system_python)"
         if [[ -z "$system" ]]; then
-            fail "Python 3.12 or newer (with venv) is not installed. Install it (Ubuntu/Debian: sudo apt install python3 python3-venv; macOS: brew install python@3.12) and run this script again."
+            fail "Python 3.11 or newer (with venv) is not installed. Install it (Ubuntu/Debian: sudo apt install python3 python3-venv; macOS: brew install python@3.12) and run this script again."
             exit 1
         fi
         info "Creating $venv_dir with $system" >&2

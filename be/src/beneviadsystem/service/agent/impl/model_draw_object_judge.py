@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeVar
 
 from beneviadsystem.config.resources import read_text
 from beneviadsystem.domain.exception import IllegalStateError
@@ -83,5 +83,8 @@ def _texts(array: Any) -> list[str]:
     return [j.text(item) for item in j.items(array) if j.text(item).strip()]
 
 
-def _list[T](array: Any, read: Callable[[Any], T | None]) -> list[T]:
+T = TypeVar("T")
+
+
+def _list(array: Any, read: Callable[[Any], T | None]) -> list[T]:
     return [value for value in (read(item) for item in j.items(array)) if value is not None]
