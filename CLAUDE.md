@@ -16,8 +16,9 @@ Monorepo with no git repo at the root and an empty root `package.json`:
 Config is read from the root `.env` (copy `.env.example`; needs `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` for Supabase, plus AI keys). Never commit `.env`.
 
 ```
-conda env create -f be/environment.yml   # once: Python 3.12 env `neviad-be` with the backend installed editable + dev tools
-scripts/start.ps1 [-SkipBe] [-SkipFe]     # Windows; scripts/start.sh on Linux. Loads .env, checks ports 8080/3000 and DB reachability, starts both
+scripts/start.ps1 [-SkipBe] [-SkipFe]     # Windows; scripts/start.sh on Linux. Loads .env, checks ports 8080/3000 and DB reachability, starts both.
+                                          # Needs only Python 3.12+ and Node 22: without conda it creates be/.venv and installs the backend there
+conda env create -f be/environment.yml   # optional dev env `neviad-be` (backend editable + pytest/ruff); the start scripts prefer it when present
 cd be && ruff check src tests && pytest   # backend lint + tests (CI), run inside the neviad-be env
 cd be && pytest tests/service/agent/codegen/test_agent_runner.py              # one test file
 cd be && pytest tests/service/agent/codegen/test_agent_runner.py::test_name   # one test

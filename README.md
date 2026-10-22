@@ -40,9 +40,11 @@ scripts/start.sh  [--skip-be] [--skip-fe]  # Linux
 
 Script nạp `.env`, kiểm tra cổng 8080 / 3000 và khả năng kết nối DB, rồi khởi động backend và frontend.
 
-Script tìm Python của backend theo thứ tự: biến `NEVIAD_PYTHON`, môi trường conda `neviad-be`, rồi `python3` trên PATH.
+Máy mới chỉ cần cài **Python 3.12 trở lên** (Windows: bản cài của python.org, tích "Add python.exe to PATH"; Ubuntu/Debian: `sudo apt install python3 python3-venv`) và **Node.js 22**, tạo `.env`, rồi chạy script. Không cần Anaconda: lần đầu script tự tạo môi trường ảo `be/.venv`, cài backend vào đó, và chỉ cài lại khi `be/pyproject.toml` đổi.
 
-Tạo môi trường backend một lần (Python 3.12, cài gói `be/` ở chế độ sửa được cùng công cụ test):
+Script chọn Python của backend theo thứ tự: biến `NEVIAD_PYTHON` (nếu đặt), môi trường conda `neviad-be` (nếu có), rồi `be/.venv`.
+
+Lập trình viên muốn dùng conda thì tạo môi trường một lần (cài cả công cụ test):
 
 ```
 conda env create -f be/environment.yml          # cập nhật sau này: conda env update -f be/environment.yml

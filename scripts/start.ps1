@@ -85,21 +85,88 @@ function Get-JdbcEndpoint([string]$JdbcUrl) {
     return @{ Host = $Matches[1]; Port = if ($Matches[2]) { [int]$Matches[2] } else { 5432 } }
 }
 
-function Get-BackendPython {
-    # NEVIAD_PYTHON wins; else the conda env of the backend (conda env create -f be/environment.yml); else python on PATH.
-    if ($env:NEVIAD_PYTHON) { return $env:NEVIAD_PYTHON }
-    if (Get-Command conda -ErrorAction SilentlyContinue) {
-        foreach ($line in (& conda env list 2>$null)) {
-            # "neviad-be   [*]   C:\Users\Some Name\anaconda3\envs\neviad-be": the path may contain spaces, and "*" marks the active env.
-            if ($line -match "^neviad-be\s+(?:\*\s+)?(.+?)\s*$") {
-                $candidate = Join-Path $Matches[1] "python.exe"
-                if (Test-Path $candidate) { return $candidate }
-            }
+function Invoke-Quiet([string]$Exe, [string[]]$Arguments) {
+    # Runs a native command for its exit code only. Windows PowerShell 5.1 turns a native command's stderr into a terminating
+    # error under "Stop", so the preference is relaxed for the call.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { & $Exe @Arguments 2>$null | Out-Null; return ($LASTEXITCODE -eq 0) }
+    catch { return $false }
+    finally { $ErrorActionPreference = $previous }
+}
+
+function Invoke-Visible([string]$Exe, [string[]]$Arguments) {
+    # Runs a native command with its output in this console; throws when it fails.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { & $Exe @Arguments | Out-Host; $code = $LASTEXITCODE }
+    finally { $ErrorActionPreference = $previous }
+    if ($code -ne 0) { throw "Command failed ($code): $Exe $($Arguments -join ' ')" }
+}
+
+function Find-SystemPython {
+    # A Python 3.12+ installed on this machine, as @(exe, args...). The "py" launcher comes with the python.org installer; the
+    # "python" alias of the Microsoft Store that only opens the Store fails the version check and is skipped.
+    $candidates = @()
+    if (Get-Command py -ErrorAction SilentlyContinue) { $candidates += , @("py", "-3") }
+    foreach ($name in "python", "python3") {
+        $command = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($command) { $candidates += , @($command.Source) }
+    }
+    foreach ($candidate in $candidates) {
+        $arguments = @($candidate | Select-Object -Skip 1) + @("-c", "import sys, venv; sys.exit(0 if sys.version_info >= (3, 12) else 1)")
+        if (Invoke-Quiet $candidate[0] $arguments) { return , $candidate }
+    }
+    return $null
+}
+
+function Get-CondaPython {
+    # The python of the conda env "neviad-be" (conda env create -f be/environment.yml), or $null.
+    if (-not (Get-Command conda -ErrorAction SilentlyContinue)) { return $null }
+    foreach ($line in (& conda env list 2>$null)) {
+        # "neviad-be   [*]   C:\Users\Some Name\anaconda3\envs\neviad-be": the path may contain spaces, and "*" marks the active env.
+        if ($line -match "^neviad-be\s+(?:\*\s+)?(.+?)\s*$") {
+            $candidate = Join-Path $Matches[1] "python.exe"
+            if (Test-Path $candidate) { return $candidate }
         }
     }
-    $python = Get-Command python -ErrorAction SilentlyContinue
-    if ($python) { return $python.Source }
-    throw "Python 3.12 is not installed. Run: conda env create -f be/environment.yml"
+    return $null
+}
+
+function Get-VenvPython {
+    # be/.venv, created with the machine's Python on first run; the backend is (re)installed into it whenever be/pyproject.toml changes.
+    $venvDir = Join-Path $beDir ".venv"
+    $python = Join-Path $venvDir "Scripts\python.exe"
+    if (-not (Test-Path $python)) {
+        $system = Find-SystemPython
+        if (-not $system) {
+            throw "Python 3.12 or newer is not installed. Install it from https://www.python.org/downloads/ (tick 'Add python.exe to PATH'), open a new terminal, and run this script again."
+        }
+        Write-Host "    Creating $venvDir with $($system -join ' ')" -ForegroundColor DarkGray
+        Invoke-Visible $system[0] (@($system | Select-Object -Skip 1) + @("-m", "venv", $venvDir))
+    }
+    $stamp = Join-Path $venvDir ".neviad-installed"
+    $wanted = (Get-FileHash (Join-Path $beDir "pyproject.toml") -Algorithm SHA256).Hash
+    $installed = if (Test-Path $stamp) { (Get-Content $stamp -Raw).Trim() } else { "" }
+    if ($installed -ne $wanted -or -not (Invoke-Quiet $python @("-c", "import beneviadsystem"))) {
+        Write-Host "    Installing the backend into $venvDir (first run or changed dependencies) ..." -ForegroundColor DarkGray
+        Invoke-Visible $python @("-m", "pip", "install", "--disable-pip-version-check", "--quiet", "-e", $beDir)
+        Set-Content -Path $stamp -Value $wanted -Encoding ascii
+    }
+    return $python
+}
+
+function Get-BackendPython {
+    # NEVIAD_PYTHON wins; else the conda env "neviad-be" if it exists; else be/.venv, made and kept up to date by this script.
+    if ($env:NEVIAD_PYTHON) {
+        if (-not (Invoke-Quiet $env:NEVIAD_PYTHON @("-c", "import beneviadsystem"))) {
+            throw "The backend is not installed for NEVIAD_PYTHON=$($env:NEVIAD_PYTHON). Run: `"$($env:NEVIAD_PYTHON)`" -m pip install -e be"
+        }
+        return $env:NEVIAD_PYTHON
+    }
+    $conda = Get-CondaPython
+    if ($conda -and (Invoke-Quiet $conda @("-c", "import beneviadsystem"))) { return $conda }
+    return Get-VenvPython
 }
 
 function Test-TcpPort([string]$HostName, [int]$Port) {
@@ -168,11 +235,6 @@ try {
     if (-not $SkipBe) {
         Write-Step "Starting Backend - FastAPI (port $bePort)"
         $python = Get-BackendPython
-        # Windows PowerShell 5.1 turns a native command's stderr into a terminating error under "Stop"; this check reads only the exit code.
-        $ErrorActionPreference = "Continue"
-        & $python -c "import beneviadsystem" 2>$null | Out-Null
-        $ErrorActionPreference = "Stop"
-        if ($LASTEXITCODE -ne 0) { throw "The backend is not installed for $python. Run: conda env create -f be/environment.yml (or pip install -e be)" }
         Write-Host "    Python: $python" -ForegroundColor DarkGray
         Start-ServiceProcess "backend" $beDir "`"$python`" -m beneviadsystem" "http://localhost:$bePort/api/health" 120
     }

@@ -204,15 +204,59 @@ wait_for_url() {
     ok "$label is ready"
 }
 
-backend_python() {
-    # NEVIAD_PYTHON wins; else the conda env of the backend (conda env create -f be/environment.yml); else python3 on PATH.
-    if [[ -n "${NEVIAD_PYTHON:-}" ]]; then printf '%s' "$NEVIAD_PYTHON"; return; fi
-    if command -v conda >/dev/null 2>&1; then
-        local prefix
-        prefix="$(conda env list 2>/dev/null | awk '$1 == "neviad-be" { print $NF }')"
-        [[ -n "$prefix" && -x "$prefix/bin/python" ]] && { printf '%s' "$prefix/bin/python"; return; }
+conda_python() {
+    # The python of the conda env "neviad-be" (conda env create -f be/environment.yml), or nothing.
+    command -v conda >/dev/null 2>&1 || return 0
+    local prefix
+    prefix="$(conda env list 2>/dev/null | awk '$1 == "neviad-be" { print $NF }')"
+    [[ -n "$prefix" && -x "$prefix/bin/python" ]] && printf '%s' "$prefix/bin/python"
+    return 0
+}
+
+system_python() {
+    # A Python 3.12+ with the venv module, installed on this machine, or nothing.
+    local candidate
+    for candidate in python3.13 python3.12 python3 python; do
+        command -v "$candidate" >/dev/null 2>&1 || continue
+        "$candidate" -c "import sys, venv, ensurepip; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >/dev/null 2>&1 \
+            && { command -v "$candidate"; return 0; }
+    done
+    return 0
+}
+
+venv_python() {
+    # Runs inside $(...): only the python path goes to stdout, progress goes to stderr.
+    # be/.venv, created with the machine's Python on first run; the backend is (re)installed into it whenever be/pyproject.toml changes.
+    local venv_dir="$BE_DIR/.venv" python="$BE_DIR/.venv/bin/python" stamp="$BE_DIR/.venv/.neviad-installed" system wanted
+    if [[ ! -x "$python" ]]; then
+        system="$(system_python)"
+        if [[ -z "$system" ]]; then
+            fail "Python 3.12 or newer (with venv) is not installed. Install it (Ubuntu/Debian: sudo apt install python3 python3-venv; macOS: brew install python@3.12) and run this script again."
+            exit 1
+        fi
+        info "Creating $venv_dir with $system" >&2
+        "$system" -m venv "$venv_dir" >&2 || { fail "Could not create $venv_dir."; exit 1; }
     fi
-    command -v python3 || true
+    wanted="$(sha256sum "$BE_DIR/pyproject.toml" | cut -d' ' -f1)"
+    if [[ "$(cat "$stamp" 2>/dev/null)" != "$wanted" ]] || ! "$python" -c "import beneviadsystem" >/dev/null 2>&1; then
+        info "Installing the backend into $venv_dir (first run or changed dependencies) ..." >&2
+        "$python" -m pip install --disable-pip-version-check --quiet -e "$BE_DIR" >&2 || { fail "Installing the backend failed."; exit 1; }
+        printf '%s\n' "$wanted" > "$stamp"
+    fi
+    printf '%s' "$python"
+}
+
+backend_python() {
+    # NEVIAD_PYTHON wins; else the conda env "neviad-be" if it exists; else be/.venv, made and kept up to date by this script.
+    if [[ -n "${NEVIAD_PYTHON:-}" ]]; then
+        "$NEVIAD_PYTHON" -c "import beneviadsystem" >/dev/null 2>&1 \
+            || { fail "The backend is not installed for NEVIAD_PYTHON=$NEVIAD_PYTHON. Run: $NEVIAD_PYTHON -m pip install -e be"; exit 1; }
+        printf '%s' "$NEVIAD_PYTHON"; return
+    fi
+    local conda
+    conda="$(conda_python)"
+    if [[ -n "$conda" ]] && "$conda" -c "import beneviadsystem" >/dev/null 2>&1; then printf '%s' "$conda"; return; fi
+    venv_python
 }
 
 start_backend() {
@@ -221,9 +265,7 @@ start_backend() {
     require_command setsid "Install util-linux."
     require_command curl "Install curl."
     local python
-    python="$(backend_python)"
-    [[ -n "$python" ]] || { fail "Python 3.12 is not installed. Run: conda env create -f be/environment.yml"; exit 1; }
-    "$python" -c "import beneviadsystem" 2>/dev/null || { fail "The backend is not installed for $python. Run: conda env create -f be/environment.yml (or pip install -e be)"; exit 1; }
+    python="$(backend_python)" || exit 1
     info "Python: $python"
     local log_file="$LOG_DIR/backend.log"
     : > "$log_file"
