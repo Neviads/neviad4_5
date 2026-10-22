@@ -70,7 +70,7 @@ function Free-Port([int]$Port, [string]$Name) {
         throw "Port $Port is already in use."
     }
     foreach ($processId in $processIds) {
-        # /T also stops child processes, e.g. the Java process started by mvnw.cmd.
+        # /T also stops child processes, e.g. the Python process started through cmd.exe.
         & taskkill /PID $processId /T /F | Out-Null
     }
     Start-Sleep -Seconds 1
@@ -79,10 +79,27 @@ function Free-Port([int]$Port, [string]$Name) {
 }
 
 function Get-JdbcEndpoint([string]$JdbcUrl) {
-    if ($JdbcUrl -notmatch "^jdbc:postgresql://([^/:?]+)(?::([0-9]+))?(?:/|\?|$)") {
-        throw "DB_URL must be a PostgreSQL JDBC URL."
+    if ($JdbcUrl -notmatch "^(?:jdbc:)?postgres(?:ql)?://(?:[^/:?@]+@)?([^/:?]+)(?::([0-9]+))?(?:/|\?|$)") {
+        throw "DB_URL must be a PostgreSQL URL (jdbc:postgresql://... or postgresql://...)."
     }
     return @{ Host = $Matches[1]; Port = if ($Matches[2]) { [int]$Matches[2] } else { 5432 } }
+}
+
+function Get-BackendPython {
+    # NEVIAD_PYTHON wins; else the conda env of the backend (conda env create -f be/environment.yml); else python on PATH.
+    if ($env:NEVIAD_PYTHON) { return $env:NEVIAD_PYTHON }
+    if (Get-Command conda -ErrorAction SilentlyContinue) {
+        foreach ($line in (& conda env list 2>$null)) {
+            $parts = $line -split "\s+"
+            if ($parts[0] -eq "neviad-be") {
+                $candidate = Join-Path $parts[-1] "python.exe"
+                if (Test-Path $candidate) { return $candidate }
+            }
+        }
+    }
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python) { return $python.Source }
+    throw "Python 3.12 is not installed. Run: conda env create -f be/environment.yml"
 }
 
 function Test-TcpPort([string]$HostName, [int]$Port) {
@@ -125,7 +142,7 @@ function Wait-ForUrl([string]$Url, [string]$Name, [int]$TimeoutSeconds) {
 
 function Start-ServiceProcess([string]$Name, [string]$WorkingDirectory, [string]$Command, [string]$HealthUrl, [int]$TimeoutSeconds) {
     # Keep child output in this same PowerShell console. Do not spawn a new
-    # visible cmd.exe window; mvnw.cmd/npm.cmd still run through cmd.exe.
+    # visible cmd.exe window; python/npm.cmd still run through cmd.exe.
     $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/d", "/s", "/c", $Command -WorkingDirectory $WorkingDirectory -NoNewWindow -PassThru
     $script:startedProcesses += $process
     Wait-ForUrl $HealthUrl $Name $TimeoutSeconds
@@ -144,14 +161,17 @@ try {
     if ($env:NEXT_PORT) { $fePort = [int]$env:NEXT_PORT }
 
     Write-Step "Checking required ports"
-    Free-Port $bePort "Backend (Spring Boot)"; Free-Port $fePort "Frontend (Next.js)"
+    Free-Port $bePort "Backend (FastAPI)"; Free-Port $fePort "Frontend (Next.js)"
     Write-Ok "Required ports are free"
     Validate-Database
 
     if (-not $SkipBe) {
-        Write-Step "Starting Backend - Spring Boot (port $bePort)"
-        Require-Command "java" "Install JDK 21."
-        Start-ServiceProcess "backend" $beDir "mvnw.cmd spring-boot:run" "http://localhost:$bePort/api/health" 180
+        Write-Step "Starting Backend - FastAPI (port $bePort)"
+        $python = Get-BackendPython
+        & $python -c "import beneviadsystem" 2>$null
+        if ($LASTEXITCODE -ne 0) { throw "The backend is not installed for $python. Run: conda env create -f be/environment.yml (or pip install -e be)" }
+        Write-Host "    Python: $python" -ForegroundColor DarkGray
+        Start-ServiceProcess "backend" $beDir "`"$python`" -m beneviadsystem" "http://localhost:$bePort/api/health" 120
     }
     if (-not $SkipFe) {
         Write-Step "Starting Frontend - Next.js dev (port $fePort)"

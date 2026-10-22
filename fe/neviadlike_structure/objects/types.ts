@@ -1,6 +1,6 @@
 // TẦNG OBJECTS — types.ts
 // Chữ ký chung của một vật thể. Khớp với hợp đồng đầu ra của skill `draw-object`
-// (be/src/main/resources/skills/draw-object/SKILL.md), nên code skill sinh ra dùng được ngay.
+// (be/src/beneviadsystem/resources/skills/draw-object/SKILL.md), nên code skill sinh ra dùng được ngay.
 //
 // Quy ước:
 //   - Một vật thể = một hàm thuần trả về Konva.Group. Chỉ VẼ; không tính vật lý, không đọc engine.

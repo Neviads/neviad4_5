@@ -98,27 +98,24 @@ fi
 cat >>"$REMOTE_DIR/.env" <<EOF
 EOF
 cat >"$REMOTE_DIR/be/Dockerfile" <<'EOF'
-FROM maven:3.9-eclipse-temurin-21 AS build
-WORKDIR /app
-COPY be/pom.xml .
-RUN mvn -B -q dependency:go-offline
-COPY be/src ./src
-RUN mvn -B -q -DskipTests package
 # The agents' check gates are Node scripts of fe/ (typescript, konva, sharp); the backend runs them from /app/fe.
 FROM node:22-bookworm-slim AS fe-tools
 WORKDIR /app/fe
 COPY fe/package.json fe/package-lock.json ./
 RUN npm ci --ignore-scripts
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app/be
+COPY be/pyproject.toml ./
+COPY be/src ./src
+RUN pip install --no-cache-dir .
 COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
 COPY --from=fe-tools /app/fe/node_modules /app/fe/node_modules
 COPY fe/package.json /app/fe/package.json
 COPY fe/scripts /app/fe/scripts
 COPY fe/lib/assembly /app/fe/lib/assembly
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+CMD ["python", "-m", "beneviadsystem"]
 EOF
 cat >"$REMOTE_DIR/fe/Dockerfile" <<'EOF'
 FROM node:22-alpine AS build

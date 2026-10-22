@@ -1,0 +1,9 @@
+# Conda environment of the backend: conda env create -f be/environment.yml && conda activate neviad-be
+name: neviad-be
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - -e .[dev]

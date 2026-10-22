@@ -2,7 +2,7 @@
 
 Công cụ biến yêu cầu của giáo viên vật lý ("mô phỏng con lắc đơn…") thành một thí nghiệm mô phỏng 2D chạy được trên trình duyệt. Các agent AI ở backend lần lượt tách yêu cầu thành vật, viết kịch bản, vẽ vật, rồi sinh code engine / renderer / experiment. Code do agent viết nằm trong bản sao `neviadlike_structure` của trình duyệt.
 
-- `be/` — Spring Boot 3.4.5, Java 21, Maven wrapper, PostgreSQL (Supabase) + Flyway, Spring AI.
+- `be/` — Python 3.12, FastAPI (OpenAPI 3.1 + Swagger UI), Pydantic, môi trường conda `neviad-be`, PostgreSQL (Supabase) với migration tương thích Flyway, STOMP qua WebSocket.
 - `fe/` — Next.js 16, React 19, TypeScript, Konva, Matter.js, Three.js.
 - `docs/object-catalog.md` — danh mục vật thể cần vẽ cho kho vật thể.
 - `scripts/` — `start.ps1` / `start.sh` chạy cả hai dịch vụ.
@@ -26,7 +26,7 @@ Sao chép `.env.example` thành `.env` ở thư mục gốc và điền giá tr�
 
 | Biến | Ý nghĩa |
 |---|---|
-| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Supabase session pooler (JDBC URL) |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Supabase session pooler (URL dạng JDBC `jdbc:postgresql://…` như các script `fe/` đọc, hoặc `postgresql://…`) |
 | `APP_PORT` (8080), `APP_CORS_ALLOWED_ORIGINS` | cổng backend, origin được phép |
 | `APP_AI_OPENAI_API_KEY`, `_BASE_URL`, `_DEFAULT_MODEL` | provider chính |
 | `APP_AI_DEEPSEEK_API_KEY`, `_BASE_URL`, `_DEFAULT_MODEL` | provider dự phòng |
@@ -40,23 +40,34 @@ scripts/start.sh  [--skip-be] [--skip-fe]  # Linux
 
 Script nạp `.env`, kiểm tra cổng 8080 / 3000 và khả năng kết nối DB, rồi khởi động backend và frontend.
 
+Script tìm Python của backend theo thứ tự: biến `NEVIAD_PYTHON`, môi trường conda `neviad-be`, rồi `python3` trên PATH.
+
+Tạo môi trường backend một lần (Python 3.12, cài gói `be/` ở chế độ sửa được cùng công cụ test):
+
+```
+conda env create -f be/environment.yml          # cập nhật sau này: conda env update -f be/environment.yml
+conda activate neviad-be
+```
+
 Chạy riêng từng phần:
 
 ```
-cd be && ./mvnw spring-boot:run                 # http://localhost:8080  (health: /api/health, Swagger: /swagger-ui/index.html)
+cd be && python -m beneviadsystem               # http://localhost:8080  (health: /api/health, Swagger UI: /swagger-ui/index.html, OpenAPI: /v3/api-docs, ReDoc: /redoc)
 npm --prefix fe ci && npm --prefix fe run dev   # http://localhost:3000
 ```
 
 Kiểm tra (giống CI):
 
 ```
-./be/mvnw -f be/pom.xml test                                      # toàn bộ test backend
-./be/mvnw -f be/pom.xml test -Dtest=AgentRunnerTest               # một class
-./be/mvnw -f be/pom.xml test -Dtest=AgentRunnerTest#tenMethod     # một method
+cd be && ruff check src tests && pytest                            # lint + toàn bộ test backend
+cd be && pytest tests/service/agent/codegen/test_agent_runner.py   # một file
+cd be && pytest -k "ledger"                                        # các test có tên khớp
 npm --prefix fe run lint && npm --prefix fe run build
 ```
 
-Frontend chưa có test runner; test chỉ có ở backend.
+Một số test dùng công cụ ngoài và tự bỏ qua (skip) khi thiếu: cổng kiểm tra Node và test tương thích `@stomp/stompjs` cần `npm --prefix fe ci`; test cơ sở dữ liệu tự dựng một cụm PostgreSQL tạm, cần `initdb`/`pg_ctl` (`conda install -n neviad-be -c conda-forge postgresql`). Frontend chưa có test runner; test chỉ có ở backend.
+
+Hợp đồng API (OpenAPI 3.1) xuất ra file để frontend hay nhóm khác sinh client: `cd be && neviad-openapi openapi.json` (không cần DB hay khoá AI).
 
 ---
 
@@ -150,8 +161,8 @@ Các agent chỉ phân tích (`ExperimentMatch`, `LiteSpec`, `Scenario`, `Assemb
 ### 3.2. Các khối dùng chung
 
 - `infrastructure/ai`
-  - `AiClient`: giao diện không phụ thuộc nhà cung cấp. `OpenAiAdapter` và `DeepSeekAdapter` cài đặt; `FallbackAiClient` bọc ngoài để chuyển nhà cung cấp; `UnavailableAiClient` dùng khi không có khoá.
-  - `OpenAiResponsesToolLoop`: vòng lặp tool qua `/v1/responses`, giữ được reasoning khi có tool. Mức reasoning và thời gian chờ nằm ở `app.ai.openai.agent.*` trong `application.properties`.
+  - `AiClient`: giao diện không phụ thuộc nhà cung cấp. `OpenAiAdapter` và `DeepSeekAdapter` cài đặt (cả hai đi qua `ChatCompletionsModel` + `ChatCompletionsToolCalling`, thay cho Spring AI); `FallbackAiClient` bọc ngoài để chuyển nhà cung cấp; `UnavailableAiClient` dùng khi không có khoá.
+  - `OpenAiResponsesToolLoop`: vòng lặp tool qua `/v1/responses`, giữ được reasoning khi có tool. Mức reasoning và thời gian chờ nằm ở các biến `APP_AI_OPENAI_AGENT_*` (`config/settings.py`).
   - `StructuredOutputSchemaRegistry`, `StrictToolSchemas`, `ToolSchemaLock`: quản lý JSON schema chặt cho đầu ra và tool.
   - `JsonStringFieldStream` + `ToolStreamListener`: tách chuỗi đang sinh dở để phát bản nháp (`CodeDraftStreamer`).
   - `ToolImageSource`: cho tool đưa ảnh lại cho model (dùng ở `check_object`).
@@ -177,10 +188,10 @@ Giao thức cầu nối (`LiveCodeProtocol`): backend gửi `Call{callId, runId,
 
 ### 3.4. Prompt và skill
 
-- `be/src/main/resources/prompts/codeagent/{engine,renderer,experiment}.md` — prompt cho từng tầng code.
-- `be/src/main/resources/prompts/drawobject/{agent,judge,judge-criteria}.md` — prompt cho agent vẽ và giám khảo.
-- `be/src/main/resources/skills/draw-object/` — skill vẽ vật (`SKILL.md`, `README.md`).
-- Prompt của `ExperimentMatch`, `LiteSpec`, `Scenario` nằm ngay trong class của từng agent.
+- `be/src/beneviadsystem/resources/prompts/codeagent/{engine,renderer,experiment}.md` — prompt cho từng tầng code.
+- `be/src/beneviadsystem/resources/prompts/drawobject/{agent,judge,judge-criteria}.md` — prompt cho agent vẽ và giám khảo.
+- `be/src/beneviadsystem/resources/skills/draw-object/` — skill vẽ vật (`SKILL.md`, `README.md`).
+- Prompt của `ExperimentMatch`, `LiteSpec`, `Scenario`, `AssemblyPlanner` nằm ngay trong module của từng agent (hằng `INSTRUCTIONS`).
 
 ### 3.5. Hợp đồng vật thể
 
@@ -190,38 +201,44 @@ Mỗi vật là hàm Konva `(p, ppm, fill, label) => { group, parts, points }` (
 
 ## 4. Cấu trúc Backend
 
-Gốc package: `be/src/main/java/com/neviad/beneviadsystem`.
+Gốc package: `be/src/beneviadsystem` (gói Python `beneviadsystem`; mỗi class một module `snake_case.py`, tên class giữ nguyên, ví dụ `CodeSession` ở `service/agent/codegen/code_session.py`). Test ở `be/tests/`, cùng cấu trúc thư mục.
 
 ```
+main.py              create_app() dựng ứng dụng FastAPI; `python -m beneviadsystem` chạy uvicorn
 presentation/        tầng web
-  controller/        AssemblyController, CodeAgentController, DrawObjectController, ExperimentMatchController,
-                     HealthController, LiteSpecController, ScenarioController, SourceController,
-                     CodeToolsDebugController (chỉ dev)
-  advice/            GlobalExceptionHandler
-  dto/               HealthResponse, requirement/, simulation/RunDraft
+  controller/        assembly_controller, code_agent_controller, draw_object_controller, experiment_match_controller,
+                     health_controller, lite_spec_controller, scenario_controller, source_controller,
+                     code_tools_debug_controller (chỉ dev); mỗi file một APIRouter
+  advice/            global_exception_handler (400 / 502 / 503 / 500)
+  dto/               health_response, requests (giới hạn của body), errors, requirement/, simulation/run_draft
 service/             nghiệp vụ
-  agent/impl/        các agent (mục 3.1), NodeScriptRunner, Node*Validator, MathExpression
-  agent/codegen/     CodeAgentService, AgentRunner, CodeSession, các CodeStore, AgentActivity*
-  agent/draft/       CodeDraftStreamer, CodeDraftPublisher (bản nháp đang viết)
-  agent/tools/       livecode/ (cầu nối trình duyệt), objects/ (ObjectLibraryTools)
-  HealthService, ObjectLibraryService, SourceLibraryService
+  agent/impl/        các agent (mục 3.1), node_script_runner, node_*_validator, math_expression
+  agent/codegen/     code_agent_service, agent_runner, code_session, các *_code_store, agent_activity*
+  agent/draft/       code_draft_streamer, code_draft_publisher (bản nháp đang viết)
+  agent/tools/       livecode/ (cầu nối trình duyệt), objects/ (object_library_tools)
+  health_service, object_library_service, source_library_service, text_format, json_fields
 infrastructure/
   ai/                AiClient + adapter + tool loop + schema (mục 3.2)
-  persistence/       SourceFileRepository (JdbcTemplate, chỉ đọc)
-  messaging/ security/ storage/   mới có package-info, chưa cài đặt
-domain/model/        ApplicationHealth, SourceFile
-config/              CorsConfig, OpenApiConfig, SecurityConfig, WebSocketConfig
+  persistence/       database (pool psycopg), source_file_repository (chỉ đọc), migrations (FlywayMigrator)
+  messaging/         stomp_broker + stomp_frame (STOMP 1.2 tại /ws), messaging_template
+  security/ storage/ mới có chỗ giữ chỗ, chưa cài đặt
+domain/model/        application_health, source_file, base (CamelModel: tên Python trong code, camelCase trên dây)
+domain/exception/    IllegalStateError
+config/              settings (biến môi trường), container (đồ thị đối tượng), cors_config, openapi_config,
+                     security_config, websocket_config, resources
 resources/
-  application.properties   cấu hình, đọc biến môi trường
-  db/migration/            V1..V3 (Flyway)
+  db/migration/            V1..V3 (SQL, áp dụng theo kiểu Flyway)
   prompts/, skills/        prompt và skill
 ```
+
+Mọi body JSON giữ đúng tên trường camelCase như trước (frontend không phải sửa). `Container` dựng mỗi service một lần khi cần; test thay một phần bằng cách truyền vào theo tên, ví dụ `Container(settings, scenario_agent=fake)`. Endpoint của agent chạy trên thread pool (256 luồng) vì mỗi yêu cầu có thể chờ model và trình duyệt vài phút.
 
 ### API REST
 
 | Endpoint | Việc |
 |---|---|
 | `GET /api/health` | kiểm tra sống |
+| `GET /v3/api-docs`, `/swagger-ui/index.html`, `/redoc` | hợp đồng OpenAPI 3.1 và giao diện xem/thử |
 | `POST /api/v1/experiment-match` | khớp thí nghiệm có sẵn |
 | `POST /api/v1/lite-spec` | tách thành yêu cầu vẽ |
 | `POST /api/v1/scenario` | kịch bản |
@@ -233,11 +250,11 @@ resources/
 | `GET /api/v1/source/{collection}/file?path=…` | đọc một file |
 | `POST·GET·PUT·DELETE /api/v1/codetools/debug/{runId}/…` | tool debug, không xác thực; chỉ bật khi `APP_LIVECODE_DEBUG=true` ở máy cục bộ |
 
-WebSocket: endpoint `/ws`, broker `/topic`, tiền tố ứng dụng `/app`.
+WebSocket: endpoint `/ws` (STOMP 1.2, subprotocol `v12.stomp`, không heartbeat), broker `/topic`, tiền tố ứng dụng `/app`. Chỉ các origin trong `APP_CORS_ALLOWED_ORIGINS` được mở socket. Lỗi trả về: `{"error": …}` cho lỗi riêng của agent (400), `{status, error, message}` cho lỗi chung.
 
 ### Cổng kiểm tra bằng Node
 
-`NodeDrawObjectValidator` và `NodeAssemblyValidator` chạy `fe/scripts/validate-draw-object.mjs` / `validate-assembly.mjs` qua `NodeScriptRunner` (JSON vào stdin, dòng JSON cuối của stdout là kết quả). Vì vậy máy chạy backend cần có `node` và cây `fe/` trên đĩa. Cấu hình: `app.pipeline.fe-root`, `app.pipeline.node-command`, `app.pipeline.gate-timeout-seconds`.
+`NodeDrawObjectValidator` và `NodeAssemblyValidator` chạy `fe/scripts/validate-draw-object.mjs` / `validate-assembly.mjs` qua `NodeScriptRunner` (JSON vào stdin, dòng JSON cuối của stdout là kết quả). Vì vậy máy chạy backend cần có `node` và cây `fe/` trên đĩa. Cấu hình: `APP_PIPELINE_FE_ROOT` (rỗng: `fe` hoặc `../fe` tính từ thư mục chạy, rồi `fe/` của repo), `APP_PIPELINE_NODE_COMMAND`, `APP_PIPELINE_GATE_TIMEOUT_SECONDS`.
 
 ---
 
@@ -292,7 +309,7 @@ presets ──> engines (chỉ kiểu)
 
 ## 6. Cơ sở dữ liệu
 
-PostgreSQL trên Supabase. Schema do Flyway quản lý (`spring.jpa.hibernate.ddl-auto=none`, `spring.flyway.baseline-on-migrate=true`, đặt `FLYWAY_ENABLED=false` để tắt). Migration nằm ở `be/src/main/resources/db/migration`.
+PostgreSQL trên Supabase. Khi khởi động, backend chạy các migration (`FlywayMigrator`, `infrastructure/persistence/migrations.py`) và ghi vào đúng bảng `flyway_schema_history` của Flyway (checksum CRC32 như Flyway), nên DB đã migrate bằng bản Java vẫn hợp lệ. Schema đã có bảng mà chưa có lịch sử thì được baseline ở version 1 (như `baseline-on-migrate`). Đặt `FLYWAY_ENABLED=false` để tắt. Migration nằm ở `be/src/beneviadsystem/resources/db/migration`.
 
 | Migration | Nội dung |
 |---|---|
@@ -326,7 +343,7 @@ Cây `fe/neviadlike_structure` mà code agent làm việc.
 ### Ai đọc, ai ghi
 
 - **Ghi:** chỉ `fe/scripts/push-source.mjs`, ghi trực tiếp vào PostgreSQL. Backend không ghi bảng nào.
-- **Đọc:** `SourceFileRepository` (JdbcTemplate): collection `template` đọc từ `template_file`, các collection khác đọc từ `source_file`. Từ đó phục vụ `SourceController`, `SourceLibraryService`, `ObjectLibraryService` và các `CodeStore`.
+- **Đọc:** `SourceFileRepository` (psycopg, câu lệnh không prepare để chạy được sau pooler): collection `template` đọc từ `template_file`, các collection khác đọc từ `source_file`. Từ đó phục vụ `SourceController`, `SourceLibraryService`, `ObjectLibraryService` và các `CodeStore`.
 - Một vật trong `objects` được nối với nhóm chủ đề của nó qua tên `catalog` trong khối OBJECT-META của file; vật không khớp nhóm nào vào nhóm `OTHER_TOPIC` (0). Các nhóm chủ đề lấy từ các mục đánh số trong `docs/object-catalog.md` (collection `catalog`).
 
 ---
@@ -335,7 +352,7 @@ Cây `fe/neviadlike_structure` mà code agent làm việc.
 
 ### 7.1. Nạp dữ liệu (ghi vào DB)
 
-Chạy từ gốc repo. Cần backend đã chạy ít nhất một lần để Flyway tạo bảng. Script đọc `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` từ môi trường hoặc từ `.env` ở gốc repo.
+Chạy từ gốc repo. Cần backend đã chạy ít nhất một lần để migration tạo bảng. Script đọc `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` từ môi trường hoặc từ `.env` ở gốc repo.
 
 ```
 npm --prefix fe run push:template    # fe/neviadlike_structure → bảng template_file
@@ -388,17 +405,17 @@ DELETE FROM source_file WHERE collection = 'objects';
 -- Dọn bản template cũ không còn được đọc
 DELETE FROM source_file WHERE collection = 'template';
 
--- Lịch sử migration của Flyway
+-- Lịch sử migration (bảng của Flyway, backend Python vẫn ghi vào đây)
 SELECT installed_rank, version, description, success FROM flyway_schema_history ORDER BY installed_rank;
 ```
 
 ### 7.4. Migration
 
-Thêm file mới `be/src/main/resources/db/migration/V4__<mô_tả>.sql`; Flyway tự chạy khi backend khởi động. Không sửa file migration đã chạy.
+Thêm file mới `be/src/beneviadsystem/resources/db/migration/V4__<mô_tả>.sql`; backend tự chạy khi khởi động, mỗi file trong một transaction. Không sửa file migration đã chạy.
 
 ### 7.5. Lưu ý kết nối Supabase
 
-`DB_URL` dùng session pooler, có `sslmode=require&prepareThreshold=0` (xem `.env.example`). `scripts/start.*` kiểm tra TCP tới host/cổng trong `DB_URL` trước khi chạy backend.
+`DB_URL` dùng session pooler, có `sslmode=require&prepareThreshold=0` (xem `.env.example`); backend bỏ các tham số chỉ JDBC hiểu (`prepareThreshold`) khi chuyển sang URL của libpq. `scripts/start.*` kiểm tra TCP tới host/cổng trong `DB_URL` trước khi chạy backend.
 
 ---
 

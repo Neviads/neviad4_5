@@ -74,7 +74,7 @@ Các mẫu cũ dưới đây (`pendulum-bob.ts`, `piston-cylinder.ts`) theo hợ
 - Kích thước tính từ `radius` rồi kẹp min/max bằng `clamp`. Màu, nét, bóng lấy từ `palette.ts`, chỉ màu thân là `fill` do bên gọi truyền.
 - Bóng đổ chỉ đặt trên thân chính. Chi tiết trang trí đặt `listening: false`.
 - Vật có bộ phận chuyển động giữ tham chiếu và viết `update(values)` chỉ đặt lại vị trí/kích thước; renderer gọi mỗi frame với giá trị đã tính từ engine.
-- Vật mới thường do skill `draw-object` sinh ra (`be/src/main/resources/skills/draw-object/`); đưa vào `objects/<ten-vat>.ts` rồi đăng ký trong `objects/index.ts`.
+- Vật mới thường do skill `draw-object` sinh ra (`be/src/beneviadsystem/resources/skills/draw-object/`); đưa vào `objects/<ten-vat>.ts` rồi đăng ký trong `objects/index.ts`.
 
 ## Quy tắc
 

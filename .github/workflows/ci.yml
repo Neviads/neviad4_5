@@ -17,22 +17,44 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend test
+    name: Backend lint and test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # A login shell, so the conda environment below is active in every step.
+        shell: bash -el {0}
     steps:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
+      - name: Set up the conda environment of the backend
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-          cache-dependency-path: be/pom.xml
+          environment-file: be/environment.yml
+          activate-environment: neviad-be
+          auto-activate-base: false
+
+      - name: Add PostgreSQL for the repository and migration tests
+        run: conda install -y -c conda-forge postgresql
+
+      # The draw-object and assembly gates and the STOMP compatibility test run the frontend's own Node scripts and client.
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: fe/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm --prefix fe ci
+
+      - name: Lint backend
+        working-directory: be
+        run: ruff check src tests
 
       - name: Run backend tests
-        run: ./be/mvnw -f be/pom.xml test
+        working-directory: be
+        run: pytest
 
   frontend:
     name: Frontend lint and build

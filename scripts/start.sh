@@ -10,7 +10,7 @@ FE_PORT=3000
 usage() {
     cat <<'EOF'
 Usage: scripts/start.sh [--skip-be] [--skip-fe]
-  --skip-be, -SkipBe   Skip Spring Boot and database validation.
+  --skip-be, -SkipBe   Skip the Python backend and database validation.
   --skip-fe, -SkipFe   Skip Next.js.
   -h, --help           Show this help.
 EOF
@@ -121,7 +121,7 @@ check_ports() {
     step "Checking required ports"
     require_command ss "On Fedora: sudo dnf install iproute"
     local errors=()
-    if [[ "$SKIP_BE" -eq 0 ]] && port_in_use "$BE_PORT" && ! confirm_kill_port "$BE_PORT" "Backend (Spring Boot)"; then
+    if [[ "$SKIP_BE" -eq 0 ]] && port_in_use "$BE_PORT" && ! confirm_kill_port "$BE_PORT" "Backend (FastAPI)"; then
         errors+=("$BE_PORT (Backend): $(port_process_info "$BE_PORT" | tr '\n' '; ')")
     fi
     if [[ "$SKIP_FE" -eq 0 ]] && port_in_use "$FE_PORT" && ! confirm_kill_port "$FE_PORT" "Frontend (Next.js)"; then
@@ -138,11 +138,11 @@ check_ports() {
 get_jdbc_host_port() {
     local url="$1"
     JDBC_HOST=""; JDBC_PORT=""
-    if [[ "$url" =~ ^jdbc:postgresql://([^/:?]+):([0-9]+)(/|$|\?) ]]; then
-        JDBC_HOST="${BASH_REMATCH[1]}"; JDBC_PORT="${BASH_REMATCH[2]}"; return 0
+    if [[ "$url" =~ ^(jdbc:)?postgres(ql)?://([^/:?@]+@)?([^/:?]+):([0-9]+)(/|$|\?) ]]; then
+        JDBC_HOST="${BASH_REMATCH[4]}"; JDBC_PORT="${BASH_REMATCH[5]}"; return 0
     fi
-    if [[ "$url" =~ ^jdbc:postgresql://([^/:?]+)(/|$|\?) ]]; then
-        JDBC_HOST="${BASH_REMATCH[1]}"; JDBC_PORT=5432; return 0
+    if [[ "$url" =~ ^(jdbc:)?postgres(ql)?://([^/:?@]+@)?([^/:?]+)(/|$|\?) ]]; then
+        JDBC_HOST="${BASH_REMATCH[4]}"; JDBC_PORT=5432; return 0
     fi
     return 1
 }
@@ -168,7 +168,7 @@ validate_database() {
     [[ "$SKIP_BE" -eq 1 ]] && return
     step "Validating Supabase database"
     [[ -n "${DB_URL:-}" && -n "${DB_USERNAME:-}" && -n "${DB_PASSWORD:-}" ]] || { fail "DB_URL, DB_USERNAME, and DB_PASSWORD must be set in .env."; exit 1; }
-    get_jdbc_host_port "$DB_URL" || { fail "DB_URL must be a PostgreSQL JDBC URL."; exit 1; }
+    get_jdbc_host_port "$DB_URL" || { fail "DB_URL must be a PostgreSQL URL (jdbc:postgresql://... or postgresql://...)."; exit 1; }
     tcp_port_open "$JDBC_HOST" "$JDBC_PORT" || { fail "Cannot reach Supabase at $JDBC_HOST:$JDBC_PORT."; exit 1; }
     ok "Supabase PostgreSQL is reachable ($JDBC_HOST:$JDBC_PORT)"
 }
@@ -204,18 +204,33 @@ wait_for_url() {
     ok "$label is ready"
 }
 
+backend_python() {
+    # NEVIAD_PYTHON wins; else the conda env of the backend (conda env create -f be/environment.yml); else python3 on PATH.
+    if [[ -n "${NEVIAD_PYTHON:-}" ]]; then printf '%s' "$NEVIAD_PYTHON"; return; fi
+    if command -v conda >/dev/null 2>&1; then
+        local prefix
+        prefix="$(conda env list 2>/dev/null | awk '$1 == "neviad-be" { print $NF }')"
+        [[ -n "$prefix" && -x "$prefix/bin/python" ]] && { printf '%s' "$prefix/bin/python"; return; }
+    fi
+    command -v python3 || true
+}
+
 start_backend() {
     [[ "$SKIP_BE" -eq 1 ]] && return
-    step "Starting Backend - Spring Boot (port $BE_PORT)"
-    require_command java "Install JDK 21."
+    step "Starting Backend - FastAPI (port $BE_PORT)"
     require_command setsid "Install util-linux."
     require_command curl "Install curl."
+    local python
+    python="$(backend_python)"
+    [[ -n "$python" ]] || { fail "Python 3.12 is not installed. Run: conda env create -f be/environment.yml"; exit 1; }
+    "$python" -c "import beneviadsystem" 2>/dev/null || { fail "The backend is not installed for $python. Run: conda env create -f be/environment.yml (or pip install -e be)"; exit 1; }
+    info "Python: $python"
     local log_file="$LOG_DIR/backend.log"
     : > "$log_file"
-    setsid bash -c 'cd "$1" && exec bash ./mvnw spring-boot:run' _ "$BE_DIR" >>"$log_file" 2>&1 &
-    BG_PIDS+=("$!"); BG_NAMES+=("Backend (Spring Boot)")
+    setsid bash -c 'cd "$1" && exec "$2" -m beneviadsystem' _ "$BE_DIR" "$python" >>"$log_file" 2>&1 &
+    BG_PIDS+=("$!"); BG_NAMES+=("Backend (FastAPI)")
     tail_with_prefix BE "$log_file"
-    wait_for_url "$BE_URL/api/health" "Backend" 180 || { fail "Backend did not start. Log: $log_file"; stop_all "Backend failed"; }
+    wait_for_url "$BE_URL/api/health" "Backend" 120 || { fail "Backend did not start. Log: $log_file"; stop_all "Backend failed"; }
 }
 
 start_frontend() {

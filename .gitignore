@@ -1,7 +1,10 @@
-# Java / Maven
-be/target/
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
 be/logs/
-*.class
 *.log
 
 # Node / Next.js
