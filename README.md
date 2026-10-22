@@ -27,11 +27,12 @@ Sao chép `.env.example` thành `.env` ở thư mục gốc và điền giá tr�
 | Biến | Ý nghĩa |
 |---|---|
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Supabase session pooler (URL dạng JDBC `jdbc:postgresql://…` như các script `fe/` đọc, hoặc `postgresql://…`) |
-| `APP_PORT` (8080), `APP_CORS_ALLOWED_ORIGINS` | cổng backend, origin được phép |
+| `APP_PORT` (8080), `NEXT_PORT` (3000) | cổng backend và frontend; chỉ đặt ở đây, `scripts/start.*`, backend và Next.js cùng đọc |
+| `APP_CORS_ALLOWED_ORIGINS` | origin được phép; để trống = `http://localhost:NEXT_PORT` |
 | `APP_AI_OPENAI_API_KEY`, `_BASE_URL`, `_DEFAULT_MODEL` | provider chính |
 | `APP_AI_DEEPSEEK_API_KEY`, `_BASE_URL`, `_DEFAULT_MODEL` | provider dự phòng |
 | `APP_AUTH_*`, `APP_R2_*` | chỗ giữ chỗ cho module đăng nhập và lưu trữ R2 (chưa dùng) |
-| `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL` | địa chỉ backend cho frontend (WebSocket mặc định `ws://localhost:8080/ws`) |
+| `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL` | địa chỉ backend cho frontend; để trống = `http://localhost:APP_PORT` và `ws://localhost:APP_PORT/ws` (`fe/next.config.ts` đọc `.env` gốc) |
 
 ```
 scripts/start.ps1 [-SkipBe] [-SkipFe]      # Windows

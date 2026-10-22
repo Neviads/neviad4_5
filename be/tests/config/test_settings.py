@@ -29,6 +29,13 @@ def test_environment_variables_keep_their_names_and_fallbacks(monkeypatch):
     assert s.app_livecode_debug is True
 
 
+def test_empty_cors_origins_follow_the_frontend_port(monkeypatch):
+    monkeypatch.setenv("APP_CORS_ALLOWED_ORIGINS", "")
+    monkeypatch.setenv("NEXT_PORT", "3100")
+
+    assert Settings(_env_file=None).allowed_origins() == ["http://localhost:3100"]
+
+
 def test_the_project_name_wins_over_the_fallback_name(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "fallback")
     monkeypatch.setenv("APP_AI_OPENAI_API_KEY", "primary")

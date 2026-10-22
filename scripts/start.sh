@@ -4,8 +4,8 @@ set -Eeuo pipefail
 # Based on Neviad-system/scripts/start-fedora.sh: cloud-database launcher for Linux.
 SKIP_BE=0
 SKIP_FE=0
-BE_PORT=8080
-FE_PORT=3000
+BE_PORT=""
+FE_PORT=""
 
 usage() {
     cat <<'EOF'
@@ -76,8 +76,13 @@ load_env() {
 }
 
 configure_ports() {
-    BE_PORT="${APP_PORT:-8080}"
-    FE_PORT="${NEXT_PORT:-3000}"
+    # The ports are set only in .env (APP_PORT, NEXT_PORT); see .env.example.
+    local name
+    for name in APP_PORT NEXT_PORT; do
+        [[ -n "${!name:-}" ]] || { fail "$name is not set. Add it to .env (see .env.example)."; exit 1; }
+    done
+    BE_PORT="$APP_PORT"
+    FE_PORT="$NEXT_PORT"
     BE_URL="http://localhost:$BE_PORT"
     FE_URL="http://localhost:$FE_PORT"
 }
@@ -287,7 +292,7 @@ start_frontend() {
     fi
     local log_file="$LOG_DIR/frontend.log"
     : > "$log_file"
-    setsid bash -c 'cd "$1" && exec npm run dev' _ "$FE_DIR" >>"$log_file" 2>&1 &
+    setsid bash -c 'cd "$1" && exec npm run dev -- --port "$2"' _ "$FE_DIR" "$FE_PORT" >>"$log_file" 2>&1 &
     BG_PIDS+=("$!"); BG_NAMES+=("Frontend (Next.js)")
     tail_with_prefix FE "$log_file"
     wait_for_url "$FE_URL" "Frontend" 90 || { fail "Frontend did not start. Log: $log_file"; stop_all "Frontend failed"; }

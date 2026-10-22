@@ -30,7 +30,7 @@ export type ShapeMaker = (p: Vec2, ppm: number, fill: string, label?: string) =>
 
 export type LibraryObject = { path: string; meta: ObjectMeta; make: ShapeMaker };
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 const META = /\/\*\s*OBJECT-META\s*([\s\S]*?)\*\//;
 const FACTORY = /(?:^|\n)\s*(?:const|let|var|function)\s+([A-Za-z_$][\w$]*)\s*(?:=|\()/g;
 

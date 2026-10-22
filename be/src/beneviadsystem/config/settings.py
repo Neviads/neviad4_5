@@ -30,7 +30,9 @@ class Settings(BaseSettings):
     db_password: str = ""
     flyway_enabled: bool = True
 
-    app_cors_allowed_origins: str = "http://localhost:3000"
+    #: The frontend's port (NEXT_PORT in .env); empty CORS origins default to http://localhost:<next_port>.
+    next_port: int = 3000
+    app_cors_allowed_origins: str = ""
 
     # AI providers
     app_ai_openai_api_key: str = Field("", validation_alias=_env("APP_AI_OPENAI_API_KEY", "OPENAI_API_KEY"))
@@ -60,7 +62,8 @@ class Settings(BaseSettings):
     app_draw_object_headless_enabled: bool = False
 
     def allowed_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.app_cors_allowed_origins.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.app_cors_allowed_origins.split(",") if origin.strip()]
+        return origins or [f"http://localhost:{self.next_port}"]
 
 
 @lru_cache

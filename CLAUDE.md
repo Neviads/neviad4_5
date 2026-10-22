@@ -13,7 +13,7 @@ Monorepo with no git repo at the root and an empty root `package.json`:
 
 ## Commands
 
-Config is read from the root `.env` (copy `.env.example`; needs `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` for Supabase, plus AI keys). Never commit `.env`.
+Config is read from the root `.env` (copy `.env.example`; needs `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` for Supabase, plus AI keys). Never commit `.env`. Ports are set only there (`APP_PORT` backend, `NEXT_PORT` frontend); empty `APP_CORS_ALLOWED_ORIGINS`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL` are derived from them (`fe/next.config.ts` loads the root `.env`).
 
 ```
 scripts/start.ps1 [-SkipBe] [-SkipFe]     # Windows; scripts/start.sh on Linux. Loads .env, checks ports 8080/3000 and DB reachability, starts both.

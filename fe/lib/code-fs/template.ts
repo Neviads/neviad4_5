@@ -3,7 +3,7 @@ import type { CodeFile } from "./store";
 // The template tree the code agent works on (fe/neviadlike_structure), as loaded into the database by `npm --prefix fe run push:template`.
 // The browser seeds each run's copy (CodeFsStore.seed) with it.
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 /** Every file of the template, from GET /api/v1/source/template; throws when the backend fails or the template was never loaded. */
 export async function fetchTemplate(): Promise<CodeFile[]> {

@@ -9,8 +9,6 @@ $ErrorActionPreference = "Stop"
 $rootDir = Split-Path -Parent $PSScriptRoot
 $beDir = Join-Path $rootDir "be"
 $feDir = Join-Path $rootDir "fe"
-$bePort = 8080
-$fePort = 3000
 $startedProcesses = @()
 $logDir = Join-Path ([System.IO.Path]::GetTempPath()) ("neviad-start-" + $PID)
 
@@ -224,8 +222,12 @@ function Stop-StartedProcesses {
 try {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
     Load-Env
-    if ($env:APP_PORT) { $bePort = [int]$env:APP_PORT }
-    if ($env:NEXT_PORT) { $fePort = [int]$env:NEXT_PORT }
+    # The ports are set only in .env (APP_PORT, NEXT_PORT); see .env.example.
+    foreach ($name in "APP_PORT", "NEXT_PORT") {
+        if (-not [Environment]::GetEnvironmentVariable($name)) { throw "$name is not set. Add it to .env (see .env.example)." }
+    }
+    $bePort = [int]$env:APP_PORT
+    $fePort = [int]$env:NEXT_PORT
 
     Write-Step "Checking required ports"
     Free-Port $bePort "Backend (FastAPI)"; Free-Port $fePort "Frontend (Next.js)"
@@ -242,7 +244,7 @@ try {
         Write-Step "Starting Frontend - Next.js dev (port $fePort)"
         Require-Command "npm" "Install Node.js/npm."
         if (-not (Test-Path (Join-Path $feDir "node_modules"))) { Push-Location $feDir; try { npm ci } finally { Pop-Location } }
-        Start-ServiceProcess "frontend" $feDir "npm run dev" "http://localhost:$fePort" 90
+        Start-ServiceProcess "frontend" $feDir "npm run dev -- --port $fePort" "http://localhost:$fePort" 90
     }
 
     Write-Host "`n  All services are running. Press Ctrl+C to stop them." -ForegroundColor Green

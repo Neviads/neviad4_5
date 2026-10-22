@@ -2,7 +2,7 @@ import type { DrawObjectItem } from "@/components/draw-object-skill/types";
 import type { ObjectGeometry, ScenarioData } from "@/components/test-litespec/ScenarioCard";
 
 // Các lời gọi be của luồng "lite": tách yêu cầu thành vật, kịch bản, vẽ vật, ba tầng code agent. Mỗi hàm ném Error có thông điệp dùng được khi be trả lỗi.
-export const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
+export const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 /** Một bộ phận nhìn thấy được của dụng cụ: khung mà người vẽ dựng hình theo. */
 export type FramePart = { name: string; shape: string; position: string; proportion: string };

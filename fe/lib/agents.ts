@@ -7,7 +7,8 @@ export class AgentApiError extends Error {
   }
 }
 
-const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+// Set by next.config.ts from the root .env (NEXT_PUBLIC_WS_URL, or ws://localhost:APP_PORT/ws).
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "";
 
 export function createRequestId(): string {
   if (typeof globalThis.crypto?.randomUUID === "function") {
