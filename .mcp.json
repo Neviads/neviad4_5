@@ -7,6 +7,10 @@
     "neviad-code": {
       "command": "node",
       "args": ["fe/scripts/code-bridge/mcp.mjs"]
+    },
+    "neviad-assembly": {
+      "command": "node",
+      "args": ["fe/scripts/assembly-bridge/mcp.mjs"]
     }
   }
 }

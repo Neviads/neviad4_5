@@ -16,3 +16,4 @@ out/
 /.draw-bridge/
 # Xưởng tạo vật bằng code giữa trang /free-style-html-create và MCP server neviad-code
 /.code-bridge/
+/.assembly-bridge/
