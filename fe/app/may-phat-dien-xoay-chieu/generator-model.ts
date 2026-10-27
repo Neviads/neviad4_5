@@ -15,6 +15,8 @@
  */
 
 import * as THREE from "three";
+import { RoundedBox, extrudeZY, mesh, screwHead, wire, xCylinder } from "@/assembly-kit/three/geo";
+import { dialTexture, letterTexture, windingTexture, woodTexture } from "@/assembly-kit/three/textures";
 
 export const SHAFT_Y = 0.135;
 export const COIL_HALF_X = 0.055;
@@ -27,94 +29,6 @@ const ARM = { inner: 0.082, outer: 0.104, top: SHAFT_Y + 0.046, yoke: 0.024 };
 const UPRIGHT_X = 0.098;
 
 // ───────── vật liệu ─────────
-
-function canvasTexture(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, srgb = true) {
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  draw(c.getContext("2d")!);
-  const t = new THREE.CanvasTexture(c);
-  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.anisotropy = 8;
-  return t;
-}
-
-function woodTexture() {
-  return canvasTexture(1024, 512, (g) => {
-    g.fillStyle = "#9a6338";
-    g.fillRect(0, 0, 1024, 512);
-    // thớ gỗ chạy dọc chiều dài đế
-    for (let i = 0; i < 260; i++) {
-      const y = Math.random() * 512;
-      const a = 0.04 + Math.random() * 0.12;
-      g.strokeStyle = Math.random() < 0.5 ? `rgba(60,30,12,${a})` : `rgba(210,150,95,${a * 0.7})`;
-      g.lineWidth = 0.6 + Math.random() * 2.2;
-      g.beginPath();
-      g.moveTo(0, y);
-      for (let x = 0; x <= 1024; x += 32) g.lineTo(x, y + Math.sin(x / 140 + i) * 3 + Math.sin(x / 37 + i * 2) * 0.8);
-      g.stroke();
-    }
-  });
-}
-
-function windingTexture() {
-  // mỗi vạch tối là khe giữa hai vòng dây
-  return canvasTexture(256, 32, (g) => {
-    g.fillStyle = "#c97a45";
-    g.fillRect(0, 0, 256, 32);
-    for (let x = 0; x < 256; x += 4) {
-      const grad = g.createLinearGradient(x, 0, x + 4, 0);
-      grad.addColorStop(0, "rgba(70,25,8,.85)");
-      grad.addColorStop(0.35, "rgba(240,170,110,.35)");
-      grad.addColorStop(1, "rgba(70,25,8,.6)");
-      g.fillStyle = grad;
-      g.fillRect(x, 0, 4, 32);
-    }
-  });
-}
-
-function letterTexture(letter: string) {
-  return canvasTexture(128, 128, (g) => {
-    g.clearRect(0, 0, 128, 128);
-    g.fillStyle = "rgba(255,255,255,.92)";
-    g.font = "bold 92px Arial, sans-serif";
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.fillText(letter, 64, 70);
-  });
-}
-
-function dialTexture() {
-  return canvasTexture(512, 384, (g) => {
-    g.fillStyle = "#f4efe2";
-    g.fillRect(0, 0, 512, 384);
-    const cx = 256, cy = 330, r = 250;
-    g.strokeStyle = "#222";
-    g.fillStyle = "#222";
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(cx, cy, r - 30, Math.PI * 1.25, Math.PI * 1.75);
-    g.stroke();
-    g.font = "26px Arial, sans-serif";
-    g.textAlign = "center";
-    for (let i = -10; i <= 10; i++) {
-      const a = -Math.PI / 2 + (i / 10) * (Math.PI / 4);
-      const long = i % 5 === 0;
-      const r0 = r - 30, r1 = r0 - (long ? 26 : 13);
-      g.lineWidth = long ? 3 : 1.6;
-      g.beginPath();
-      g.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
-      g.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
-      g.stroke();
-      if (long) g.fillText(String(Math.abs(i) * 2), cx + Math.cos(a) * (r1 - 22), cy + Math.sin(a) * (r1 - 22) + 8);
-    }
-    g.font = "bold 40px Arial, sans-serif";
-    g.fillText("V", cx, 250);
-    g.font = "20px Arial, sans-serif";
-    g.fillText("−          0          +", cx, 285);
-  });
-}
 
 export function createMaterials() {
   const wood = woodTexture();
@@ -147,53 +61,6 @@ export function createMaterials() {
   };
 }
 export type GeneratorMaterials = ReturnType<typeof createMaterials>;
-
-// ───────── tiện ích hình học ─────────
-
-function mesh(geo: THREE.BufferGeometry, mat: THREE.Material, parent: THREE.Object3D, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(x, y, z);
-  m.castShadow = true;
-  m.receiveShadow = true;
-  parent.add(m);
-  return m;
-}
-
-/** Trụ nằm dọc trục x. */
-function xCylinder(r: number, x0: number, x1: number, mat: THREE.Material, parent: THREE.Object3D, y = 0, z = 0, seg = 32) {
-  const g = new THREE.CylinderGeometry(r, r, x1 - x0, seg);
-  g.rotateZ(Math.PI / 2);
-  return mesh(g, mat, parent, (x0 + x1) / 2, y, z);
-}
-
-/** Đùn một hình 2D vẽ trong mặt phẳng (z, y) dọc theo trục x, từ x0 tới x1. */
-function extrudeZY(shape: THREE.Shape, x0: number, x1: number, bevel = 0.0015) {
-  const g = new THREE.ExtrudeGeometry(shape, {
-    depth: x1 - x0 - bevel * 2,
-    bevelEnabled: bevel > 0,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 2,
-    curveSegments: 32,
-  });
-  // hình: x → z thế giới, y → y; trục đùn z → x thế giới
-  g.rotateY(-Math.PI / 2);
-  g.translate(x1 - bevel, 0, 0);
-  return g;
-}
-
-function wire(points: [number, number, number][], r: number, mat: THREE.Material, parent: THREE.Object3D) {
-  const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)), false, "centripetal");
-  return mesh(new THREE.TubeGeometry(curve, Math.max(24, points.length * 16), r, 10, false), mat, parent);
-}
-
-function screwHead(parent: THREE.Object3D, mat: THREE.Material, x: number, y: number, z: number) {
-  const g = new THREE.SphereGeometry(0.0042, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-  g.scale(1, 0.55, 1);
-  mesh(g, mat, parent, x, y, z);
-  const slot = mesh(new THREE.BoxGeometry(0.0064, 0.0012, 0.0011), new THREE.MeshStandardMaterial({ color: 0x333333 }), parent, x, y + 0.0021, z);
-  slot.castShadow = false;
-}
 
 // ───────── phần đứng yên ─────────
 
@@ -496,16 +363,3 @@ export function createGeneratorRotor(m: GeneratorMaterials): THREE.Group {
   return root;
 }
 
-/** Hộp bo góc nhỏ (không kéo thêm addon). */
-class RoundedBox extends THREE.ExtrudeGeometry {
-  constructor(w: number, h: number, d: number, r = 0.002) {
-    const s = new THREE.Shape();
-    const x = w / 2 - r, y = h / 2 - r;
-    s.absarc(x, y, r, 0, Math.PI / 2, false);
-    s.absarc(-x, y, r, Math.PI / 2, Math.PI, false);
-    s.absarc(-x, -y, r, Math.PI, (Math.PI * 3) / 2, false);
-    s.absarc(x, -y, r, (Math.PI * 3) / 2, Math.PI * 2, false);
-    super(s, { depth: d - 2 * r, bevelEnabled: true, bevelSize: r, bevelThickness: r, bevelSegments: 3 });
-    this.translate(0, 0, -(d - 2 * r) / 2);
-  }
-}
