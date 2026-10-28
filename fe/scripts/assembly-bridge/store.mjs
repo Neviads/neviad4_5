@@ -14,6 +14,8 @@ export const snapshotMetaFile = (id) => join(BASE(), "snapshots", `${id}.json`);
 export const snapshotGlbFile = (id) => join(BASE(), "snapshots", `${id}.glb`);
 /** Lưới nướng sẵn của một hình (tên = băm khoá nội dung), trang tải về thay vì tự dựng lại. */
 export const meshFile = (hash) => join(BASE(), "meshes", `${hash}.bin`);
+/** Mô hình vật lý đã tính của một tài liệu (tên = physicsKey), trang tải về để chạy bộ giải. */
+export const physicsFile = (hash) => join(BASE(), "physics", `${hash}.json`);
 
 /** Chưa có file thì là trạng thái trống. File hỏng thì ném lỗi chứ không coi là trống, để lần ghi sau không đè mất dữ liệu. */
 export function readState() {

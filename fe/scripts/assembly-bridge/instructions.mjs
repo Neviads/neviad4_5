@@ -33,6 +33,12 @@ THÂN VỎ (xe, tàu, vỏ máy — mặt cong hai chiều): KHÔNG đùn hình 
 5. shape_split_region: kính ôm theo thân (plane xy cho kính hông với range z > 0; plane zy cho kính chắn gió với range x), lift âm vài mm để kính thụt vào ô.
 6. anchor_define tâm hốc bánh (kind axis, dir [0, 0, 1]) rồi part_add bánh xe coaxial vào đó; mirror (plane z) nếu chỉ dựng một bên.
 
+THAM CHIẾU KẾ THỪA: hình khoét bằng boolean giữ điểm neo của dao cắt, tên "<idDao>.<diemNeo>" (khoét hốc bằng trụ "hoc" thì thân có "hoc.axis"); bo cạnh, khắc rãnh giữ nguyên các điểm neo đó; lặp thì đánh số "<input>[i].<diemNeo>". Ghép vào chúng (vd bánh coaxial với "than.hoc.axis") thay vì tự gõ toạ độ.
+
+KIỂM TRA (sau mỗi đợt dựng, trước khi mô phỏng): check_interference (xuyên nhau theo lưới thật), check_clearance (khe giữa hai bộ phận / cụm), check_floating (lơ lửng), check_physics (mô phỏng ngắn tìm vật nổ tung, rơi xuyên sàn, khớp rời). Sửa theo báo cáo rồi kiểm lại.
+
+MÔ PHỎNG (mọi thứ là toạ độ và vận tốc, một bộ giải chung): physics_setup {free: [khớp bỏ đi để vật tự do]} → body_set (khối lượng thật nếu vật rỗng, ma sát, phục hồi) → initial_set (vận tốc đầu; bánh lăn sẵn thì cho cả ω) → drive_add (động cơ) → simulate {duration} đọc bảng số (chạy trong Node, không cần trình duyệt) → sim_export .physics.json cho trang (new World(model), world.step(dt), view.setWorld(path, chain(world.matrix(body), part.offset))). Khớp trong cụm viết "<idBoPhan>/<khop>"; vật lý tự nối chúng.
+
 DÙNG LẠI CỤM: dựng một cụm (bánh xe, đèn, gương…) ở bản riêng, rồi part_save_as_type {assembly, name, root, expose: {axis: "lop.axis"}} lưu vào thư viện. Ở bản khác part_add {type: name} như mọi bộ phận (cụm được chép vào tài liệu, file vẫn tự đủ), ghép bằng các điểm neo công khai. part_types_list liệt kê các cụm đã lưu.
 
 VẬT LIỆU VÀ CẢNH: material_presets → material_define {preset, overrides, textures} → material_assign (bộ phận, hoặc "shape:<id>"). Vật thật không có bề mặt đều tăm tắp: dùng texture thủ tục (noise cho nhựa sần, grain cho kim loại chải, tread cho gai lốp trên một dải tiện riêng, scratches cho độ nhám). decal_add cho chữ, logo, vạch chia (arcRadius để chữ chạy theo cung). scene_set {environment: studio | street | sunset | dawn, stage: studioCyc | road | glossyFloor} rồi render_view {camera: threeQuarterFront | side | detail:<id>, quality: final} để xem ảnh đẹp. measure để so số đo với thông số thật. assembly_export .glb để xuất lưới và vật liệu.`;
