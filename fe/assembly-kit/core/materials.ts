@@ -37,6 +37,11 @@ export function checkMaterialDef(def: MaterialDef, label: string): void {
   const preset = PRESETS[def.preset];
   if (!preset) throw new AssemblyError(`${label}: không có preset "${def.preset}". Có: ${Object.keys(PRESETS).join(", ")}.`);
   for (const [k, v] of Object.entries(def.overrides ?? {})) {
+    // wireframe: ô hiển thị dùng chung cho mọi preset (xem lưới tam giác), không phải tham số vật liệu
+    if (k === "wireframe") {
+      if (typeof v !== "boolean") throw new AssemblyError(`${label}.wireframe phải là true hoặc false.`);
+      continue;
+    }
     if (!(k in preset.defaults)) throw new AssemblyError(`${label}: preset ${def.preset} không có tham số "${k}". Có: ${Object.keys(preset.defaults).join(", ")}.`);
     const d = preset.defaults[k];
     if (typeof d === "string" && (typeof v !== "string" || !COLOR.test(v))) throw new AssemblyError(`${label}.${k} phải là màu "#rrggbb".`);

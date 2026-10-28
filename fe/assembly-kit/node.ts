@@ -11,6 +11,7 @@ export { describeTree, partReport, typeInfo, typeList } from "./core/report";
 export { MATERIAL_NAMES } from "./core/types";
 export { PRESETS, TEXTURE_KINDS, checkMaterialRef } from "./core/materials";
 export { buildShapes, shapeKeys, usedShapeIds } from "./shapes/build";
+export { sand } from "./shapes/sand";
 export { encodeShape, keyHash } from "./shapes/bake";
 export { initKernel } from "./shapes/kernel";
 export { SHAPE_PREFIX, checkDocExtras, checkTypeName, registryFor } from "./shapes/registry";

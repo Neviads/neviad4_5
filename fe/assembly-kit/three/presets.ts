@@ -32,6 +32,14 @@ function make(def: MaterialDef): THREE.MeshPhysicalMaterial {
   if (tex.roughness) m.roughnessMap = grayTexture(tex.roughness, false);
   if (tex.color) m.map = grayTexture(tex.color, true);
   if (m.transmission > 0) m.depthWrite = false;
+  // wireframe: chỉ vẽ cạnh tam giác (màu đậm trên nền sáng, không phát sáng)
+  if (def.overrides?.wireframe) {
+    m.wireframe = true;
+    m.metalness = 0;
+    m.roughness = 1;
+    m.clearcoat = 0;
+    m.emissiveIntensity = 0;
+  }
   m.name = def.preset;
   return m;
 }

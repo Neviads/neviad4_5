@@ -13,6 +13,9 @@ import type { AnchorSpec, AssemblyDoc, Bounds, ShapeNode } from "../core/types";
 import { boxFaces, point } from "../parts/_common";
 import { type OpResult, extrude, lathe, mirror, pattern, sweep } from "./ops";
 import { booleanOp, groove, loft, roundEdges, splitRegion } from "./ops-solid";
+import { bevel } from "./bevel";
+import { sand } from "./sand";
+import { weld } from "./weld";
 
 export interface BuiltShape {
   id: string;
@@ -27,7 +30,7 @@ export interface BuiltShape {
 }
 
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
-const OPS = ["lathe", "extrude", "sweep", "mirror", "pattern", "loft", "boolean", "roundEdges", "groove", "splitRegion"] as const;
+const OPS = ["lathe", "extrude", "sweep", "mirror", "pattern", "loft", "boolean", "roundEdges", "groove", "splitRegion", "weld", "bevel", "sand"] as const;
 const NEEDS_INPUT = new Set(["mirror", "pattern", "roundEdges", "groove", "splitRegion"]);
 
 const cache = new Map<string, BuiltShape>();
@@ -55,6 +58,12 @@ function runOp(node: ShapeNode, label: string, inputs: BuiltShape[]): OpResult {
       return groove(p, label, inputs[0].geometry);
     case "splitRegion":
       return splitRegion(p, label, inputs[0].geometry);
+    case "weld":
+      return weld(p, label, inputs.map((i) => i.geometry));
+    case "bevel":
+      return bevel(p, label, inputs.map((i) => i.geometry));
+    case "sand":
+      return sand(p, label, inputs.map((i) => i.geometry));
     default:
       throw new AssemblyError(`${label}: không có phép "${(node as ShapeNode).op}". Dùng: ${OPS.join(", ")}.`);
   }
@@ -113,7 +122,7 @@ function buildNode(node: ShapeNode, inputs: BuiltShape[], key: string): BuiltSha
   const put = (prefix: string, src: Record<string, AnchorSpec>, mm?: THREE.Matrix4) => {
     for (const [k, a] of Object.entries(src)) inherited[`${prefix}${k}`] = mm ? transformAnchor(a, mm) : a;
   };
-  if (node.op === "boolean") {
+  if (node.op === "boolean" || node.op === "weld" || node.op === "bevel" || node.op === "sand") {
     put("", inputs[0].featureAnchors);
     for (const t of inputs.slice(1)) put(`${t.id}.`, t.featureAnchors);
   } else if (node.op === "roundEdges" || node.op === "groove") put("", inputs[0].featureAnchors);
@@ -151,6 +160,9 @@ export function shapeKeys(doc: AssemblyDoc): Map<string, string> {
     const ins = node.inputs ?? [];
     if (NEEDS_INPUT.has(node.op) && ins.length !== 1) throw new AssemblyError(`[hình ${node.id}] ${node.op} cần đúng 1 hình đầu vào (input).`);
     if (node.op === "boolean" && ins.length < 2) throw new AssemblyError(`[hình ${node.id}] boolean cần input và ít nhất một hình trong tools.`);
+    if (node.op === "weld" && ins.length !== 2) throw new AssemblyError(`[hình ${node.id}] weld cần đúng 2 hình: input (a) và tools[0] (b).`);
+    if (node.op === "bevel" && (ins.length < 1 || ins.length > 2)) throw new AssemblyError(`[hình ${node.id}] bevel cần 1 hình (input) hoặc 2 hình (input + tools[0]).`);
+    if (node.op === "sand" && (ins.length < 1 || ins.length > 2)) throw new AssemblyError(`[hình ${node.id}] sand cần 1 hình (input) hoặc 2 hình (input + tools[0] làm vùng mài).`);
     const inputKeys = ins.map((id) => {
       const k = keys.get(id);
       if (k === undefined) throw new AssemblyError(`[hình ${node.id}] chưa có hình "${id}" (hoặc nó đứng sau). Có: ${[...keys.keys()].join(", ") || "(chưa có)"}.`);

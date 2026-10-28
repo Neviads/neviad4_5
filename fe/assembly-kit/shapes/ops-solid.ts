@@ -201,14 +201,23 @@ export function booleanOp(p: Raw, label: string, inputs: THREE.BufferGeometry[])
   }
   if (m.isEmpty()) throw new AssemblyError(`${label}: kết quả ${op} rỗng (các hình không chồng nhau hoặc bị trừ hết).`);
   const after = m.volume();
-  const geometry = fromManifold(m);
+  // smooth: true → pháp tuyến liền mạch trên cả lưới (không tách nét ở 30°). Cần cho mặt cong đã
+  // được chia mịn không đều (ống, ống gió sau bo): lưới có mảnh vụn làm toCreasedNormals tách nét
+  // lộn xộn → mặt bị loang ô vuông dù hình học vẫn nhẵn.
+  const smooth = p.smooth === true;
+  const geometry = smooth ? fromManifoldIndexed(m) : fromManifold(m);
+  if (smooth) geometry.computeVertexNormals();
   m.delete();
-  return { geometry, anchors: {}, info: [`${op} ${inputs.length - 1} hình: thể tích ${+before.toPrecision(8)} → ${+after.toPrecision(8)} m³`] };
+  return {
+    geometry,
+    anchors: {},
+    info: [`${op} ${inputs.length - 1} hình: thể tích ${+before.toPrecision(8)} → ${+after.toPrecision(8)} m³${smooth ? ", pháp tuyến liền mạch" : ""}`],
+  };
 }
 
 // ───────── bo cạnh ─────────
 
-interface IMesh {
+export interface IMesh {
   pos: number[];
   tri: number[];
 }
@@ -221,7 +230,7 @@ function faceNormal(m: IMesh, t: number): THREE.Vector3 {
 
 const ekey = (a: number, b: number) => (a < b ? `${a}_${b}` : `${b}_${a}`);
 
-interface SharpEdge {
+export interface SharpEdge {
   a: THREE.Vector3;
   b: THREE.Vector3;
   n1: THREE.Vector3;
@@ -231,7 +240,7 @@ interface SharpEdge {
 }
 
 /** Cạnh sắc kèm pháp tuyến hai mặt kề. */
-function sharpInfo(m: IMesh, angleDeg: number): SharpEdge[] {
+export function sharpInfo(m: IMesh, angleDeg: number): SharpEdge[] {
   const map = new Map<string, number[]>();
   for (let t = 0; t < m.tri.length / 3; t++) for (let e = 0; e < 3; e++) {
     const k = ekey(m.tri[t * 3 + e], m.tri[t * 3 + ((e + 1) % 3)]);
@@ -270,7 +279,7 @@ function sharpEdges(m: IMesh, angleDeg: number, minArea = 0): [number, number][]
   return out;
 }
 
-function faceArea(m: IMesh, t: number): number {
+export function faceArea(m: IMesh, t: number): number {
   const v = (i: number) => new THREE.Vector3(m.pos[i * 3], m.pos[i * 3 + 1], m.pos[i * 3 + 2]);
   const a = v(m.tri[t]), b = v(m.tri[t + 1]), c = v(m.tri[t + 2]);
   return b.sub(a).cross(c.sub(a)).length() / 2;
@@ -303,23 +312,11 @@ function distanceToSegments(m: IMesh, segs: [number[], number[]][], reach: numbe
   return d;
 }
 
-export function roundEdges(p: Raw, label: string, input: THREE.BufferGeometry): OpResult {
-  const radius = numParam(p, "radius", label, { def: 0.004, min: 1e-5, max: 1 });
-  const angle = numParam(p, "angle", label, { def: 30, min: 1, max: 179 });
-  const maxTri = Math.round(numParam(p, "maxTriangles", label, { def: 600000, min: 1000, max: 3000000 }));
-  const w0 = welded(input);
-  const m0: IMesh = { pos: Array.from(w0.attributes.position.array), tri: Array.from(w0.index!.array) };
-  const edges = sharpInfo(m0, angle);
-  if (!edges.length) return { geometry: input.clone(), anchors: {}, info: [`bo cạnh: không có cạnh nào gãy hơn ${angle}°, giữ nguyên`] };
-  // chia mịn đều cả lưới (manifold giữ mặt phẳng phẳng); cạnh không ngắn hơn mức mà ngân sách tam giác cho phép
-  let area = 0;
-  for (let t = 0; t < m0.tri.length; t += 3) area += faceArea(m0, t);
-  const h = Math.max(radius / 3, Math.sqrt((4 * area) / (Math.sqrt(3) * maxTri)) * 1.05);
-  const mf = toManifold(input, label).refineToLength(h);
-  const g2 = fromManifoldIndexed(mf);
-  mf.delete();
-  const m: IMesh = { pos: Array.from(g2.attributes.position.array), tri: Array.from(g2.index!.array) };
-
+/**
+ * Ruột "lăn bi" của việc bo cạnh: trả về vị trí mới của lưới `m` (không sửa `m`).
+ * `edges` phải lấy từ chính mặt của `m` (trước hay sau khi chia mịn đều được — hình không đổi).
+ */
+export function rollEdgesToArc(m: IMesh, edges: SharpEdge[], radius: number, angle: number, h: number): number[] {
   // "lăn bi": với cạnh giữa hai mặt (pháp tuyến n1, n2), trục mặt bo song song cạnh, cách cả hai mặt đúng r.
   // Đỉnh nằm trên mặt 1 cách cạnh s < T = r·tan(θ/2) được đưa lên cung tròn bán kính r quanh trục đó.
   const reach = radius * 3, cell = reach, grid = new Map<string, number[]>();
@@ -399,7 +396,26 @@ export function roundEdges(p: Raw, label: string, input: THREE.BufferGeometry): 
       out[i * 3 + 2] = best.p.z;
     }
   }
-  m.pos = Array.from(out);
+  return Array.from(out);
+}
+
+export function roundEdges(p: Raw, label: string, input: THREE.BufferGeometry): OpResult {
+  const radius = numParam(p, "radius", label, { def: 0.004, min: 1e-5, max: 1 });
+  const angle = numParam(p, "angle", label, { def: 30, min: 1, max: 179 });
+  const maxTri = Math.round(numParam(p, "maxTriangles", label, { def: 600000, min: 1000, max: 3000000 }));
+  const w0 = welded(input);
+  const m0: IMesh = { pos: Array.from(w0.attributes.position.array), tri: Array.from(w0.index!.array) };
+  const edges = sharpInfo(m0, angle);
+  if (!edges.length) return { geometry: input.clone(), anchors: {}, info: [`bo cạnh: không có cạnh nào gãy hơn ${angle}°, giữ nguyên`] };
+  // chia mịn đều cả lưới (manifold giữ mặt phẳng phẳng); cạnh không ngắn hơn mức mà ngân sách tam giác cho phép
+  let area = 0;
+  for (let t = 0; t < m0.tri.length; t += 3) area += faceArea(m0, t);
+  const h = Math.max(radius / 3, Math.sqrt((4 * area) / (Math.sqrt(3) * maxTri)) * 1.05);
+  const mf = toManifold(input, label).refineToLength(h);
+  const g2 = fromManifoldIndexed(mf);
+  mf.delete();
+  const m: IMesh = { pos: Array.from(g2.attributes.position.array), tri: Array.from(g2.index!.array) };
+  m.pos = rollEdgesToArc(m, edges, radius, angle, h);
   const left = sharpEdges(m, angle, (h * h) / 20).length;
   const sharp0 = edges;
   const geometry = new THREE.BufferGeometry();

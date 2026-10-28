@@ -25,7 +25,7 @@ export function cameraFor(name: string, box: THREE.Box3, aspect: number): THREE.
   const fov = 28, cam = new THREE.PerspectiveCamera(fov, aspect, r / 100, r * 100);
   // khoảng cách để quả cầu bao vừa cả chiều đứng lẫn chiều ngang của khung hình
   const half = (fov * Math.PI) / 360, halfH = Math.atan(Math.tan(half) * aspect);
-  const dist = (r / Math.sin(Math.min(half, halfH))) * 0.82;
+  const dist = (r / Math.sin(Math.min(half, halfH))) * 1.02;
   cam.position.copy(c).addScaledVector(dir, dist);
   cam.lookAt(c);
   return cam;

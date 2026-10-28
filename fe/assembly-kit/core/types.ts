@@ -129,7 +129,7 @@ export interface Path2D {
   closed?: boolean;
 }
 
-export type ShapeOp = "lathe" | "extrude" | "sweep" | "mirror" | "pattern" | "loft" | "boolean" | "roundEdges" | "groove" | "splitRegion";
+export type ShapeOp = "lathe" | "extrude" | "sweep" | "mirror" | "pattern" | "loft" | "boolean" | "roundEdges" | "groove" | "splitRegion" | "weld" | "bevel" | "sand";
 
 /** Điểm neo do agent đặt trên một hình (anchor_define), trong khung của hình. */
 export type ShapeAnchor = AnchorSpec;

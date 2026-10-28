@@ -100,7 +100,9 @@ export function lathe(p: Raw, label: string): OpResult {
   const segments = Math.round(numParam(p, "segments", label, { def: 72, min: 6, max: 256 }));
   const angleDeg = numParam(p, "angle", label, { def: 360, min: 1, max: 360 });
 
-  let pts = outer.map(([r, y]) => [Math.max(r, 0), y] as P2);
+  // bán kính ~0 phải đúng bằng 0: LatheGeometry với r = 0,0001 để lại một lỗ Ø0,2 mm ở đỉnh trục,
+  // lưới không kín nên boolean / weld từ chối. Làm tròn về 0 thì hai vòng đỉnh trùng nhau và lưới kín.
+  let pts = outer.map(([r, y]) => [r < 2e-4 ? 0 : r, y] as P2);
   if (wall > 0) {
     // vỏ có độ dày: mặt ngoài → miệng → mặt trong đi ngược về (như hàm shell() trong Bàn thí nghiệm.html)
     const inner = offsetLeft(pts, wall);
