@@ -22,6 +22,13 @@ export async function GET(request: Request) {
     if (!mf || !existsSync(mf)) return new Response(null, { status: 404 });
     return new Response(readFileSync(mf), { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "public, max-age=31536000, immutable" } });
   }
+  // ?physics=<khoá>: mô hình vật lý MCP đã tính (physics_setup, body_set…)
+  const phys = new URL(request.url).searchParams.get("physics");
+  if (phys !== null) {
+    const pf = /^[0-9a-f]{16}$/.test(phys) ? join(root(), "physics", `${phys}.json`) : null;
+    if (!pf || !existsSync(pf)) return new Response(null, { status: 404 });
+    return new Response(readFileSync(pf), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=31536000, immutable" } });
+  }
   const file = join(root(), "state.json");
   const state = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : { version: 0, assemblies: [], view: null };
   // Không có ?since= thì luôn trả cả trạng thái (Number(null) là 0, sẽ trùng nhầm phiên bản 0).

@@ -8,6 +8,10 @@ import { type AssemblyView, buildAssembly, createStage } from "@/assembly-kit/th
 import { loadBrowserKernel } from "@/assembly-kit/three/kernel-browser";
 import { preloadMeshes } from "@/assembly-kit/three/preload";
 import { renderView } from "@/assembly-kit/three/render";
+import { chain } from "@/assembly-kit/core/math";
+import { physicsKey } from "@/assembly-kit/physics/key";
+import type { PhysicsModel } from "@/assembly-kit/physics/model";
+import { World } from "@/assembly-kit/physics/solver";
 import { type MaterialKit, createMaterialKit } from "@/assembly-kit/three/materials";
 
 type Entry = { id: string; title: string; rev: number; updatedAt: string; doc: AssemblyDoc };
@@ -109,6 +113,10 @@ export default function Studio() {
   // lõi hình khối (boolean, khắc rãnh) nạp bất đồng bộ; dựng cảnh sau khi có
   const [kernelOk, setKernelOk] = useState(false);
   const [building, setBuilding] = useState<string | null>(null);
+  // chạy vật lý: mô hình do MCP tính sẵn (physics_setup…), trang chỉ chạy bộ giải
+  const simRef = useRef<{ world: World | null; model: PhysicsModel | null; running: boolean; speed: number; acc: number }>({ world: null, model: null, running: false, speed: 1, acc: 0 });
+  const [sim, setSim] = useState<{ status: "idle" | "loading" | "running" | "paused" | "missing"; t: number }>({ status: "idle", t: 0 });
+  const [rebuild, setRebuild] = useState(0);
   useEffect(() => {
     loadBrowserKernel()
       .then(() => setKernelOk(true))
@@ -170,7 +178,21 @@ export default function Studio() {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     resize();
-    renderer.setAnimationLoop(() => {
+    let last = performance.now(), tick = 0;
+    renderer.setAnimationLoop((now) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      const s = simRef.current, view = viewRef.current?.view;
+      if (s.running && s.world && view) {
+        const DT = 1 / 120;
+        s.acc += dt * s.speed;
+        for (let n = 0; s.acc >= DT && n < 6; n++, s.acc -= DT) s.world.step(DT);
+        for (const b of s.world.bodies) {
+          const M = s.world.matrix(b);
+          for (const part of b.model.parts) view.setWorld(part.path, chain(M, part.offset));
+        }
+        if (++tick % 10 === 0) setSim({ status: "running", t: s.world.t });
+      }
       controls.update();
       renderer.render(stage.scene, camera);
     });
@@ -188,7 +210,7 @@ export default function Studio() {
   useEffect(() => {
     const t = three.current;
     if (!t || !kernelOk) return;
-    const key = selected ? `${selected.id}@${selected.rev}` : "";
+    const key = selected ? `${selected.id}@${selected.rev}#${rebuild}` : "";
     if (viewRef.current?.key === key) return;
     if (viewRef.current) {
       t.stage.scene.remove(viewRef.current.view.root);
@@ -233,7 +255,36 @@ export default function Studio() {
     };
     // pose đổi được xử lý ở effect riêng
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.id, selected?.rev, kernelOk]);
+  }, [selected?.id, selected?.rev, kernelOk, rebuild]);
+
+  // đổi bản lắp ráp hoặc bản sửa mới thì bỏ mô phỏng cũ
+  useEffect(() => {
+    simRef.current = { ...simRef.current, world: null, model: null, running: false, acc: 0 };
+    Promise.resolve().then(() => setSim({ status: "idle", t: 0 }));
+  }, [selected?.id, selected?.rev]);
+
+  const simStart = async () => {
+    const s = simRef.current;
+    if (!selected?.doc.physics) return;
+    if (!s.model) {
+      setSim({ status: "loading", t: 0 });
+      const res = await fetch(`/api/assembly-bridge?physics=${physicsKey(selected.doc)}`);
+      if (!res.ok) return setSim({ status: "missing", t: 0 });
+      s.model = (await res.json()) as PhysicsModel;
+    }
+    s.world ??= new World(s.model);
+    s.running = true;
+    setSim({ status: "running", t: s.world.t });
+  };
+  const simPause = () => {
+    simRef.current.running = false;
+    setSim((x) => ({ ...x, status: "paused" }));
+  };
+  const simReset = () => {
+    simRef.current = { ...simRef.current, world: null, running: false, acc: 0 };
+    setSim({ status: "idle", t: 0 });
+    setRebuild((r) => r + 1); // dựng lại cảnh về tư thế lắp ráp
+  };
 
   useEffect(() => {
     try {
@@ -329,6 +380,28 @@ export default function Studio() {
         <canvas ref={canvasRef} className="block h-full w-full" />
         {capturing && <div className="absolute right-3 top-3 rounded-md bg-black/60 px-3 py-1.5 text-[12px]">Đang chụp {capturing} cho Claude…</div>}
         {building && !capturing && <div className="absolute right-3 top-3 rounded-md bg-black/60 px-3 py-1.5 text-[12px]">Đang dựng {building}…</div>}
+        {selected?.doc.physics && (
+          <div className="absolute right-3 bottom-3 flex items-center gap-2 rounded-lg bg-black/55 p-2 text-[12px] backdrop-blur">
+            <span className="px-1 text-[#aab2bd]">Vật lý</span>
+            <button type="button" className="rounded bg-white/10 px-2 py-1 hover:bg-white/20 disabled:opacity-40" disabled={sim.status === "running" || sim.status === "loading"} onClick={simStart}>
+              {sim.status === "paused" ? "Tiếp tục" : "Chạy"}
+            </button>
+            <button type="button" className="rounded bg-white/10 px-2 py-1 hover:bg-white/20 disabled:opacity-40" disabled={sim.status !== "running"} onClick={simPause}>
+              Dừng
+            </button>
+            <button type="button" className="rounded bg-white/10 px-2 py-1 hover:bg-white/20" onClick={simReset}>
+              Đặt lại
+            </button>
+            <select className="rounded bg-white/10 px-1 py-1" defaultValue="1" onChange={(e) => (simRef.current.speed = +e.target.value)}>
+              <option value="0.25">0,25×</option>
+              <option value="0.5">0,5×</option>
+              <option value="1">1×</option>
+            </select>
+            <span className="w-24 text-right tabular-nums text-[#aab2bd]">
+              {sim.status === "loading" ? "đang tải…" : sim.status === "missing" ? "chưa có mô hình" : `t = ${sim.t.toFixed(2)} s`}
+            </span>
+          </div>
+        )}
         {joints.length > 0 && (
           <div className="absolute bottom-3 left-3 w-72 space-y-2 rounded-lg bg-black/55 p-3 text-[12px] backdrop-blur">
             {joints.map((j) => {
