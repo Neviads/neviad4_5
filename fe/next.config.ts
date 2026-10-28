@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || `http://localhost:${backendPort}`,
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || `ws://localhost:${backendPort}/ws`,
   },
+  // Lưới nướng sẵn của các route 3D: tên tệp là băm nội dung, nên trình duyệt giữ mãi được (không tải lại 15 MB mỗi lần mở trang)
+  async headers() {
+    return [{ source: "/assembly-meshes/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] }];
+  },
 };
 
 export default nextConfig;
