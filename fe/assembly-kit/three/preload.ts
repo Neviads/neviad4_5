@@ -7,22 +7,24 @@ import type { AssemblyDoc } from "../core/types";
 import { decodeShape, keyHash } from "../shapes/bake";
 import { hasShape, seedShape, shapeKeys, usedShapeIds } from "../shapes/build";
 
-export async function preloadMeshes(doc: AssemblyDoc, endpoint = "/api/assembly-bridge"): Promise<number> {
-  const keys: string[] = [];
+/** `url(băm)`: nơi tải lưới; mặc định API dev của xưởng, route dùng bản chép trong public/assembly-meshes. */
+export async function preloadMeshes(doc: AssemblyDoc, url: (hash: string) => string = (h) => `/api/assembly-bridge?mesh=${h}`): Promise<number> {
+  // Set: hai cụm cùng loại (vd hai xe) dùng chung hình, chỉ tải một lần
+  const keys = new Set<string>();
   const walk = (d: AssemblyDoc) => {
     if (d.shapes?.length) {
       const all = shapeKeys(d);
       for (const id of usedShapeIds(d)) {
         const k = all.get(id);
-        if (k && !hasShape(k)) keys.push(k);
+        if (k && !hasShape(k)) keys.add(k);
       }
     }
     for (const t of Object.values(d.types ?? {})) walk(t.doc);
   };
   walk(doc);
-  const loaded = await Promise.all(keys.map(async (k) => {
+  const loaded = await Promise.all([...keys].map(async (k) => {
     try {
-      const res = await fetch(`${endpoint}?mesh=${keyHash(k)}`);
+      const res = await fetch(url(keyHash(k)));
       if (!res.ok) return 0;
       const s = decodeShape(await res.arrayBuffer());
       if (s.key !== k) return 0; // trùng băm hiếm gặp: bỏ, để tự dựng

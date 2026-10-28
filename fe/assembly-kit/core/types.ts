@@ -5,6 +5,7 @@
  * Toàn bộ file này không phụ thuộc three.js: server MCP trong Node dùng được.
  */
 
+import type { PhysicsConfig } from "../physics/model";
 import type { M4, V3 } from "./math";
 
 // ───────── tham số ─────────
@@ -206,6 +207,8 @@ export interface AssemblyDoc {
   scene?: SceneSpec;
   /** Cụm đã lưu mà tài liệu này dùng (bản sao từ thư viện, để file tự đủ). */
   types?: Record<string, CompositeType>;
+  /** Cấu hình mô phỏng (physics_setup, body_set, initial_set, drive_add). */
+  physics?: PhysicsConfig;
 }
 
 export const MATERIAL_NAMES = [

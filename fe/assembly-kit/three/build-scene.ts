@@ -20,7 +20,10 @@ export interface AssemblyView {
   root: THREE.Group;
   parts: Map<string, THREE.Object3D>;
   solved: Solved;
+  /** giá trị khớp; khớp trong cụm viết "<idBoPhan>/<khop>" */
   setPose(values: Record<string, number>): void;
+  /** đặt ma trận thế giới cho một bộ phận ("id" hoặc "idCum/idTrong"), dùng khi bộ giải vật lý điều khiển */
+  setWorld(path: string, world: number[]): void;
   dispose(): void;
 }
 
@@ -36,6 +39,7 @@ export function buildAssembly(doc: AssemblyDoc, kit: MaterialKit): AssemblyView 
   let solved = solve(work, registry);
 
   const children: AssemblyView[] = [];
+  const childOf = new Map<string, AssemblyView>();
   for (const id of solved.order) {
     const sp = solved.parts.get(id)!;
     const pt = registry[sp.type];
@@ -44,6 +48,7 @@ export function buildAssembly(doc: AssemblyDoc, kit: MaterialKit): AssemblyView 
       // cụm đã lưu: dựng tài liệu con, dời để khung của loại trùng khung bộ phận gốc
       const child = buildAssembly(pt.composite.doc, kit);
       children.push(child);
+      childOf.set(id, child);
       child.root.matrixAutoUpdate = false;
       child.root.matrix.fromArray(invertRigid(pt.composite.rootMatrix));
       obj = new THREE.Group();
@@ -89,6 +94,10 @@ export function buildAssembly(doc: AssemblyDoc, kit: MaterialKit): AssemblyView 
     },
     setPose(values) {
       for (const j of work.joints) j.value = values[j.id] ?? 0;
+      for (const [id, child] of childOf) {
+        const inner = Object.fromEntries(Object.entries(values).filter(([k]) => k.startsWith(`${id}/`)).map(([k, x]) => [k.slice(id.length + 1), x]));
+        if (Object.keys(inner).length) child.setPose(inner);
+      }
       solved = solve(work, registry);
       for (const [id, obj] of parts) {
         obj.matrix.fromArray(solved.parts.get(id)!.world);
@@ -96,8 +105,22 @@ export function buildAssembly(doc: AssemblyDoc, kit: MaterialKit): AssemblyView 
       }
       drawRoutes();
     },
+    setWorld(path, world) {
+      const slash = path.indexOf("/");
+      if (slash > 0) return childOf.get(path.slice(0, slash))?.setWorld(path.slice(slash + 1), world);
+      const obj = parts.get(path);
+      if (!obj) return;
+      // ma trận cục bộ = (thế giới của cha)⁻¹ · thế giới mong muốn
+      obj.parent?.updateMatrixWorld(true);
+      const parentInv = obj.parent ? obj.parent.matrixWorld.clone().invert() : new THREE.Matrix4();
+      obj.matrix.copy(parentInv.multiply(new THREE.Matrix4().fromArray(world)));
+      obj.matrixWorldNeedsUpdate = true;
+    },
     dispose() {
-      root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+      root.traverse((o) => {
+        const g = (o as THREE.Mesh).geometry;
+        if (g && !g.userData.shared) g.dispose();
+      });
       children.forEach((c) => c.dispose());
     },
   };

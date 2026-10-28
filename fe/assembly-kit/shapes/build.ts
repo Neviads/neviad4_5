@@ -22,6 +22,8 @@ export interface BuiltShape {
   triangles: number;
   info: string[];
   key: string;
+  /** điểm neo theo tính năng (không tính khung bao), truyền tiếp cho hình dựng từ hình này */
+  featureAnchors: Record<string, AnchorSpec>;
 }
 
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
@@ -72,7 +74,8 @@ function transformAnchor(a: AnchorSpec, m: THREE.Matrix4): AnchorSpec {
   }
 }
 
-const nodeKey = (node: ShapeNode, inputKeys: string[]) => JSON.stringify([node.op, node.params, node.offset, node.rotate, node.anchors, inputKeys]);
+// "v2": từ khi có điểm neo kế thừa (lưới nướng sẵn cũ không có chúng)
+const nodeKey = (node: ShapeNode, inputKeys: string[]) => JSON.stringify(["v2", node.op, node.params, node.offset, node.rotate, node.anchors, inputKeys]);
 
 /** Nạp sẵn một hình đã dựng (lưới nướng sẵn do MCP ghi) vào cache, để trình duyệt khỏi dựng lại. */
 export function seedShape(built: Omit<BuiltShape, "id">): void {
@@ -104,15 +107,35 @@ function buildNode(node: ShapeNode, inputs: BuiltShape[], key: string): BuiltSha
   if (bb.isEmpty() || ![...bb.min.toArray(), ...bb.max.toArray()].every(Number.isFinite)) throw new AssemblyError(`${label}: hình rỗng hoặc có toạ độ không hợp lệ.`);
   const bounds: Bounds = { min: bb.min.toArray() as V3, max: bb.max.toArray() as V3 };
   const size = bb.getSize(new THREE.Vector3()).toArray() as V3, center = bb.getCenter(new THREE.Vector3()).toArray() as V3;
-  const opAnchors = Object.fromEntries(Object.entries(res.anchors).map(([k, a]) => [k, transformAnchor(a, m)]));
+  // điểm neo kế thừa: boolean giữ của input và lấy của từng dao ("<dao>.<ten>"); bo cạnh, khắc giữ của input;
+  // pattern đánh số bản sao ("<input>[i].<ten>"); mirror giữ bản gốc và thêm bản lật ("<ten>~m")
+  const inherited: Record<string, AnchorSpec> = {};
+  const put = (prefix: string, src: Record<string, AnchorSpec>, mm?: THREE.Matrix4) => {
+    for (const [k, a] of Object.entries(src)) inherited[`${prefix}${k}`] = mm ? transformAnchor(a, mm) : a;
+  };
+  if (node.op === "boolean") {
+    put("", inputs[0].featureAnchors);
+    for (const t of inputs.slice(1)) put(`${t.id}.`, t.featureAnchors);
+  } else if (node.op === "roundEdges" || node.op === "groove") put("", inputs[0].featureAnchors);
+  else if (node.op === "pattern") res.copies?.forEach((mm, i) => put(`${inputs[0].id}[${i}].`, inputs[0].featureAnchors, mm));
+  else if (node.op === "mirror") {
+    put("", inputs[0].featureAnchors);
+    const ax = (node.params.plane as string) ?? "z";
+    const refl = new THREE.Matrix4().makeScale(ax === "x" ? -1 : 1, ax === "y" ? -1 : 1, ax === "z" ? -1 : 1);
+    for (const [k, a] of Object.entries(inputs[0].featureAnchors)) inherited[`${k}~m`] = transformAnchor(a, refl);
+  }
+  const feature: Record<string, AnchorSpec> = {
+    ...Object.fromEntries(Object.entries(inherited).map(([k, a]) => [k, transformAnchor(a, m)])),
+    ...Object.fromEntries(Object.entries(res.anchors).map(([k, a]) => [k, transformAnchor(a, m)])),
+    ...(node.anchors ?? {}),
+  };
   const anchors: Record<string, AnchorSpec> = {
     ...boxFaces(size, center),
     center: point(center, [0, 1, 0], "tâm khung bao"),
-    ...opAnchors,
-    ...(node.anchors ?? {}),
+    ...feature,
   };
   const triangles = (g.index ? g.index.count : g.attributes.position.count) / 3;
-  const built: BuiltShape = { id: node.id, geometry: g, bounds, anchors, triangles, info: res.info, key };
+  const built: BuiltShape = { id: node.id, geometry: g, bounds, anchors, triangles, info: res.info, key, featureAnchors: feature };
   if (cache.size > 300) cache.clear();
   cache.set(key, built);
   return built;

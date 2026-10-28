@@ -22,8 +22,11 @@ function shapeType(s: BuiltShape): PartType {
     params: {},
     anchors: () => s.anchors,
     bounds: () => s.bounds,
-    // hình học trong cache dùng chung nên mỗi lần dựng cảnh lấy một bản sao
-    build: (_p, kit) => shadowed(new THREE.Mesh(s.geometry.clone(), kitOf(kit).byName.steel)),
+    // dùng chung lưới trong cache (hai xe cùng loại không nhân đôi bộ nhớ); đánh dấu để dispose không huỷ nó
+    build: (_p, kit) => {
+      s.geometry.userData.shared = true;
+      return shadowed(new THREE.Mesh(s.geometry, kitOf(kit).byName.steel));
+    },
   };
 }
 

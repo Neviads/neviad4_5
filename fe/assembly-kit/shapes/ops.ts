@@ -16,6 +16,8 @@ export interface OpResult {
   geometry: THREE.BufferGeometry;
   anchors: Record<string, AnchorSpec>;
   info: string[];
+  /** pattern: phép biến đổi của từng bản sao (để đặt điểm neo "<input>[i].<ten>") */
+  copies?: THREE.Matrix4[];
 }
 
 /** Bo cạnh tối thiểu mặc định: không có cạnh sắc tuyệt đối (docs/car-toolkit-design.md, nguyên tắc 3). */
@@ -334,21 +336,25 @@ export function pattern(p: Raw, label: string, input: THREE.BufferGeometry): OpR
   const copies: THREE.BufferGeometry[] = [];
   if (kind === "linear") {
     const step = vecParam(p, "step", label);
-    for (let i = 0; i < count; i++) copies.push(normalizeGeometry(input).translate(step[0] * i, step[1] * i, step[2] * i));
-    return { geometry: merge(copies), anchors: {}, info: [`lặp thẳng ${count} bản, bước [${step.join(", ")}]`] };
+    const mats = Array.from({ length: count }, (_, i) => new THREE.Matrix4().makeTranslation(step[0] * i, step[1] * i, step[2] * i));
+    for (const m of mats) copies.push(normalizeGeometry(input).applyMatrix4(m));
+    return { geometry: merge(copies), anchors: {}, info: [`lặp thẳng ${count} bản, bước [${step.join(", ")}]`], copies: mats };
   }
   const ax = enumParam(p, "axis", label, ["x", "y", "z"] as const, "y");
   const stepDeg = numParam(p, "stepAngle", label, { def: 360 / count });
   const center = vecParam(p, "center", label, [0, 0, 0]);
+  const mats: THREE.Matrix4[] = [];
   for (let i = 0; i < count; i++) {
     const m = new THREE.Matrix4().makeTranslation(center[0], center[1], center[2])
       .multiply(new THREE.Matrix4().makeRotationAxis(AXES[ax], (stepDeg * i * Math.PI) / 180))
       .multiply(new THREE.Matrix4().makeTranslation(-center[0], -center[1], -center[2]));
+    mats.push(m);
     copies.push(normalizeGeometry(input).applyMatrix4(m));
   }
   return {
     geometry: merge(copies),
     anchors: { patternAxis: axis(center, AXES[ax].toArray() as V3, ax === "y" ? [0, 0, 1] : [0, 1, 0], `trục lặp vòng (${ax})`) },
+    copies: mats,
     info: [`lặp vòng ${count} bản quanh trục ${ax}, mỗi bản ${+stepDeg.toFixed(4)}°`],
   };
 }

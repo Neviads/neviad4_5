@@ -68,7 +68,8 @@ export interface RefParts {
 }
 
 export function parseRef(ref: string): RefParts {
-  const m = /^([A-Za-z0-9_-]+)\.([A-Za-z0-9_]+)(?:@(.+))?$/.exec(ref ?? "");
+  // id bộ phận tới dấu chấm đầu tiên; tên điểm neo được chứa dấu chấm, [i] và ~ (điểm neo kế thừa: "hoc.axis", "lo[2].axis")
+  const m = /^([A-Za-z0-9_-]+)\.([A-Za-z0-9_.~[\]]+)(?:@(.+))?$/.exec(ref ?? "");
   if (!m) throw new AssemblyError(`"${ref}" không đúng dạng "boPhan.diemNeo" hoặc "boPhan.diemNeo@vitri".`);
   return { id: m[1], anchor: m[2], mod: m[3] };
 }

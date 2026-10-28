@@ -25,6 +25,7 @@ interface Header {
   key: string;
   bounds: BuiltShape["bounds"];
   anchors: BuiltShape["anchors"];
+  featureAnchors?: BuiltShape["anchors"];
   info: string[];
   triangles: number;
   attrs: Record<string, { offset: number; count: number; itemSize: number }>;
@@ -47,7 +48,7 @@ export function encodeShape(s: Omit<BuiltShape, "id">): Uint8Array {
     offset += arr.byteLength;
   }
   const idx = new Uint32Array(g.index!.array);
-  const header: Header = { key: s.key, bounds: s.bounds, anchors: s.anchors, info: s.info, triangles: s.triangles, attrs, index: { offset, count: idx.length } };
+  const header: Header = { key: s.key, bounds: s.bounds, anchors: s.anchors, featureAnchors: s.featureAnchors, info: s.info, triangles: s.triangles, attrs, index: { offset, count: idx.length } };
   parts.push(idx);
   const head = new TextEncoder().encode(JSON.stringify(header));
   const pad = (4 - ((4 + head.length) % 4)) % 4;
@@ -70,5 +71,5 @@ export function decodeShape(buf: ArrayBuffer): Omit<BuiltShape, "id"> {
   for (const [n, a] of Object.entries(header.attrs)) g.setAttribute(n, new THREE.BufferAttribute(new Float32Array(buf.slice(base + a.offset, base + a.offset + a.count * 4)), a.itemSize));
   g.setIndex(new THREE.BufferAttribute(new Uint32Array(buf.slice(base + header.index.offset, base + header.index.offset + header.index.count * 4)), 1));
   g.computeBoundingBox();
-  return { geometry: g, bounds: header.bounds, anchors: header.anchors, info: header.info, triangles: header.triangles, key: header.key };
+  return { geometry: g, bounds: header.bounds, anchors: header.anchors, info: header.info, triangles: header.triangles, key: header.key, featureAnchors: header.featureAnchors ?? {} };
 }
