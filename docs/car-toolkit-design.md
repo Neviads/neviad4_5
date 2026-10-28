@@ -377,7 +377,7 @@ Bài thử nhỏ, chứng minh được cả chuỗi tool.
 ### Giai đoạn 3: hoàn chỉnh
 **Tool:** 2 `extrude`, 16 `decal`, 19 `save_as_type`, 12 `subdiv` (nếu loft chưa đủ), 25 `export`.
 
-**Kết quả:** đèn có chao và phản quang, gương, tay nắm, cần gạt, lưới tản nhiệt, biển số, logo. Bánh lăn theo khớp, cửa mở được. Xuất cho route `/va-cham-hai-xe` thay hai xe hộp hiện tại.
+**Kết quả:** đèn có chao và phản quang, gương, tay nắm, cần gạt, lưới tản nhiệt, biển số, logo. Bánh lăn theo khớp, cửa mở được.
 
 ## 5. Rủi ro và cách xử lý
 
