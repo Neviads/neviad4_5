@@ -8,22 +8,25 @@ import { type AssemblyDoc, MATERIAL_NAMES, type MaterialDef, type TextureSpec } 
 
 export interface PresetSpec {
   desc: string;
+  /** khối lượng riêng kg/m³ và hệ số ma sát (cho mô hình vật lý) */
+  density?: number;
+  friction?: number;
   /** Tham số chỉnh được và giá trị mặc định. Màu viết "#rrggbb". */
   defaults: Record<string, number | string>;
 }
 
 export const PRESETS: Record<string, PresetSpec> = {
-  carPaint: { desc: "Sơn xe: màu nền, vảy kim loại (flakes), lớp bóng clearcoat", defaults: { color: "#b3121a", roughness: 0.38, metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.03, flakes: 0.35 } },
-  chrome: { desc: "Mạ chrome bóng gương", defaults: { color: "#f4f6f8", roughness: 0.05, metalness: 1 } },
-  brushedAluminium: { desc: "Nhôm chải xước, phản chiếu kéo dài theo một hướng", defaults: { color: "#c8ccd2", roughness: 0.32, metalness: 1, anisotropy: 0.8, anisotropyRotation: 0 } },
-  paintedMetal: { desc: "Kim loại sơn mờ (la-zăng sơn, kẹp phanh)", defaults: { color: "#2a2d33", roughness: 0.45, metalness: 0.6, clearcoat: 0.5, clearcoatRoughness: 0.2 } },
-  tireRubber: { desc: "Cao su lốp: đen ngả xám, nhám, có sheen", defaults: { color: "#1a1b1d", roughness: 0.88, sheen: 0.35, sheenRoughness: 0.7, sheenColor: "#4a5258" } },
-  glassTinted: { desc: "Kính khúc xạ thật (transmission, ior, màu hấp thụ)", defaults: { color: "#ffffff", roughness: 0.02, transmission: 1, ior: 1.52, thickness: 0.004, attenuationColor: "#d8ecf2", attenuationDistance: 0.5 } },
-  lampLens: { desc: "Chao đèn: nhựa trong có vân, hơi ám màu", defaults: { color: "#ffffff", roughness: 0.08, transmission: 0.95, ior: 1.49, thickness: 0.003, attenuationColor: "#ffffff", attenuationDistance: 1 } },
-  plasticTextured: { desc: "Nhựa đen sần (ốp gầm, viền)", defaults: { color: "#202224", roughness: 0.75, metalness: 0 } },
-  emissiveLight: { desc: "Nguồn sáng (đèn hậu, đèn xi-nhan); emissiveIntensity càng lớn càng loá (bloom)", defaults: { color: "#ffffff", emissive: "#ff2a1a", emissiveIntensity: 3, roughness: 0.3 } },
-  asphalt: { desc: "Mặt đường nhựa", defaults: { color: "#2b2c2e", roughness: 0.95, metalness: 0 } },
-  ceramic: { desc: "Gốm, sứ tráng men", defaults: { color: "#f2efe8", roughness: 0.15, clearcoat: 0.6, clearcoatRoughness: 0.1 } },
+  carPaint: { density: 7850, friction: 0.5, desc: "Sơn xe: màu nền, vảy kim loại (flakes), lớp bóng clearcoat", defaults: { color: "#b3121a", roughness: 0.38, metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.03, flakes: 0.35 } },
+  chrome: { density: 7850, friction: 0.4, desc: "Mạ chrome bóng gương", defaults: { color: "#f4f6f8", roughness: 0.05, metalness: 1 } },
+  brushedAluminium: { density: 2700, friction: 0.4, desc: "Nhôm chải xước, phản chiếu kéo dài theo một hướng", defaults: { color: "#c8ccd2", roughness: 0.32, metalness: 1, anisotropy: 0.8, anisotropyRotation: 0 } },
+  paintedMetal: { density: 2700, friction: 0.45, desc: "Kim loại sơn mờ (la-zăng sơn, kẹp phanh)", defaults: { color: "#2a2d33", roughness: 0.45, metalness: 0.6, clearcoat: 0.5, clearcoatRoughness: 0.2 } },
+  tireRubber: { density: 1100, friction: 0.9, desc: "Cao su lốp: đen ngả xám, nhám, có sheen", defaults: { color: "#1a1b1d", roughness: 0.88, sheen: 0.35, sheenRoughness: 0.7, sheenColor: "#4a5258" } },
+  glassTinted: { density: 2500, friction: 0.3, desc: "Kính khúc xạ thật (transmission, ior, màu hấp thụ)", defaults: { color: "#ffffff", roughness: 0.02, transmission: 1, ior: 1.52, thickness: 0.004, attenuationColor: "#d8ecf2", attenuationDistance: 0.5 } },
+  lampLens: { density: 1200, friction: 0.3, desc: "Chao đèn: nhựa trong có vân, hơi ám màu", defaults: { color: "#ffffff", roughness: 0.08, transmission: 0.95, ior: 1.49, thickness: 0.003, attenuationColor: "#ffffff", attenuationDistance: 1 } },
+  plasticTextured: { density: 1200, friction: 0.5, desc: "Nhựa đen sần (ốp gầm, viền)", defaults: { color: "#202224", roughness: 0.75, metalness: 0 } },
+  emissiveLight: { density: 1200, friction: 0.4, desc: "Nguồn sáng (đèn hậu, đèn xi-nhan); emissiveIntensity càng lớn càng loá (bloom)", defaults: { color: "#ffffff", emissive: "#ff2a1a", emissiveIntensity: 3, roughness: 0.3 } },
+  asphalt: { density: 2300, friction: 0.8, desc: "Mặt đường nhựa", defaults: { color: "#2b2c2e", roughness: 0.95, metalness: 0 } },
+  ceramic: { density: 2400, friction: 0.4, desc: "Gốm, sứ tráng men", defaults: { color: "#f2efe8", roughness: 0.15, clearcoat: 0.6, clearcoatRoughness: 0.1 } },
 };
 
 export const TEXTURE_KINDS: TextureSpec["kind"][] = ["noise", "flakes", "tread", "grain", "scratches"];

@@ -14,3 +14,8 @@ export { buildShapes, shapeKeys, usedShapeIds } from "./shapes/build";
 export { encodeShape, keyHash } from "./shapes/bake";
 export { initKernel } from "./shapes/kernel";
 export { SHAPE_PREFIX, checkDocExtras, checkTypeName, registryFor } from "./shapes/registry";
+export { buildPhysicsModel, bodyOfPart } from "./physics/build-model";
+export { World } from "./physics/solver";
+export { descendants, flatten, partOrCluster, worldGeometry } from "./physics/geometry";
+export { kernel, toManifold } from "./shapes/kernel";
+export { physicsKey } from "./physics/key";
