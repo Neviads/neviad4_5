@@ -31,6 +31,11 @@ function make(def: MaterialDef): THREE.MeshPhysicalMaterial {
   }
   if (tex.roughness) m.roughnessMap = grayTexture(tex.roughness, false);
   if (tex.color) m.map = grayTexture(tex.color, true);
+  // CHẤT LỎNG: đây là chỗ chặn "nước bán trong". Tài liệu chỉ cho transmission, không
+  // có opacity/transparent, nên hai lớp trong suốt lồng nhau (nước trong cốc thuỷ tinh,
+  // dầu trong ống nhựa trong) sẽ mất lớp bên trong: three.js loại vật liệu transmission
+  // khỏi lượt render transmission. Muốn có alpha thật thì phải thêm opacity/transparent
+  // vào MaterialDef (xem ghi chú đầu core/types.ts).
   if (m.transmission > 0) m.depthWrite = false;
   // wireframe: chỉ vẽ cạnh tam giác (màu đậm trên nền sáng, không phát sáng)
   if (def.overrides?.wireframe) {

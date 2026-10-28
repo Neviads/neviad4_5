@@ -8,6 +8,48 @@
 import type { PhysicsConfig } from "../physics/model";
 import type { M4, V3 } from "./math";
 
+/**
+ * GIỚI HẠN: CHẤT LỎNG — ghi 2026-10-28, sau khi dựng bơm bánh răng (/may-bom-thuy-luc).
+ *
+ * Bộ kit này dựng được KHỐI chất lỏng đứng yên và cơ cấu bơm, nhưng KHÔNG mô phỏng
+ * chất lỏng chuyển động: nó là CAD + khớp rắn, không phải bộ giải CFD.
+ *
+ * Làm được:
+ *  - Khối dầu/nước tĩnh đúng thể tích: shape_lathe (wall > 0) cho cốc/bể rỗng,
+ *    shape_boolean intersect với nửa không gian dưới mức → đúng mặt phẳng mức.
+ *  - Số đo thật: thể tích hình (m³), check_interference (thể tích giao), measure
+ *    → tính được lưu lượng lý thuyết q = V_kẹt × số_răng × vòng/phút.
+ *  - Mức dâng/hạ: gắn khối lỏng vào khớp prismatic + drive_add.
+ *  - Hình học dòng chảy: shape_sweep cho ống/gioăng (uv.y = mét dọc theo đường).
+ *
+ * Không làm được (bản chất, không phải thiếu tính năng):
+ *  - Không trường vận tốc, không bảo toàn khối lượng, không áp suất, không mặt
+ *    thoáng biến dạng, không nhớt/xoáy. Mọi hình là manifold đóng, nướng một lần;
+ *    "chảy" chỉ có thể là xoay/tịnh tiến khối đặc hoặc trượt vân.
+ *  - Vật liệu chỉ có transmission để trong suốt — không opacity/transparent
+ *    (xem MaterialDef bên dưới). Lồng hai lớp transmission (nước trong cốc thuỷ
+ *    tinh, dầu trong ống nhựa trong) sẽ mất lớp trong, vì three.js loại vật liệu
+ *    transmission khỏi lượt render transmission (xem three/presets.ts).
+ *  - Texture thủ tục là tĩnh (noise/grain/tread/scratches): không kênh thời gian.
+ *  - Physics chỉ có vật rắn: body/joint/drive/contact. Không SPH/LBM/FLIP, không
+ *    lực nổi, không ma sát nhớt.
+ *  - Không có khái niệm "mức" (fill/level): đổi mức phải dựng lại hình.
+ *
+ * Hệ quả đã gặp: "dầu trong rãnh răng" dựng bằng đĩa trừ hình bánh răng rồi gắn làm
+ * con của bánh răng thì không bị ép ra khi ăn khớp — răng bánh này xuyên qua khối
+ * dầu của bánh kia 1,79 cm³. Đó là giới hạn của phương pháp, không phải lỗi dựng.
+ *
+ * Nếu muốn kit làm được chất lỏng, thêm theo thứ tự chi phí:
+ *  1. MaterialDef: opacity/transparent/depthWrite + PartInstance.visible.
+ *  2. shape_fill {vessel, level, up} = giao phần rỗng với nửa không gian dưới mức.
+ *  3. TextureSpec: uvScroll {speed, axis} — ống/dòng tự trượt, không cần code trang.
+ *  4. Primitive jet/droplets/ripple có tham số lưu lượng.
+ *  5. (ngoài CAD) op flow_field: LBM 2D trên hình cắt, trả texture + lưu lượng.
+ *
+ * Vai trò nên chia: kit = hình học + vật liệu + cơ cấu + số đo; chất lỏng = solver
+ * ở trang (hoặc một MCP riêng).
+ */
+
 // ───────── tham số ─────────
 
 export type ParamSpec =
