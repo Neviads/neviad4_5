@@ -5,8 +5,13 @@
 `shape_bevel` đã viết xong ở `fe/assembly-kit/shapes/bevel.ts` và đăng ký trong
 `shapes/build.ts` (`OPS`, kiểm tra 1–2 input, kế thừa điểm neo), `core/types.ts` (`ShapeOp`), và
 `fe/scripts/assembly-bridge/mcp.mjs` (schema + handler). Đã kiểm bằng số với
-`fe/scripts/assembly-bridge/bevel-selftest.mjs` và chạy thật lên bộ ống gió
-(`fe/scripts/assembly-bridge/bevel-ong.mjs`).
+`fe/scripts/assembly-bridge/bevel-selftest.mjs` (đã chạy thật lên bộ ống gió; script dựng thử đã gỡ).
+
+**Chất lượng lưới (bổ sung sau):** weld, bevel và sand dùng chung `fe/assembly-kit/shapes/quality.ts`.
+- Sau khi dời đỉnh, tam giác bị lật, ép dẹt hoặc gấp mép (> 150°) được làm mượt tại chỗ (`untangle`). Riêng sand trả đỉnh hỏng về hình đầu vào.
+- Lưới đã chia mịn được gom lại bằng `simplify` dung sai nhỏ (`leanMesh` trong `weld.ts`), vì `refineToLength` chia mịn cả hình: hai hộp chữ L từng ra 83 390 tam giác, nay còn 418.
+- Mỗi phép trả dòng `lưới: N tam giác, X chỗ gấp mép, Y tam giác dẹt`, kèm cảnh báo khi có chỗ gấp.
+- Selftest có điều kiện trượt và dựng mọi ca tại chỗ, không đọc xưởng thật.
 
 Cài đặt hiện tại (khác vài chỗ so với bản đề xuất đầu, ghi lại cho đúng):
 - `add` **không** quét sợi đắp dọc đường giao; nó **đẩy dải mối nối ra ngoài theo pháp tuyến**

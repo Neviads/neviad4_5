@@ -1,7 +1,7 @@
 // Thử lệnh sand (mài bề mặt) ngoài MCP: đóng gói kit như mcp.mjs rồi chạy 6 ca bằng số.
 // Chạy: node fe/scripts/assembly-bridge/sand-selftest.mjs
 import { build } from "esbuild";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as THREE from "three";
@@ -99,6 +99,27 @@ function movedCount(a, b, thr) {
     if (Math.hypot(a[i * 3] - b[i * 3], a[i * 3 + 1] - b[i * 3 + 1], a[i * 3 + 2] - b[i * 3 + 2]) > thr) c++;
   }
   return c;
+}
+
+/**
+ * Phần DIỆN TÍCH mặt có đỉnh dời quá `thr` (mỗi đỉnh mang 1/3 diện tích các tam giác quanh nó). Đếm theo số đỉnh thì
+ * sai với lưới đã giản lược: mặt phẳng còn vài đỉnh, mối bo cong giữ gần hết đỉnh.
+ */
+function movedArea(w, a, b, thr) {
+  const share = new Float64Array(w.nv);
+  let total = 0;
+  for (let t = 0; t < w.tri.length; t += 3) {
+    const [i, j, k] = [w.tri[t] * 3, w.tri[t + 1] * 3, w.tri[t + 2] * 3];
+    const u = [0, 1, 2].map((c) => w.pos[j + c] - w.pos[i + c]), v = [0, 1, 2].map((c) => w.pos[k + c] - w.pos[i + c]);
+    const area = Math.hypot(u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]) / 2;
+    for (const x of [w.tri[t], w.tri[t + 1], w.tri[t + 2]]) share[x] += area / 3;
+    total += area;
+  }
+  let moved = 0;
+  for (let i = 0; i < w.nv; i++) {
+    if (Math.hypot(a[i * 3] - b[i * 3], a[i * 3 + 1] - b[i * 3 + 1], a[i * 3 + 2] - b[i * 3 + 2]) > thr) moved += share[i];
+  }
+  return moved / total;
 }
 
 /** Trung vị độ dài cạnh của lưới đã hàn. */
@@ -210,31 +231,33 @@ const vol1 = volume(w1.pos, w1.tri);
 check("thể tích đổi ≤ 0,5 %", Math.abs(vol1 / cylVol0 - 1) <= 0.005, `${(vol1 / cylVol0 * 100 - 100).toFixed(2)} %`);
 check("không đỉnh nào dời quá limit", cmpDisp(cylW.pos, w1.pos) <= 0.0003 + 1e-6, `${(cmpDisp(cylW.pos, w1.pos) * 1000).toFixed(4)} mm`);
 
-// ── ca 2: bộ ống gió thật (ong-gio-han) ──
-line("[ca 2] ống gió Ø120 đã đắp mối nối (ong-gio-han) — limit 1 mm (lưới boolean 2,4 mm)");
+// ── ca 2: ống gió 42° đã đắp mối nối (dựng tại chỗ, không đọc xưởng) ──
+const tube = (rotate, offset) => ({ op: "lathe", params: { profile: { pts: [[0, -0.18], [0.06, -0.18], [0.06, 0.18], [0, 0.18]], closed: false }, segments: 64 }, rotate, offset });
+const bevelled = (a, b, params) =>
+  kit.buildShapes({ id: "t", title: "t", parts: [], joints: [], routes: [], materials: {}, shapes: [{ id: "a", ...a }, { id: "b", ...b }, { id: "bev", op: "bevel", params, inputs: ["a", "b"] }] }, ["bev"]).get("bev").geometry;
+line("[ca 2] ống gió Ø120 đã đắp mối nối (bevel add 12 mm) — limit 1 mm");
 {
-  const state = JSON.parse(readFileSync(join(FE_ROOT, ".assembly-bridge/state.json"), "utf8"));
-  const asm = state.assemblies.find((a) => a.id === "ong-gio-han");
-  if (!asm) throw new Error("Không có bản ong-gio-han trong state.json");
   const t0 = Date.now();
-  const g = kit.buildShapes(asm.doc, ["ongHanSach"]).get("ongHanSach").geometry;
+  const g = bevelled(tube([0, 0, 90], [0.11, 0.06, 0]), tube([0, 0, -48], [0.1, 0.2161, 0]), { mode: "add", radius: 0.012 });
   const srcW = weld(g);
-  const srcNbr = adjacency(srcW.tri, srcW.nv);
   const srcMed = medianEdge(srcW);
   const volBefore = volume(srcW.pos, srcW.tri);
   const boxBefore = bbox(g);
+  const q0 = kit.geometryStats(g);
   const t1 = Date.now();
   const res = kit.sand({ strength: 0.6, limit: 0.001, lock: 30 }, "ong", [g]);
   const t2 = Date.now();
   const outW = weld(res.geometry);
   const volAfter = volume(outW.pos, outW.tri);
+  const q1 = kit.geometryStats(res.geometry);
   report(res.info);
   line(`         (dựng ${t1 - t0} ms, mài ${t2 - t1} ms, ${srcW.nv} đỉnh, cạnh trung vị ${(srcMed * 1000).toFixed(2)} mm)`);
-  const moved = movedCount(srcW.pos, outW.pos, 0.0001);
-  check("có bào chỗ gợn (0,5–30 % đỉnh dời > 0,1 mm)", moved > 0.005 * srcW.nv && moved < 0.3 * srcW.nv, `${moved}/${srcW.nv} đỉnh`);
+  const moved = movedArea(srcW, srcW.pos, outW.pos, 0.0001);
+  check("có bào chỗ gợn (0,1–30 % diện tích mặt dời > 0,1 mm)", moved > 0.001 && moved < 0.3, `${(moved * 100).toFixed(1)} % diện tích, ${movedCount(srcW.pos, outW.pos, 0.0001)}/${srcW.nv} đỉnh`);
   check("thể tích giảm ≤ 2 %", Math.abs(volAfter / volBefore - 1) <= 0.02, `${(volAfter / volBefore * 100 - 100).toFixed(2)} %`);
   const dbox = Math.max(...boxBefore.map((v, i) => Math.abs(v - bbox(res.geometry)[i])));
   check("khung bao đổi ≤ limit (miệng ống còn sắc)", dbox <= 0.001 + 1e-6, `${(dbox * 1000).toFixed(4)} mm`);
+  check("không thêm chỗ gấp mép / tam giác dẹt", q1.folds <= q0.folds && q1.slivers <= q0.slivers, `gấp ${q0.folds} → ${q1.folds}, dẹt ${q0.slivers} → ${q1.slivers}`);
 }
 
 // ── ca 3: hộp 100³ — lock phải giữ 12 cạnh sắc ──
@@ -331,9 +354,30 @@ line("[ca 7] lỗi");
     }
   };
   const g = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-  line(`    region near thiếu hình 2: ${t(() => kit.sand({ region: "near" }, "x", [g]))}`);
-  line(`    limit quá lớn: ${t(() => kit.sand({ limit: 0.05 }, "x", [g]))}`);
-  line(`    lock 180 nhưng vùng rỗng: ${t(() => kit.sand({ region: "near", reach: 0.0001 }, "x", [g, new THREE.BoxGeometry(0.01, 0.01, 0.01).translate(1, 1, 1)]))}`);
+  for (const [name, fn] of [
+    ["region near thiếu hình 2", () => kit.sand({ region: "near" }, "x", [g])],
+    ["limit quá lớn", () => kit.sand({ limit: 0.05 }, "x", [g])],
+    ["vùng near rỗng", () => kit.sand({ region: "near", reach: 0.0001 }, "x", [g, new THREE.BoxGeometry(0.01, 0.01, 0.01).translate(1, 1, 1)])],
+  ]) {
+    const msg = t(fn);
+    check(`${name}: báo lỗi`, msg !== "(không ném lỗi)", msg);
+  }
+}
+
+// ── ca 8: mài MẶC ĐỊNH (agent không truyền tham số) trên kết quả bevel — không được làm lưới xấu đi ──
+line("[ca 8] mài mặc định trên kết quả bevel");
+{
+  const box = (x0, x1, z0, z1) => ({ op: "extrude", params: { outline: { pts: [[x0, z0], [x1, z0], [x1, z1], [x0, z1], [x0, z0]], closed: true }, plane: "xz", depth: 0.24, edgeRadius: 0.002 } });
+  const rod = (rotate, offset) => ({ op: "lathe", params: { profile: { pts: [[0, -0.2], [0.03, -0.2], [0.03, 0.2], [0, 0.2]], closed: false }, segments: 64 }, rotate, offset });
+  for (const [name, g] of [
+    ["hai hộp chữ L (cut)", bevelled(box(-0.1, 0.1, 0.0, 0.4), box(-0.1, 0.4, -0.1, 0.1), { mode: "cut", radius: 0.02 })],
+    ["hai trụ chữ T (add)", bevelled(rod(undefined, [0, 0.2, 0]), rod([0, 0, 90], [0.12, 0.2, 0]), { mode: "add", radius: 0.015 })],
+    ["ống gió 42° (add)", bevelled(tube([0, 0, 90], [0.11, 0.06, 0]), tube([0, 0, -48], [0.1, 0.2161, 0]), { mode: "add", radius: 0.012 })],
+  ]) {
+    const q0 = kit.geometryStats(g);
+    const q1 = kit.geometryStats(kit.sand({}, name, [g]).geometry);
+    check(`${name}: không thêm chỗ gấp mép / tam giác dẹt`, q1.folds <= q0.folds && q1.slivers <= q0.slivers, `gấp ${q0.folds} → ${q1.folds}, dẹt ${q0.slivers} → ${q1.slivers}`);
+  }
 }
 
 line("");

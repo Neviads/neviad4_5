@@ -10,6 +10,7 @@
  *  5. trả lưới sạch + số liệu để agent tự đánh giá
  */
 
+import type { Manifold } from "manifold-3d";
 import * as THREE from "three";
 import { mergeVertices, toCreasedNormals } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { V3 } from "../core/math";
@@ -17,6 +18,7 @@ import { AssemblyError } from "../core/solve";
 import { point } from "../parts/_common";
 import { fromManifoldIndexed, toManifold } from "./kernel";
 import { type OpResult, numParam } from "./ops";
+import { geometryStats, qualityLines, repairFolds, untangle } from "./quality";
 
 type Raw = Record<string, unknown>;
 
@@ -171,6 +173,31 @@ export function relax(pos: Float64Array, nbr: number[][], w: Float64Array, facto
   }
 }
 
+/**
+ * Gom lại lưới sau khi dời đỉnh: `refineToLength` chia mịn CẢ hình (kể cả mặt phẳng xa mối nối) nên lưới phình
+ * hàng trăm lần. Giản lược với dung sai rất nhỏ chỉ gộp chỗ phẳng/chưa dời, giữ nguyên cung bo; còn vượt
+ * `maxTri` thì giản lược mạnh như trước. Trả về Manifold mới (đã xoá cái cũ) hoặc chính `m`.
+ */
+export function leanMesh(m: Manifold, detail: number, maxTri: number, info: string[]): Manifold {
+  if (typeof m.simplify !== "function") return m;
+  const before = m.numTri();
+  let out = m;
+  for (const tol of [detail * 0.02, detail * 0.4]) {
+    if (tol > detail * 0.02 && out.numTri() <= maxTri) break;
+    const lean = out.simplify(tol);
+    if (lean.isEmpty()) {
+      lean.delete();
+      break;
+    }
+    if (out !== m) out.delete();
+    out = lean;
+  }
+  if (out === m) return m;
+  m.delete();
+  if (out.numTri() < before) info.push(`gom lưới ${before} → ${out.numTri()} tam giác`);
+  return out;
+}
+
 export const sizeOf = (g: THREE.BufferGeometry): V3 => {
   const c = g.clone();
   c.computeBoundingBox();
@@ -240,7 +267,7 @@ export function weld(p: Raw, label: string, inputs: THREE.BufferGeometry[]): OpR
       const fine = mu.refineToLength(detail);
       if (!fine.isEmpty() && fine.numTri() <= Math.max(maxTri, triUnion * 4)) {
         mU = fine;
-        info.push(`chia mịn ${detail * 1000} mm: ${triUnion} → ${fine.numTri()} tam giác`);
+        info.push(`chia mịn ${(detail * 1000).toFixed(1)} mm: ${triUnion} → ${fine.numTri()} tam giác`);
       } else fine.delete();
     } catch {
       /* chia mịn là tuỳ chọn: hỏng thì làm trên lưới gộp */
@@ -304,6 +331,9 @@ export function weld(p: Raw, label: string, inputs: THREE.BufferGeometry[]): OpR
     relax(pos, nbr, w, 0.5);
     relax(pos, nbr, w, -0.53);
   }
+  // Taubin trên dải chia mịn có thể lật tam giác nhỏ ở mép sắc: kéo chúng về lưới gộp
+  const fixed = untangle(pos, U.tri, U.pos).bad;
+  if (fixed) info.push(`gỡ ${fixed} tam giác hỏng (lật, ép dẹt hoặc gấp mép) bằng làm mượt tại chỗ`);
 
   const smoothed = new THREE.BufferGeometry();
   smoothed.setAttribute("position", new THREE.BufferAttribute(Float32Array.from(pos), 3));
@@ -311,18 +341,12 @@ export function weld(p: Raw, label: string, inputs: THREE.BufferGeometry[]): OpR
 
   let mOut = toManifold(smoothed, `${label} (sau khi hàn)`);
   const volAfter = mOut.volume();
-  let tris = mOut.numTri();
-  if (tris > maxTri && typeof mOut.simplify === "function") {
-    const before = tris;
-    const lean = mOut.simplify(detail * 0.4);
-    if (!lean.isEmpty()) {
-      mOut.delete();
-      mOut = lean;
-      tris = mOut.numTri();
-      info.push(`giản lược ${before} → ${tris} tam giác (giới hạn ${maxTri})`);
-    }
-  }
-  const geometry = toCreasedNormals(fromManifoldIndexed(mOut), (30 * Math.PI) / 180);
+  mOut = leanMesh(mOut, detail, maxTri, info);
+  const tris = mOut.numTri();
+  const raw = fromManifoldIndexed(mOut);
+  const refolded = repairFolds(raw);
+  if (refolded) info.push(`sửa ${refolded} tam giác gấp mép hoặc dẹt sau khi gom lưới`);
+  const geometry = toCreasedNormals(raw, (30 * Math.PI) / 180);
   const status = typeof mOut.status === "function" ? mOut.status() : 0;
   mOut.delete();
 
@@ -345,6 +369,7 @@ export function weld(p: Raw, label: string, inputs: THREE.BufferGeometry[]): OpR
   );
   if (grown > 25) info.push(`cảnh báo: thể tích tăng ${grown.toFixed(0)} % — bán kính quá lớn, hình bị phình`);
   if (tris > maxTri) info.push(`cảnh báo: ${tris} tam giác vẫn vượt giới hạn ${maxTri}`);
+  info.push(...qualityLines(geometryStats(geometry)));
 
   return {
     geometry,

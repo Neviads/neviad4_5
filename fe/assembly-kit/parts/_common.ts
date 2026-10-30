@@ -1,20 +1,14 @@
 /**
- * Trợ giúp chung cho các file định nghĩa bộ phận: đọc tham số, khai báo điểm neo, đặt vật liệu.
+ * Trợ giúp chung cho hình tự dựng (shapes/): khai báo điểm neo, đặt bóng đổ.
  *
- * Quy ước khung của bộ phận: y hướng lên, mét. Vật tròn xoay có trục dọc y (như CylinderGeometry) trừ khi file nói
- * khác. Mặt nằm ngang dùng up = −z và uv = [x, z]; mặt đứng dùng up = +y. Nhờ vậy hai bộ phận chồng lên nhau bằng
+ * Quy ước khung của bộ phận: y hướng lên, mét. Vật tròn xoay có trục dọc y (như CylinderGeometry). Mặt nằm ngang dùng up = −z và uv = [x, z]; mặt đứng dùng up = +y. Nhờ vậy hai bộ phận chồng lên nhau bằng
  * onto/touch giữ nguyên hướng, không tự xoay.
  */
 
 import * as THREE from "three";
 import type { V3 } from "../core/math";
-import type { AnchorSpec, Params } from "../core/types";
+import type { AnchorSpec } from "../core/types";
 import type { MaterialKit } from "../three/materials";
-
-export const num = (p: Params, k: string) => p[k] as number;
-export const vec = (p: Params, k: string) => p[k] as V3;
-export const str = (p: Params, k: string) => p[k] as string;
-export const bool = (p: Params, k: string) => p[k] as boolean;
 
 const HORIZONTAL_UV: [V3, V3] = [[1, 0, 0], [0, 0, 1]];
 
@@ -52,12 +46,4 @@ export function shadowed(o: THREE.Object3D) {
     }
   });
   return o;
-}
-
-/** Thân tròn xoay (trục y) từ profile [bán kính, y], có lỗ nếu bán kính trong > 0. */
-export function ringLathe(outerR: number, innerR: number, h: number, segments = 48) {
-  const pts = innerR > 0
-    ? [[innerR, -h / 2], [outerR, -h / 2], [outerR, h / 2], [innerR, h / 2], [innerR, -h / 2]]
-    : [[0.0001, -h / 2], [outerR, -h / 2], [outerR, h / 2], [0.0001, h / 2]];
-  return new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), segments);
 }

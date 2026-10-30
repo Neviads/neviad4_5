@@ -1,5 +1,5 @@
 /**
- * Thư viện bộ phận của một tài liệu: thư viện chung (parts/) cộng mỗi hình tự dựng thành loại "shape:<id>".
+ * Các loại bộ phận của một tài liệu: mỗi hình tự dựng thành loại "shape:<id>", cộng các cụm đã lưu (PARTS rỗng).
  * Mọi nơi giải hoặc dựng một tài liệu đều lấy registry ở đây thay vì dùng PARTS trực tiếp.
  */
 

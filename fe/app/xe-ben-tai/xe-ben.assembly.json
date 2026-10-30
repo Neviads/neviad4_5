@@ -1,0 +1,8446 @@
+{
+ "id": "xe-tai-ben",
+ "title": "Xe ben 5 tấn — thùng tự đổ, cửa cabin mở",
+ "parts": [
+  {
+   "id": "khung",
+   "type": "shape:khung",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "khung.goc",
+    "b": "ground.top",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "trucTruoc",
+   "type": "shape:trucTruoc",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "trucTruoc.goc",
+    "b": "khung.goc",
+    "shift": [
+     1.1,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "trucSau",
+   "type": "shape:trucSau",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "trucSau.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "binhDau",
+   "type": "shape:binhDau",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "binhDau.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "nhomMo"
+  },
+  {
+   "id": "kinhChan",
+   "type": "shape:kinhChan",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "kinhChan.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "kinhDen"
+  },
+  {
+   "id": "cuaTrai",
+   "type": "shape:cuaTrai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "cuaTrai.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "cuaPhai",
+   "type": "shape:cuaPhai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "cuaPhai.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "luoiTan",
+   "type": "shape:luoiTan",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "luoiTan.goc",
+    "b": "khung.goc",
+    "shift": [
+     1.31,
+     0,
+     -0.12
+    ]
+   }
+  },
+  {
+   "id": "thanhLuoi",
+   "type": "shape:thanhLuoi",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "thanhLuoi.goc",
+    "b": "khung.goc",
+    "shift": [
+     1.29,
+     0,
+     -0.12
+    ]
+   }
+  },
+  {
+   "id": "denVien",
+   "type": "shape:denVien",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denVien.goc",
+    "b": "khung.goc",
+    "shift": [
+     1.31,
+     0,
+     -0.11
+    ]
+   },
+   "material": "chrome"
+  },
+  {
+   "id": "denKinh",
+   "type": "shape:denKinh",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denKinh.goc",
+    "b": "khung.goc",
+    "shift": [
+     1.31,
+     0,
+     -0.11
+    ]
+   },
+   "material": "ceramic"
+  },
+  {
+   "id": "canTruoc",
+   "type": "shape:canTruoc",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "canTruoc.goc",
+    "b": "khung.goc",
+    "shift": [
+     1.36,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "bienSo",
+   "type": "shape:bienSo",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "bienSo.goc",
+    "b": "khung.goc",
+    "shift": [
+     1.36,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "banhTruocT",
+   "type": "banhTai",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhTruocT.axis",
+    "b": "trucTruoc.oTrai"
+   }
+  },
+  {
+   "id": "banhTruocP",
+   "type": "banhTai",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhTruocP.axis",
+    "b": "trucTruoc.oPhai"
+   }
+  },
+  {
+   "id": "banhSauTN",
+   "type": "banhTai",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhSauTN.axis",
+    "b": "trucSau.oTraiNgoai"
+   }
+  },
+  {
+   "id": "banhSauTT",
+   "type": "banhTai",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhSauTT.axis",
+    "b": "trucSau.oTraiTrong"
+   }
+  },
+  {
+   "id": "banhSauPT",
+   "type": "banhTai",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhSauPT.axis",
+    "b": "trucSau.oPhaiTrong"
+   }
+  },
+  {
+   "id": "banhSauPN",
+   "type": "banhTai",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhSauPN.axis",
+    "b": "trucSau.oPhaiNgoai"
+   }
+  },
+  {
+   "id": "vienKinh",
+   "type": "shape:vienKinh",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "vienKinh.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "bac",
+   "type": "shape:bac",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "bac.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "kinhHau",
+   "type": "shape:kinhHau",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "kinhHau.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "gotNuocTrai",
+   "type": "shape:gotNuocMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "gotNuocTrai.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "gotNuocPhai",
+   "type": "shape:gotNuocMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "gotNuocPhai.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "mai",
+   "type": "shape:maiMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "mai.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "denTran1",
+   "type": "shape:denTranMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denTran1.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "denTran2",
+   "type": "shape:denTranMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denTran2.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "denTran3",
+   "type": "shape:denTranMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denTran3.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "denTran4",
+   "type": "shape:denTranMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denTran4.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "denTran5",
+   "type": "shape:denTranMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denTran5.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "kinhTrai",
+   "type": "shape:kinhTrai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "kinhTrai.goc",
+    "b": "cuaTrai.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "kinhDen"
+  },
+  {
+   "id": "kinhPhai",
+   "type": "shape:kinhPhai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "kinhPhai.goc",
+    "b": "cuaPhai.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "kinhDen"
+  },
+  {
+   "id": "khungPhu",
+   "type": "shape:khungPhu",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "khungPhu.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "banLe",
+   "type": "shape:banLe",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "banLe.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "banLeTruc",
+   "type": "shape:banLeTruc",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "banLeTruc.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "chrome"
+  },
+  {
+   "id": "thungBen",
+   "type": "shape:sanThung",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "thungBen.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "thanhBen",
+   "type": "shape:thanhBen",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "thanhBen.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "canhBen",
+   "type": "shape:canh",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "canhBen.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "gianBen",
+   "type": "shape:gian",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "gianBen.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "vachBen",
+   "type": "shape:vachTruocBen",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "vachBen.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "vachCanhBen",
+   "type": "shape:vachCanh",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "vachCanhBen.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "cuaHau",
+   "type": "shape:cuaHau",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "cuaHau.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "cuaHauGian",
+   "type": "shape:cuaHauGian",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "cuaHauGian.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonVang"
+  },
+  {
+   "id": "giaBat",
+   "type": "shape:giaBat",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "giaBat.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "vatLieu",
+   "type": "shape:vatLieu",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "vatLieu.goc",
+    "b": "thungBen.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "catCuoi"
+  },
+  {
+   "id": "xiLanh",
+   "type": "shape:xiLanh",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "xiLanh.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "canPiston",
+   "type": "shape:canPiston",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "canPiston.goc",
+    "b": "xiLanh.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "chrome"
+  },
+  {
+   "id": "denCanhBaoDe",
+   "type": "shape:denCanhBaoDe",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denCanhBaoDe.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "denCanhBao",
+   "type": "shape:denCanhBao",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denCanhBao.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "denCam"
+  },
+  {
+   "id": "chanBun",
+   "type": "shape:chanBun",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "chanBun.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "caoSuDen"
+  },
+  {
+   "id": "canSau",
+   "type": "shape:canSau",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "canSau.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "denHau",
+   "type": "shape:denHau",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denHau.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "denDo"
+  },
+  {
+   "id": "tayCuaT",
+   "type": "shape:tayCuaMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "tayCuaT.goc",
+    "b": "cuaTrai.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "chrome"
+  },
+  {
+   "id": "tayCuaP",
+   "type": "shape:tayCuaPhai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "tayCuaP.goc",
+    "b": "cuaPhai.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "chrome"
+  },
+  {
+   "id": "vienCua",
+   "type": "shape:vienCua",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "vienCua.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "paintedMetal"
+  },
+  {
+   "id": "guongCanhT",
+   "type": "shape:guongCanhMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "guongCanhT.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "caoSuDen"
+  },
+  {
+   "id": "guongCanhP",
+   "type": "shape:guongCanhPhai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "guongCanhP.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "caoSuDen"
+  },
+  {
+   "id": "guongMatT",
+   "type": "shape:guongMatMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "guongMatT.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "caoSuDen"
+  },
+  {
+   "id": "guongMatP",
+   "type": "shape:guongMatPhai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "guongMatP.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "caoSuDen"
+  },
+  {
+   "id": "guongKinhT",
+   "type": "shape:guongKinhMot",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "guongKinhT.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "chrome"
+  },
+  {
+   "id": "guongKinhP",
+   "type": "shape:guongKinhPhai",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "guongKinhP.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "chrome"
+  },
+  {
+   "id": "thanVo",
+   "type": "shape:thanVo",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "thanVo.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonTrang"
+  },
+  {
+   "id": "sanCabin",
+   "type": "shape:sanCabin",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "sanCabin.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "noiThatXam"
+  },
+  {
+   "id": "tranCabin",
+   "type": "shape:tranCabin",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "tranCabin.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "tranXam"
+  },
+  {
+   "id": "tamSau",
+   "type": "shape:tamSau",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "tamSau.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "noiThatXam"
+  },
+  {
+   "id": "tamHong",
+   "type": "shape:tamHong",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "tamHong.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "noiThatXam"
+  },
+  {
+   "id": "tapLo",
+   "type": "shape:tapLo",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "tapLo.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "noiThatXam"
+  },
+  {
+   "id": "tapLoMat",
+   "type": "shape:tapLoMat",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "tapLoMat.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "nhuaDen"
+  },
+  {
+   "id": "voLang",
+   "type": "shape:voLang",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "voLang.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "nhuaDen"
+  },
+  {
+   "id": "voLangHub",
+   "type": "shape:voLangHub",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "voLangHub.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "nhuaDen"
+  },
+  {
+   "id": "ghe",
+   "type": "shape:ghe",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "ghe.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "gheVai"
+  },
+  {
+   "id": "denCabin",
+   "type": "shape:denCabin",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "denCabin.goc",
+    "b": "thanVo.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "denCabin"
+  },
+  {
+   "id": "mui",
+   "type": "shape:muiMem",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "mui.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonTrang"
+  },
+  {
+   "id": "gic",
+   "type": "shape:gic",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "gic.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "sonTrang"
+  },
+  {
+   "id": "khungMui",
+   "type": "shape:khungMui",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "khungMui.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "khungMuiNgang",
+   "type": "shape:khungMuiNgang",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "khungMuiNgang.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "satDam"
+  },
+  {
+   "id": "kinhChanTrong",
+   "type": "shape:kinhChanTrong",
+   "params": {},
+   "place": {
+    "kind": "fixed",
+    "a": "kinhChanTrong.goc",
+    "b": "khung.goc",
+    "shift": [
+     0,
+     0,
+     0
+    ]
+   },
+   "material": "kinhDen"
+  }
+ ],
+ "joints": [
+  {
+   "id": "moCuaTrai",
+   "kind": "revolute",
+   "axis": "cuaTrai.banLe",
+   "moves": [
+    "cuaTrai"
+   ],
+   "limits": [
+    0,
+    65
+   ]
+  },
+  {
+   "id": "moCuaPhai",
+   "kind": "revolute",
+   "axis": "cuaPhai.banLe",
+   "moves": [
+    "cuaPhai"
+   ],
+   "limits": [
+    -65,
+    0
+   ]
+  },
+  {
+   "id": "dayPiston",
+   "kind": "prismatic",
+   "axis": "xiLanh.truot",
+   "moves": [
+    "canPiston"
+   ],
+   "limits": [
+    0,
+    0.16
+   ]
+  },
+  {
+   "id": "nangThung",
+   "kind": "revolute",
+   "axis": "thungBen.banLe",
+   "moves": [
+    "thungBen"
+   ],
+   "limits": [
+    0,
+    50
+   ],
+   "couple": {
+    "joint": "dayPiston",
+    "ratio": 312.5
+   }
+  },
+  {
+   "id": "xoayXiLanh",
+   "kind": "revolute",
+   "axis": "xiLanh.pivot",
+   "moves": [
+    "xiLanh"
+   ],
+   "limits": [
+    -15,
+    2
+   ],
+   "couple": {
+    "joint": "dayPiston",
+    "ratio": -73.75
+   }
+  },
+  {
+   "id": "moCuaHau",
+   "kind": "revolute",
+   "axis": "cuaHau.banLe",
+   "moves": [
+    "cuaHau",
+    "cuaHauGian"
+   ],
+   "limits": [
+    -95,
+    0
+   ],
+   "couple": {
+    "joint": "dayPiston",
+    "ratio": -593.75
+   }
+  },
+  {
+   "id": "truotVatLieu",
+   "kind": "prismatic",
+   "axis": "vatLieu.truot",
+   "moves": [
+    "vatLieu"
+   ],
+   "limits": [
+    0,
+    0.9
+   ],
+   "couple": {
+    "joint": "dayPiston",
+    "ratio": 5.625
+   }
+  }
+ ],
+ "routes": [],
+ "materials": {
+  "sonTrang": {
+   "preset": "carPaint",
+   "overrides": {
+    "color": "#f2f3ee",
+    "roughness": 0.34,
+    "metalness": 0.12,
+    "clearcoat": 1,
+    "clearcoatRoughness": 0.05,
+    "flakes": 0.05
+   }
+  },
+  "sonXanhThung": {
+   "preset": "paintedMetal",
+   "overrides": {
+    "color": "#26496b",
+    "roughness": 0.5,
+    "metalness": 0.55,
+    "clearcoat": 0.3,
+    "clearcoatRoughness": 0.3
+   }
+  },
+  "caoSuDen": {
+   "preset": "plasticTextured",
+   "overrides": {
+    "color": "#141518",
+    "roughness": 0.85
+   },
+   "textures": {
+    "normal": {
+     "kind": "noise",
+     "scale": 40,
+     "strength": 0.35
+    }
+   }
+  },
+  "kinhToi": {
+   "preset": "glassTinted",
+   "overrides": {
+    "attenuationColor": "#16242c",
+    "attenuationDistance": 0.03,
+    "thickness": 0.004
+   }
+  },
+  "voCaoSu": {
+   "preset": "tireRubber",
+   "overrides": {
+    "roughness": 0.9,
+    "color": "#16171a"
+   },
+   "textures": {
+    "normal": {
+     "kind": "tread",
+     "scale": 24,
+     "strength": 0.55
+    },
+    "roughness": {
+     "kind": "noise",
+     "scale": 30,
+     "strength": 0.3
+    }
+   }
+  },
+  "vanhBac": {
+   "preset": "paintedMetal",
+   "overrides": {
+    "color": "#c3c7cb",
+    "roughness": 0.38,
+    "metalness": 0.85,
+    "clearcoat": 0.4,
+    "clearcoatRoughness": 0.2
+   }
+  },
+  "kinhDen": {
+   "preset": "paintedMetal",
+   "overrides": {
+    "color": "#0d1418",
+    "roughness": 0.12,
+    "metalness": 0.35,
+    "clearcoat": 1,
+    "clearcoatRoughness": 0.04
+   }
+  },
+  "nhomMo": {
+   "preset": "paintedMetal",
+   "overrides": {
+    "color": "#a9aeb3",
+    "roughness": 0.52,
+    "metalness": 0.75
+   }
+  },
+  "denCam": {
+   "preset": "emissiveLight",
+   "overrides": {
+    "color": "#ffc04d",
+    "emissive": "#ff9010",
+    "emissiveIntensity": 2.2,
+    "roughness": 0.2
+   }
+  },
+  "sonVang": {
+   "preset": "carPaint",
+   "overrides": {
+    "color": "#e5a416",
+    "roughness": 0.42,
+    "metalness": 0.2,
+    "clearcoat": 0.6,
+    "clearcoatRoughness": 0.15,
+    "flakes": 0.15
+   }
+  },
+  "catCuoi": {
+   "preset": "paintedMetal",
+   "overrides": {
+    "color": "#b39a6a",
+    "roughness": 0.97,
+    "metalness": 0.02
+   },
+   "textures": {
+    "normal": {
+     "kind": "noise",
+     "scale": 55,
+     "seed": 9,
+     "strength": 0.85
+    },
+    "roughness": {
+     "kind": "noise",
+     "scale": 40,
+     "seed": 4,
+     "strength": 0.5
+    }
+   }
+  },
+  "satDam": {
+   "preset": "paintedMetal",
+   "overrides": {
+    "color": "#33363b",
+    "roughness": 0.55,
+    "metalness": 0.75
+   }
+  },
+  "denDo": {
+   "preset": "emissiveLight",
+   "overrides": {
+    "color": "#e02418",
+    "emissive": "#b81408",
+    "emissiveIntensity": 1.5,
+    "roughness": 0.25
+   }
+  },
+  "noiThatXam": {
+   "preset": "emissiveLight",
+   "overrides": {
+    "color": "#5f646b",
+    "emissive": "#565b63",
+    "emissiveIntensity": 0.8,
+    "roughness": 0.9
+   }
+  },
+  "gheVai": {
+   "preset": "emissiveLight",
+   "overrides": {
+    "color": "#8a7458",
+    "emissive": "#6b5a44",
+    "emissiveIntensity": 0.75,
+    "roughness": 0.95
+   }
+  },
+  "nhuaDen": {
+   "preset": "emissiveLight",
+   "overrides": {
+    "color": "#35393e",
+    "emissive": "#2b2f34",
+    "emissiveIntensity": 0.7,
+    "roughness": 0.7
+   }
+  },
+  "tranXam": {
+   "preset": "emissiveLight",
+   "overrides": {
+    "color": "#c3c8ce",
+    "emissive": "#a8aeb6",
+    "emissiveIntensity": 0.8,
+    "roughness": 0.94
+   }
+  },
+  "denCabin": {
+   "preset": "emissiveLight",
+   "overrides": {
+    "color": "#fff2d0",
+    "emissive": "#ffe9b8",
+    "emissiveIntensity": 2.2
+   }
+  }
+ },
+ "shapes": [
+  {
+   "id": "thanhDoc",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.75,
+       0.54
+      ],
+      [
+       2.35,
+       0.54
+      ],
+      [
+       2.35,
+       0.74
+      ],
+      [
+       -2.75,
+       0.74
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "depth": 0.08,
+    "edgeRadius": 0.008,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.36
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "thanhDocDoi",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "thanhDoc"
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "ngangMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.4,
+       -0.07
+      ],
+      [
+       0.4,
+       -0.07
+      ],
+      [
+       0.4,
+       0.07
+      ],
+      [
+       -0.4,
+       0.07
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "depth": 0.1,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    -2.55,
+    0.6,
+    0
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "ngang",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 6,
+    "step": [
+     0.9,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "ngangMot"
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "khung",
+   "op": "boolean",
+   "params": {
+    "op": "union"
+   },
+   "inputs": [
+    "thanhDocDoi",
+    "ngang"
+   ],
+   "material": "paintedMetal",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "trucTruoc",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.72,
+       -0.055
+      ],
+      [
+       0.72,
+       -0.055
+      ],
+      [
+       0.72,
+       0.055
+      ],
+      [
+       -0.72,
+       0.055
+      ]
+     ],
+     "round": [
+      0.024,
+      0.024,
+      0.024,
+      0.024
+     ]
+    },
+    "depth": 0.13,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    1.95,
+    0.405,
+    0
+   ],
+   "material": "paintedMetal",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "oTrai": {
+     "kind": "axis",
+     "origin": [
+      1.95,
+      0.405,
+      0.62
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "điểm neo oTrai (agent đặt)"
+    },
+    "oPhai": {
+     "kind": "axis",
+     "origin": [
+      1.95,
+      0.405,
+      -0.62
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo oPhai (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "cauSau",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.72,
+       -0.055
+      ],
+      [
+       0.72,
+       -0.055
+      ],
+      [
+       0.72,
+       0.055
+      ],
+      [
+       -0.72,
+       0.055
+      ]
+     ],
+     "round": [
+      0.024,
+      0.024,
+      0.024,
+      0.024
+     ]
+    },
+    "depth": 0.14,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    -1.45,
+    0.405,
+    0
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "cauSauBi",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.15
+      ],
+      [
+       0.08,
+       -0.145
+      ],
+      [
+       0.14,
+       -0.11
+      ],
+      [
+       0.17,
+       -0.05
+      ],
+      [
+       0.17,
+       0.05
+      ],
+      [
+       0.14,
+       0.11
+      ],
+      [
+       0.08,
+       0.145
+      ],
+      [
+       0,
+       0.15
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0
+     ]
+    },
+    "segments": 48
+   },
+   "offset": [
+    -1.45,
+    0.405,
+    0
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "trucSau",
+   "op": "boolean",
+   "params": {
+    "op": "union"
+   },
+   "inputs": [
+    "cauSau",
+    "cauSauBi"
+   ],
+   "material": "paintedMetal",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "oTraiNgoai": {
+     "kind": "axis",
+     "origin": [
+      -1.45,
+      0.405,
+      0.66
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "điểm neo oTraiNgoai (agent đặt)"
+    },
+    "oTraiTrong": {
+     "kind": "axis",
+     "origin": [
+      -1.45,
+      0.405,
+      0.42
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "điểm neo oTraiTrong (agent đặt)"
+    },
+    "oPhaiTrong": {
+     "kind": "axis",
+     "origin": [
+      -1.45,
+      0.405,
+      -0.42
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo oPhaiTrong (agent đặt)"
+    },
+    "oPhaiNgoai": {
+     "kind": "axis",
+     "origin": [
+      -1.45,
+      0.405,
+      -0.66
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo oPhaiNgoai (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "binhDau",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.13,
+       0
+      ],
+      [
+       0.155,
+       0.012
+      ],
+      [
+       0.165,
+       0.05
+      ],
+      [
+       0.165,
+       0.82
+      ],
+      [
+       0.155,
+       0.858
+      ],
+      [
+       0.13,
+       0.87
+      ],
+      [
+       0,
+       0.87
+      ]
+     ],
+     "round": [
+      0,
+      0.01,
+      0.01,
+      0.01,
+      0.01,
+      0.01,
+      0.01,
+      0
+     ]
+    },
+    "segments": 48
+   },
+   "offset": [
+    -0.3,
+    0.62,
+    0.62
+   ],
+   "rotate": [
+    0,
+    0,
+    -90
+   ],
+   "material": "brushedAluminium",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "thanDem",
+   "op": "loft",
+   "params": {
+    "sections": [
+     {
+      "x": 0.85,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.81,
+         0.66
+        ],
+        [
+         0.8550000000000001,
+         0.69
+        ],
+        [
+         0.8700000000000001,
+         0.74
+        ],
+        [
+         0.8700000000000001,
+         1.86
+        ],
+        [
+         0.8450000000000001,
+         2
+        ],
+        [
+         0.6,
+         2.0900000000000003
+        ],
+        [
+         0.3,
+         2.1350000000000002
+        ],
+        [
+         0,
+         2.14
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0.03,
+        0
+       ]
+      }
+     },
+     {
+      "x": 1.05,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.81,
+         0.66
+        ],
+        [
+         0.8550000000000001,
+         0.69
+        ],
+        [
+         0.8700000000000001,
+         0.74
+        ],
+        [
+         0.8700000000000001,
+         1.86
+        ],
+        [
+         0.8450000000000001,
+         2
+        ],
+        [
+         0.6,
+         2.1
+        ],
+        [
+         0.3,
+         2.145
+        ],
+        [
+         0,
+         2.15
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0.03,
+        0
+       ]
+      }
+     },
+     {
+      "x": 1.6,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.81,
+         0.66
+        ],
+        [
+         0.8550000000000001,
+         0.69
+        ],
+        [
+         0.8700000000000001,
+         0.74
+        ],
+        [
+         0.8700000000000001,
+         1.86
+        ],
+        [
+         0.8450000000000001,
+         2
+        ],
+        [
+         0.6,
+         2.1
+        ],
+        [
+         0.3,
+         2.145
+        ],
+        [
+         0,
+         2.15
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0.03,
+        0
+       ]
+      }
+     },
+     {
+      "x": 2.1,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.795,
+         0.66
+        ],
+        [
+         0.8400000000000001,
+         0.69
+        ],
+        [
+         0.855,
+         0.74
+        ],
+        [
+         0.855,
+         1.86
+        ],
+        [
+         0.8300000000000001,
+         2
+        ],
+        [
+         0.59,
+         2.0650000000000004
+        ],
+        [
+         0.3,
+         2.1100000000000003
+        ],
+        [
+         0,
+         2.115
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0.03,
+        0
+       ]
+      }
+     },
+     {
+      "x": 2.35,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.76,
+         0.66
+        ],
+        [
+         0.805,
+         0.69
+        ],
+        [
+         0.8200000000000001,
+         0.74
+        ],
+        [
+         0.8200000000000001,
+         1.86
+        ],
+        [
+         0.795,
+         2
+        ],
+        [
+         0.56,
+         2.0050000000000003
+        ],
+        [
+         0.3,
+         2.0500000000000003
+        ],
+        [
+         0,
+         2.055
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0.03,
+        0
+       ]
+      }
+     },
+     {
+      "x": 2.45,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.73,
+         0.66
+        ],
+        [
+         0.775,
+         0.69
+        ],
+        [
+         0.79,
+         0.74
+        ],
+        [
+         0.79,
+         1.86
+        ],
+        [
+         0.765,
+         2
+        ],
+        [
+         0.54,
+         1.9549999999999998
+        ],
+        [
+         0.3,
+         2
+        ],
+        [
+         0,
+         2.005
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0.03,
+        0
+       ]
+      }
+     }
+    ],
+    "symmetric": true,
+    "points": 72,
+    "samples": 8,
+    "caps": "flat"
+   },
+   "material": "sonTrang"
+  },
+  {
+   "id": "hocMot",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.44,
+       0
+      ],
+      [
+       0.46,
+       0.02
+      ],
+      [
+       0.46,
+       0.36
+      ],
+      [
+       0.44,
+       0.38
+      ],
+      [
+       0,
+       0.38
+      ]
+     ]
+    },
+    "segments": 64
+   },
+   "offset": [
+    1.95,
+    0.405,
+    0.56
+   ]
+  },
+  {
+   "id": "hocHai",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "hocMot"
+   ]
+  },
+  {
+   "id": "hoKinhChan",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.7,
+       1.36
+      ],
+      [
+       -0.66,
+       1.84
+      ],
+      [
+       0.66,
+       1.84
+      ],
+      [
+       0.7,
+       1.36
+      ]
+     ],
+     "round": [
+      0.05,
+      0.05,
+      0.05,
+      0.05
+     ]
+    },
+    "depth": 0.06,
+    "plane": "zy"
+   },
+   "offset": [
+    2.45,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "hoKinhBenMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.12,
+       1.4
+      ],
+      [
+       2.22,
+       1.4
+      ],
+      [
+       2.22,
+       1.86
+      ],
+      [
+       1.12,
+       1.86
+      ]
+     ],
+     "round": [
+      0.05,
+      0.05,
+      0.05,
+      0.05
+     ]
+    },
+    "depth": 0.07,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.87
+   ]
+  },
+  {
+   "id": "hoKinhBen",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "hoKinhBenMot"
+   ]
+  },
+  {
+   "id": "thanCat",
+   "op": "boolean",
+   "params": {
+    "op": "subtract"
+   },
+   "inputs": [
+    "thanDem",
+    "hocHai",
+    "hoKinhChan",
+    "hoKinhBen"
+   ],
+   "material": "sonTrang"
+  },
+  {
+   "id": "thanMem",
+   "op": "roundEdges",
+   "params": {
+    "radius": 0.014,
+    "angle": 28
+   },
+   "inputs": [
+    "thanCat"
+   ],
+   "material": "sonTrang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "kinhChan",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.675,
+       1.385
+      ],
+      [
+       -0.635,
+       1.815
+      ],
+      [
+       0.635,
+       1.815
+      ],
+      [
+       0.675,
+       1.385
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "plane": "zy",
+    "range": [
+     2.4,
+     2.5
+    ],
+    "thickness": 0.005,
+    "lift": 0.002
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "kinhToi",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "kinhTrai",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.15,
+       1.43
+      ],
+      [
+       2.19,
+       1.43
+      ],
+      [
+       2.19,
+       1.83
+      ],
+      [
+       1.15,
+       1.83
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "plane": "xy",
+    "range": [
+     0.81,
+     0.86
+    ],
+    "thickness": 0.004,
+    "lift": 0.009
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "kinhDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "kinhPhai",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.15,
+       1.43
+      ],
+      [
+       2.19,
+       1.43
+      ],
+      [
+       2.19,
+       1.83
+      ],
+      [
+       1.15,
+       1.83
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "plane": "xy",
+    "range": [
+     -0.86,
+     -0.81
+    ],
+    "thickness": 0.004,
+    "lift": 0.009
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "kinhDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "luoiTan",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.6,
+       0.82
+      ],
+      [
+       0.6,
+       0.82
+      ],
+      [
+       0.6,
+       1.12
+      ],
+      [
+       -0.6,
+       1.12
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "depth": 0.06,
+    "edgeRadius": 0.01,
+    "plane": "zy"
+   },
+   "offset": [
+    2.45,
+    0,
+    0
+   ],
+   "material": "caoSuDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "thanhLuoiMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.565,
+       0.858
+      ],
+      [
+       0.565,
+       0.858
+      ],
+      [
+       0.565,
+       0.892
+      ],
+      [
+       -0.565,
+       0.892
+      ]
+     ],
+     "round": [
+      0.01,
+      0.01,
+      0.01,
+      0.01
+     ]
+    },
+    "depth": 0.03,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    2.486,
+    0,
+    0
+   ],
+   "material": "chrome"
+  },
+  {
+   "id": "thanhLuoi",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 4,
+    "step": [
+     0,
+     0.068,
+     0
+    ]
+   },
+   "inputs": [
+    "thanhLuoiMot"
+   ],
+   "material": "chrome",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denVienMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.545,
+       1.125
+      ],
+      [
+       0.775,
+       1.125
+      ],
+      [
+       0.775,
+       1.325
+      ],
+      [
+       0.545,
+       1.325
+      ]
+     ],
+     "round": [
+      0.035,
+      0.035,
+      0.035,
+      0.035
+     ]
+    },
+    "depth": 0.06,
+    "edgeRadius": 0.012,
+    "plane": "zy"
+   },
+   "offset": [
+    2.44,
+    0,
+    0
+   ],
+   "material": "chrome"
+  },
+  {
+   "id": "denKinhMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.565,
+       1.145
+      ],
+      [
+       0.755,
+       1.145
+      ],
+      [
+       0.755,
+       1.305
+      ],
+      [
+       0.565,
+       1.305
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "depth": 0.024,
+    "edgeRadius": 0.01,
+    "plane": "zy"
+   },
+   "offset": [
+    2.472,
+    0,
+    0
+   ],
+   "material": "ceramic"
+  },
+  {
+   "id": "guongCanhMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.84,
+       1.54
+      ],
+      [
+       1.07,
+       1.54
+      ],
+      [
+       1.07,
+       1.59
+      ],
+      [
+       0.84,
+       1.59
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "depth": 0.045,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    2.36,
+    0,
+    0
+   ],
+   "material": "caoSuDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongMatMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.96,
+       1.28
+      ],
+      [
+       1.12,
+       1.28
+      ],
+      [
+       1.12,
+       1.76
+      ],
+      [
+       0.96,
+       1.76
+      ]
+     ],
+     "round": [
+      0.035,
+      0.035,
+      0.035,
+      0.035
+     ]
+    },
+    "depth": 0.05,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    2.36,
+    0,
+    0
+   ],
+   "material": "caoSuDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongKinhMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.975,
+       1.295
+      ],
+      [
+       1.105,
+       1.295
+      ],
+      [
+       1.105,
+       1.745
+      ],
+      [
+       0.975,
+       1.745
+      ]
+     ],
+     "round": [
+      0.028,
+      0.028,
+      0.028,
+      0.028
+     ]
+    },
+    "depth": 0.012,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    2.331,
+    0,
+    0
+   ],
+   "material": "chrome",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "canTruoc",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.86,
+       0.4
+      ],
+      [
+       0.86,
+       0.4
+      ],
+      [
+       0.86,
+       0.66
+      ],
+      [
+       -0.86,
+       0.66
+      ]
+     ],
+     "round": [
+      0.06,
+      0.06,
+      0.06,
+      0.06
+     ]
+    },
+    "depth": 0.14,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    2.5,
+    0,
+    0
+   ],
+   "material": "paintedMetal",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "bienSo",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.24,
+       0.455
+      ],
+      [
+       0.24,
+       0.455
+      ],
+      [
+       0.24,
+       0.585
+      ],
+      [
+       -0.24,
+       0.585
+      ]
+     ],
+     "round": [
+      0.012,
+      0.012,
+      0.012,
+      0.012
+     ]
+    },
+    "depth": 0.014,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    2.578,
+    0,
+    0
+   ],
+   "material": "whitePaint",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tayCuaMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.24,
+       1.26
+      ],
+      [
+       1.44,
+       1.26
+      ],
+      [
+       1.44,
+       1.305
+      ],
+      [
+       1.24,
+       1.305
+      ]
+     ],
+     "round": [
+      0.015,
+      0.015,
+      0.015,
+      0.015
+     ]
+    },
+    "depth": 0.03,
+    "edgeRadius": 0.006,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.875
+   ],
+   "material": "chrome",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongCanh",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "guongCanhMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongMat",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "guongMatMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongKinh",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "guongKinhMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denVien",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "denVienMot"
+   ],
+   "material": "chrome",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denKinh",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "denKinhMot"
+   ],
+   "material": "ceramic",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tayCua",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "tayCuaMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "cuaTrai",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.1,
+       0.89
+      ],
+      [
+       2.24,
+       0.89
+      ],
+      [
+       2.24,
+       1.88
+      ],
+      [
+       1.1,
+       1.88
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "plane": "xy",
+    "range": [
+     0.8,
+     1
+    ],
+    "thickness": 0.012,
+    "lift": 0.006
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "sonTrang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "banLe": {
+     "kind": "axis",
+     "origin": [
+      2.24,
+      1.2,
+      0.862
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "điểm neo banLe (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "cuaPhai",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.1,
+       0.89
+      ],
+      [
+       2.24,
+       0.89
+      ],
+      [
+       2.24,
+       1.88
+      ],
+      [
+       1.1,
+       1.88
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "plane": "xy",
+    "range": [
+     -1,
+     -0.8
+    ],
+    "thickness": 0.012,
+    "lift": 0.006
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "sonTrang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "banLe": {
+     "kind": "axis",
+     "origin": [
+      2.24,
+      1.2,
+      -0.862
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "điểm neo banLe (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "vienKinh",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.68,
+       1.322
+      ],
+      [
+       0.68,
+       1.322
+      ],
+      [
+       0.68,
+       1.352
+      ],
+      [
+       -0.68,
+       1.352
+      ]
+     ],
+     "round": [
+      0.012,
+      0.012,
+      0.012,
+      0.012
+     ]
+    },
+    "depth": 0.05,
+    "edgeRadius": 0.004,
+    "plane": "zy"
+   },
+   "offset": [
+    2.455,
+    0,
+    0
+   ],
+   "material": "chrome",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "bacMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.95,
+       0.4
+      ],
+      [
+       1.45,
+       0.4
+      ],
+      [
+       1.45,
+       0.448
+      ],
+      [
+       1.04,
+       0.448
+      ],
+      [
+       1.04,
+       0.665
+      ],
+      [
+       0.95,
+       0.665
+      ]
+     ],
+     "round": [
+      0.012,
+      0.012,
+      0.008,
+      0.008,
+      0.008,
+      0.012
+     ]
+    },
+    "depth": 0.26,
+    "edgeRadius": 0.008,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.75
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "bac",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "bacMot"
+   ],
+   "material": "paintedMetal",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "kinhHau",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.56,
+       1.46
+      ],
+      [
+       -0.56,
+       1.86
+      ],
+      [
+       0.56,
+       1.86
+      ],
+      [
+       0.56,
+       1.46
+      ]
+     ],
+     "round": [
+      0.05,
+      0.05,
+      0.05,
+      0.05
+     ]
+    },
+    "plane": "zy",
+    "range": [
+     -1,
+     1
+    ],
+    "thickness": 0.005,
+    "lift": 0.002
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "kinhDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "gotNuocMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.58,
+       1.402
+      ],
+      [
+       -0.24,
+       1.402
+      ],
+      [
+       -0.24,
+       1.42
+      ],
+      [
+       -0.58,
+       1.42
+      ]
+     ],
+     "round": [
+      0.006,
+      0.006,
+      0.006,
+      0.006
+     ]
+    },
+    "depth": 0.022,
+    "edgeRadius": 0.003,
+    "plane": "zy"
+   },
+   "offset": [
+    2.452,
+    0,
+    0
+   ],
+   "material": "plasticTextured",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "maiMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.72,
+       1.828
+      ],
+      [
+       0.72,
+       1.828
+      ],
+      [
+       0.72,
+       1.868
+      ],
+      [
+       -0.72,
+       1.868
+      ]
+     ],
+     "round": [
+      0.014,
+      0.014,
+      0.014,
+      0.014
+     ]
+    },
+    "depth": 0.045,
+    "edgeRadius": 0.008,
+    "plane": "zy"
+   },
+   "offset": [
+    2.448,
+    0,
+    0
+   ],
+   "material": "sonTrang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denTranMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.0275,
+       1.831
+      ],
+      [
+       0.0275,
+       1.831
+      ],
+      [
+       0.0275,
+       1.863
+      ],
+      [
+       -0.0275,
+       1.863
+      ]
+     ],
+     "round": [
+      0.007,
+      0.007,
+      0.007,
+      0.007
+     ]
+    },
+    "depth": 0.02,
+    "edgeRadius": 0.005,
+    "plane": "zy"
+   },
+   "offset": [
+    2.487,
+    0,
+    0
+   ],
+   "material": "denCam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "sanThung",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.95,
+       -1
+      ],
+      [
+       0.7,
+       -1
+      ],
+      [
+       0.7,
+       1
+      ],
+      [
+       -2.95,
+       1
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "depth": 0.07,
+    "edgeRadius": 0.008,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    0.905,
+    0
+   ],
+   "material": "sonVang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "banLe": {
+     "kind": "axis",
+     "origin": [
+      -2.87,
+      0.845,
+      0
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "điểm neo banLe (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "thanhBenMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.93,
+       0.94
+      ],
+      [
+       0.68,
+       0.94
+      ],
+      [
+       0.68,
+       1.5
+      ],
+      [
+       -2.93,
+       1.5
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "depth": 0.05,
+    "edgeRadius": 0.008,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.975
+   ],
+   "material": "sonVang"
+  },
+  {
+   "id": "thanhBen",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "thanhBenMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "chu": {
+     "kind": "face",
+     "origin": [
+      -1.1,
+      1.2525,
+      1.06
+     ],
+     "normal": [
+      0,
+      0,
+      1
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "điểm neo chu (agent đặt)"
+    },
+    "chuP": {
+     "kind": "face",
+     "origin": [
+      -1.1,
+      1.2525,
+      -1.06
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "điểm neo chuP (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "canhMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.93,
+       1.485
+      ],
+      [
+       1.012,
+       1.485
+      ],
+      [
+       1.012,
+       1.552
+      ],
+      [
+       0.93,
+       1.552
+      ]
+     ],
+     "round": [
+      0.025,
+      0.025,
+      0.025,
+      0.025
+     ]
+    },
+    "depth": 3.62,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    -1.125,
+    0,
+    0
+   ],
+   "material": "sonVang"
+  },
+  {
+   "id": "canh",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "canhMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "gianMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.9,
+       1.1
+      ],
+      [
+       0.65,
+       1.1
+      ],
+      [
+       0.65,
+       1.145
+      ],
+      [
+       -2.9,
+       1.145
+      ]
+     ],
+     "round": [
+      0.015,
+      0.015,
+      0.015,
+      0.015
+     ]
+    },
+    "depth": 0.03,
+    "edgeRadius": 0.005,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    1
+   ],
+   "material": "sonVang"
+  },
+  {
+   "id": "gianHang",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     0,
+     0.26,
+     0
+    ]
+   },
+   "inputs": [
+    "gianMot"
+   ]
+  },
+  {
+   "id": "gian",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "gianHang"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "vachTruocBen",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.975,
+       0.94
+      ],
+      [
+       0.975,
+       0.94
+      ],
+      [
+       0.975,
+       1.88
+      ],
+      [
+       -0.975,
+       1.88
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "depth": 0.06,
+    "edgeRadius": 0.008,
+    "plane": "zy"
+   },
+   "offset": [
+    0.68,
+    0,
+    0
+   ],
+   "material": "sonVang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "vachCanh",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.99,
+       1.86
+      ],
+      [
+       0.99,
+       1.86
+      ],
+      [
+       0.99,
+       1.92
+      ],
+      [
+       -0.99,
+       1.92
+      ]
+     ],
+     "round": [
+      0.025,
+      0.025,
+      0.025,
+      0.025
+     ]
+    },
+    "depth": 0.09,
+    "edgeRadius": 0.008,
+    "plane": "zy"
+   },
+   "offset": [
+    0.68,
+    0,
+    0
+   ],
+   "material": "sonVang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "cuaHau",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.95,
+       0.94
+      ],
+      [
+       0.95,
+       0.94
+      ],
+      [
+       0.95,
+       1.5
+      ],
+      [
+       -0.95,
+       1.5
+      ]
+     ],
+     "round": [
+      0.015,
+      0.015,
+      0.015,
+      0.015
+     ]
+    },
+    "depth": 0.05,
+    "edgeRadius": 0.008,
+    "plane": "zy"
+   },
+   "offset": [
+    -2.955,
+    0,
+    0
+   ],
+   "material": "sonVang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "banLe": {
+     "kind": "axis",
+     "origin": [
+      -2.955,
+      1.5,
+      0
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "điểm neo banLe (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "cuaHauGianMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.93,
+       1.04
+      ],
+      [
+       0.93,
+       1.04
+      ],
+      [
+       0.93,
+       1.085
+      ],
+      [
+       -0.93,
+       1.085
+      ]
+     ],
+     "round": [
+      0.012,
+      0.012,
+      0.012,
+      0.012
+     ]
+    },
+    "depth": 0.028,
+    "edgeRadius": 0.005,
+    "plane": "zy"
+   },
+   "offset": [
+    -2.99,
+    0,
+    0
+   ],
+   "material": "sonVang"
+  },
+  {
+   "id": "cuaHauGian",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     0,
+     0.25,
+     0
+    ]
+   },
+   "inputs": [
+    "cuaHauGianMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "khungPhuDoc",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.95,
+       0.735
+      ],
+      [
+       0.8,
+       0.735
+      ],
+      [
+       0.8,
+       0.855
+      ],
+      [
+       -2.95,
+       0.855
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "depth": 0.09,
+    "edgeRadius": 0.006,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.26
+   ],
+   "material": "satDam"
+  },
+  {
+   "id": "khungPhuDocDoi",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "khungPhuDoc"
+   ]
+  },
+  {
+   "id": "khungPhuNgangMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.31,
+       0.735
+      ],
+      [
+       0.31,
+       0.735
+      ],
+      [
+       0.31,
+       0.855
+      ],
+      [
+       -0.31,
+       0.855
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "depth": 0.08,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    0.55,
+    0,
+    0
+   ],
+   "material": "satDam"
+  },
+  {
+   "id": "khungPhuNgang",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 5,
+    "step": [
+     -0.85,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "khungPhuNgangMot"
+   ]
+  },
+  {
+   "id": "khungPhu",
+   "op": "boolean",
+   "params": {
+    "op": "union"
+   },
+   "inputs": [
+    "khungPhuDocDoi",
+    "khungPhuNgang"
+   ],
+   "material": "satDam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "banLeTam",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.94,
+       0.72
+      ],
+      [
+       -2.8,
+       0.72
+      ],
+      [
+       -2.8,
+       0.862
+      ],
+      [
+       -2.94,
+       0.862
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "depth": 0.035,
+    "edgeRadius": 0.005,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.3
+   ],
+   "material": "satDam"
+  },
+  {
+   "id": "banLe",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "banLeTam"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "banLeTruc",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.846,
+       0.845
+      ],
+      [
+       -2.84682,
+       0.85121
+      ],
+      [
+       -2.84922,
+       0.857
+      ],
+      [
+       -2.85303,
+       0.86197
+      ],
+      [
+       -2.858,
+       0.86578
+      ],
+      [
+       -2.86379,
+       0.86818
+      ],
+      [
+       -2.87,
+       0.869
+      ],
+      [
+       -2.87621,
+       0.86818
+      ],
+      [
+       -2.882,
+       0.86578
+      ],
+      [
+       -2.88697,
+       0.86197
+      ],
+      [
+       -2.89078,
+       0.857
+      ],
+      [
+       -2.89318,
+       0.85121
+      ],
+      [
+       -2.894,
+       0.845
+      ],
+      [
+       -2.89318,
+       0.83879
+      ],
+      [
+       -2.89078,
+       0.833
+      ],
+      [
+       -2.88697,
+       0.82803
+      ],
+      [
+       -2.882,
+       0.82422
+      ],
+      [
+       -2.87621,
+       0.82182
+      ],
+      [
+       -2.87,
+       0.821
+      ],
+      [
+       -2.86379,
+       0.82182
+      ],
+      [
+       -2.858,
+       0.82422
+      ],
+      [
+       -2.85303,
+       0.82803
+      ],
+      [
+       -2.84922,
+       0.833
+      ],
+      [
+       -2.84682,
+       0.83879
+      ]
+     ]
+    },
+    "depth": 0.66,
+    "edgeRadius": 0.004,
+    "plane": "xy"
+   },
+   "material": "chrome",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "xiLanh",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.085,
+       0
+      ],
+      [
+       0.09,
+       0.015
+      ],
+      [
+       0.09,
+       0.05
+      ],
+      [
+       0.075,
+       0.07
+      ],
+      [
+       0.075,
+       0.38
+      ],
+      [
+       0.088,
+       0.4
+      ],
+      [
+       0.088,
+       0.42
+      ],
+      [
+       0,
+       0.42
+      ]
+     ],
+     "round": [
+      0,
+      0.008,
+      0.008,
+      0.008,
+      0.008,
+      0.008,
+      0.008,
+      0.008,
+      0
+     ]
+    },
+    "segments": 40
+   },
+   "offset": [
+    -2.2,
+    0.63,
+    0
+   ],
+   "rotate": [
+    0,
+    0,
+    61.9
+   ],
+   "material": "satDam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "pivot": {
+     "kind": "axis",
+     "origin": [
+      -2.2,
+      0.63,
+      0
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "điểm neo pivot (agent đặt)"
+    },
+    "truot": {
+     "kind": "axis",
+     "origin": [
+      -2.2,
+      0.63,
+      0
+     ],
+     "dir": [
+      -0.882,
+      0.471,
+      0
+     ],
+     "desc": "điểm neo truot (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "canPiston",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0.22
+      ],
+      [
+       0.036,
+       0.22
+      ],
+      [
+       0.036,
+       0.48
+      ],
+      [
+       0.05,
+       0.48
+      ],
+      [
+       0.05,
+       0.51
+      ],
+      [
+       0,
+       0.51
+      ]
+     ],
+     "round": [
+      0,
+      0.004,
+      0.004,
+      0.004,
+      0.004,
+      0
+     ]
+    },
+    "segments": 32
+   },
+   "offset": [
+    -2.2,
+    0.63,
+    0
+   ],
+   "rotate": [
+    0,
+    0,
+    61.9
+   ],
+   "material": "chrome",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "giaBat",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -2.72,
+       0.83
+      ],
+      [
+       -2.58,
+       0.83
+      ],
+      [
+       -2.58,
+       0.9
+      ],
+      [
+       -2.72,
+       0.9
+      ]
+     ],
+     "round": [
+      0.015,
+      0.015,
+      0.015,
+      0.015
+     ]
+    },
+    "depth": 0.16,
+    "edgeRadius": 0.005,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "material": "satDam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "vatLieu",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.92,
+       0.95
+      ],
+      [
+       -0.92,
+       1.1
+      ],
+      [
+       -0.62,
+       1.26
+      ],
+      [
+       -0.28,
+       1.35
+      ],
+      [
+       0,
+       1.38
+      ],
+      [
+       0.28,
+       1.35
+      ],
+      [
+       0.62,
+       1.26
+      ],
+      [
+       0.92,
+       1.1
+      ],
+      [
+       0.92,
+       0.95
+      ]
+     ],
+     "round": [
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05
+     ]
+    },
+    "depth": 3,
+    "edgeRadius": 0.012,
+    "plane": "zy",
+    "taper": 0.94
+   },
+   "offset": [
+    -1.05,
+    0,
+    0
+   ],
+   "material": "catCuoi",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    },
+    "truot": {
+     "kind": "axis",
+     "origin": [
+      -1.05,
+      0.95,
+      0
+     ],
+     "dir": [
+      -1,
+      0,
+      0
+     ],
+     "desc": "điểm neo truot (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denCanhBaoDe",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.07,
+       0
+      ],
+      [
+       0.072,
+       0.012
+      ],
+      [
+       0.072,
+       0.04
+      ],
+      [
+       0,
+       0.04
+      ]
+     ],
+     "round": [
+      0,
+      0.006,
+      0.006,
+      0.006,
+      0
+     ]
+    },
+    "segments": 36
+   },
+   "offset": [
+    1.3,
+    2.13,
+    0
+   ],
+   "material": "satDam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denCanhBao",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.055,
+       0
+      ],
+      [
+       0.058,
+       0.014
+      ],
+      [
+       0.055,
+       0.05
+      ],
+      [
+       0.04,
+       0.075
+      ],
+      [
+       0.02,
+       0.09
+      ],
+      [
+       0,
+       0.095
+      ]
+     ],
+     "round": [
+      0,
+      0.01,
+      0.01,
+      0.01,
+      0.01,
+      0.008,
+      0
+     ]
+    },
+    "segments": 36
+   },
+   "offset": [
+    1.3,
+    2.168,
+    0
+   ],
+   "material": "denCam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "chanBunMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.37,
+       0.18
+      ],
+      [
+       0.82,
+       0.18
+      ],
+      [
+       0.82,
+       0.86
+      ],
+      [
+       0.37,
+       0.86
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "depth": 0.015,
+    "edgeRadius": 0.004,
+    "plane": "zy"
+   },
+   "offset": [
+    -1.98,
+    0,
+    0
+   ],
+   "material": "caoSuDen"
+  },
+  {
+   "id": "chanBun",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "chanBunMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "canSau",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.82,
+       0.56
+      ],
+      [
+       0.82,
+       0.56
+      ],
+      [
+       0.82,
+       0.68
+      ],
+      [
+       -0.82,
+       0.68
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "depth": 0.12,
+    "edgeRadius": 0.01,
+    "plane": "zy"
+   },
+   "offset": [
+    -2.79,
+    0,
+    0
+   ],
+   "material": "satDam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denHauMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.56,
+       0.585
+      ],
+      [
+       0.74,
+       0.585
+      ],
+      [
+       0.74,
+       0.655
+      ],
+      [
+       0.56,
+       0.655
+      ]
+     ],
+     "round": [
+      0.01,
+      0.01,
+      0.01,
+      0.01
+     ]
+    },
+    "depth": 0.03,
+    "edgeRadius": 0.006,
+    "plane": "zy"
+   },
+   "offset": [
+    -2.86,
+    0,
+    0
+   ],
+   "material": "emissiveLight"
+  },
+  {
+   "id": "denHau",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "denHauMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tayCuaPhai",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": false
+   },
+   "inputs": [
+    "tayCuaMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "vienCuaNgoai",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.093,
+       0.883
+      ],
+      [
+       2.247,
+       0.883
+      ],
+      [
+       2.247,
+       1.887
+      ],
+      [
+       1.093,
+       1.887
+      ]
+     ],
+     "round": [
+      0.032,
+      0.032,
+      0.032,
+      0.032
+     ]
+    },
+    "plane": "xy",
+    "range": [
+     0.8,
+     1
+    ],
+    "thickness": 0.004,
+    "lift": 0.0008
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "vienCuaTrong",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.1,
+       0.89
+      ],
+      [
+       2.24,
+       0.89
+      ],
+      [
+       2.24,
+       1.88
+      ],
+      [
+       1.1,
+       1.88
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "plane": "xy",
+    "range": [
+     0.8,
+     1
+    ],
+    "thickness": 0.01,
+    "lift": 0.002
+   },
+   "inputs": [
+    "thanMem"
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "vienCuaVong",
+   "op": "boolean",
+   "params": {
+    "op": "subtract"
+   },
+   "inputs": [
+    "vienCuaNgoai",
+    "vienCuaTrong"
+   ],
+   "material": "paintedMetal"
+  },
+  {
+   "id": "vienCua",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "vienCuaVong"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongCanhPhai",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": false
+   },
+   "inputs": [
+    "guongCanhMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongMatPhai",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": false
+   },
+   "inputs": [
+    "guongMatMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "guongKinhPhai",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": false
+   },
+   "inputs": [
+    "guongKinhMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "khoangCabin",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.96,
+       -0.81
+      ],
+      [
+       2.42,
+       -0.81
+      ],
+      [
+       2.42,
+       0.81
+      ],
+      [
+       0.96,
+       0.81
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "depth": 0.94,
+    "edgeRadius": 0.006,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    1.37,
+    0
+   ]
+  },
+  {
+   "id": "hoCuaMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.115,
+       0.905
+      ],
+      [
+       2.225,
+       0.905
+      ],
+      [
+       2.225,
+       1.835
+      ],
+      [
+       1.115,
+       1.835
+      ]
+     ],
+     "round": [
+      0.032,
+      0.032,
+      0.032,
+      0.032
+     ]
+    },
+    "depth": 0.36,
+    "edgeRadius": 0.004,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.72
+   ]
+  },
+  {
+   "id": "hoCua",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "hoCuaMot"
+   ]
+  },
+  {
+   "id": "thanVoCat",
+   "op": "boolean",
+   "params": {
+    "op": "subtract"
+   },
+   "inputs": [
+    "thanDem",
+    "hocHai",
+    "hoKinhChan",
+    "hoKinhBen",
+    "khoangCabin",
+    "hoCua"
+   ],
+   "material": "sonTrang"
+  },
+  {
+   "id": "thanVo",
+   "op": "roundEdges",
+   "params": {
+    "radius": 0.012,
+    "angle": 28
+   },
+   "inputs": [
+    "thanVoCat"
+   ],
+   "material": "sonTrang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "sanCabin",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.97,
+       -0.79
+      ],
+      [
+       2.4,
+       -0.79
+      ],
+      [
+       2.4,
+       0.79
+      ],
+      [
+       0.97,
+       0.79
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "depth": 0.05,
+    "edgeRadius": 0.006,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    0.935,
+    0
+   ],
+   "material": "noiThatXam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tranCabin",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.98,
+       -0.78
+      ],
+      [
+       2.4,
+       -0.78
+      ],
+      [
+       2.4,
+       0.78
+      ],
+      [
+       0.98,
+       0.78
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "depth": 0.03,
+    "edgeRadius": 0.005,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    1.815,
+    0
+   ],
+   "material": "tranXam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tamSau",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.79,
+       0.94
+      ],
+      [
+       0.79,
+       0.94
+      ],
+      [
+       0.79,
+       1.83
+      ],
+      [
+       -0.79,
+       1.83
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "depth": 0.03,
+    "edgeRadius": 0.005,
+    "plane": "zy"
+   },
+   "offset": [
+    0.985,
+    0,
+    0
+   ],
+   "material": "noiThatXam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tamHongMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1,
+       0.96
+      ],
+      [
+       2.36,
+       0.96
+      ],
+      [
+       2.36,
+       1.38
+      ],
+      [
+       1,
+       1.38
+      ]
+     ],
+     "round": [
+      0.03,
+      0.03,
+      0.03,
+      0.03
+     ]
+    },
+    "depth": 0.018,
+    "edgeRadius": 0.004,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.797
+   ],
+   "material": "noiThatXam"
+  },
+  {
+   "id": "tamHong",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "tamHongMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tapLo",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       2.18,
+       -0.78
+      ],
+      [
+       2.4,
+       -0.78
+      ],
+      [
+       2.4,
+       0.78
+      ],
+      [
+       2.18,
+       0.78
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "depth": 0.3,
+    "edgeRadius": 0.012,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    1.1,
+    0
+   ],
+   "material": "noiThatXam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "tapLoMat",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       2.13,
+       -0.78
+      ],
+      [
+       2.41,
+       -0.78
+      ],
+      [
+       2.41,
+       0.78
+      ],
+      [
+       2.13,
+       0.78
+      ]
+     ],
+     "round": [
+      0.05,
+      0.05,
+      0.05,
+      0.05
+     ]
+    },
+    "depth": 0.045,
+    "edgeRadius": 0.012,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    1.2725,
+    0
+   ],
+   "material": "nhuaDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "voLangNgoai",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.21,
+       0
+      ],
+      [
+       0.20681,
+       0.03647
+      ],
+      [
+       0.19734,
+       0.07182
+      ],
+      [
+       0.18187,
+       0.105
+      ],
+      [
+       0.16087,
+       0.13499
+      ],
+      [
+       0.13499,
+       0.16087
+      ],
+      [
+       0.105,
+       0.18187
+      ],
+      [
+       0.07182,
+       0.19734
+      ],
+      [
+       0.03647,
+       0.20681
+      ],
+      [
+       0,
+       0.21
+      ],
+      [
+       -0.03647,
+       0.20681
+      ],
+      [
+       -0.07182,
+       0.19734
+      ],
+      [
+       -0.105,
+       0.18187
+      ],
+      [
+       -0.13499,
+       0.16087
+      ],
+      [
+       -0.16087,
+       0.13499
+      ],
+      [
+       -0.18187,
+       0.105
+      ],
+      [
+       -0.19734,
+       0.07182
+      ],
+      [
+       -0.20681,
+       0.03647
+      ],
+      [
+       -0.21,
+       0
+      ],
+      [
+       -0.20681,
+       -0.03647
+      ],
+      [
+       -0.19734,
+       -0.07182
+      ],
+      [
+       -0.18187,
+       -0.105
+      ],
+      [
+       -0.16087,
+       -0.13499
+      ],
+      [
+       -0.13499,
+       -0.16087
+      ],
+      [
+       -0.105,
+       -0.18187
+      ],
+      [
+       -0.07182,
+       -0.19734
+      ],
+      [
+       -0.03647,
+       -0.20681
+      ],
+      [
+       0,
+       -0.21
+      ],
+      [
+       0.03647,
+       -0.20681
+      ],
+      [
+       0.07182,
+       -0.19734
+      ],
+      [
+       0.105,
+       -0.18187
+      ],
+      [
+       0.13499,
+       -0.16087
+      ],
+      [
+       0.16087,
+       -0.13499
+      ],
+      [
+       0.18187,
+       -0.105
+      ],
+      [
+       0.19734,
+       -0.07182
+      ],
+      [
+       0.20681,
+       -0.03647
+      ]
+     ]
+    },
+    "depth": 0.04,
+    "edgeRadius": 0.008,
+    "plane": "xz"
+   },
+   "offset": [
+    1.98,
+    1.28,
+    0.35
+   ],
+   "rotate": [
+    0,
+    0,
+    25
+   ],
+   "material": "nhuaDen"
+  },
+  {
+   "id": "voLangTrong",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.172,
+       0
+      ],
+      [
+       0.16939,
+       0.02987
+      ],
+      [
+       0.16163,
+       0.05883
+      ],
+      [
+       0.14896,
+       0.086
+      ],
+      [
+       0.13176,
+       0.11056
+      ],
+      [
+       0.11056,
+       0.13176
+      ],
+      [
+       0.086,
+       0.14896
+      ],
+      [
+       0.05883,
+       0.16163
+      ],
+      [
+       0.02987,
+       0.16939
+      ],
+      [
+       0,
+       0.172
+      ],
+      [
+       -0.02987,
+       0.16939
+      ],
+      [
+       -0.05883,
+       0.16163
+      ],
+      [
+       -0.086,
+       0.14896
+      ],
+      [
+       -0.11056,
+       0.13176
+      ],
+      [
+       -0.13176,
+       0.11056
+      ],
+      [
+       -0.14896,
+       0.086
+      ],
+      [
+       -0.16163,
+       0.05883
+      ],
+      [
+       -0.16939,
+       0.02987
+      ],
+      [
+       -0.172,
+       0
+      ],
+      [
+       -0.16939,
+       -0.02987
+      ],
+      [
+       -0.16163,
+       -0.05883
+      ],
+      [
+       -0.14896,
+       -0.086
+      ],
+      [
+       -0.13176,
+       -0.11056
+      ],
+      [
+       -0.11056,
+       -0.13176
+      ],
+      [
+       -0.086,
+       -0.14896
+      ],
+      [
+       -0.05883,
+       -0.16163
+      ],
+      [
+       -0.02987,
+       -0.16939
+      ],
+      [
+       0,
+       -0.172
+      ],
+      [
+       0.02987,
+       -0.16939
+      ],
+      [
+       0.05883,
+       -0.16163
+      ],
+      [
+       0.086,
+       -0.14896
+      ],
+      [
+       0.11056,
+       -0.13176
+      ],
+      [
+       0.13176,
+       -0.11056
+      ],
+      [
+       0.14896,
+       -0.086
+      ],
+      [
+       0.16163,
+       -0.05883
+      ],
+      [
+       0.16939,
+       -0.02987
+      ]
+     ]
+    },
+    "depth": 0.06,
+    "edgeRadius": 0.004,
+    "plane": "xz"
+   },
+   "offset": [
+    1.98,
+    1.28,
+    0.35
+   ],
+   "rotate": [
+    0,
+    0,
+    25
+   ],
+   "material": "nhuaDen"
+  },
+  {
+   "id": "voLang",
+   "op": "boolean",
+   "params": {
+    "op": "subtract"
+   },
+   "inputs": [
+    "voLangNgoai",
+    "voLangTrong"
+   ],
+   "material": "nhuaDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "voLangHub",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.06,
+       0
+      ],
+      [
+       0.05909,
+       0.01042
+      ],
+      [
+       0.05638,
+       0.02052
+      ],
+      [
+       0.05196,
+       0.03
+      ],
+      [
+       0.04596,
+       0.03857
+      ],
+      [
+       0.03857,
+       0.04596
+      ],
+      [
+       0.03,
+       0.05196
+      ],
+      [
+       0.02052,
+       0.05638
+      ],
+      [
+       0.01042,
+       0.05909
+      ],
+      [
+       0,
+       0.06
+      ],
+      [
+       -0.01042,
+       0.05909
+      ],
+      [
+       -0.02052,
+       0.05638
+      ],
+      [
+       -0.03,
+       0.05196
+      ],
+      [
+       -0.03857,
+       0.04596
+      ],
+      [
+       -0.04596,
+       0.03857
+      ],
+      [
+       -0.05196,
+       0.03
+      ],
+      [
+       -0.05638,
+       0.02052
+      ],
+      [
+       -0.05909,
+       0.01042
+      ],
+      [
+       -0.06,
+       0
+      ],
+      [
+       -0.05909,
+       -0.01042
+      ],
+      [
+       -0.05638,
+       -0.02052
+      ],
+      [
+       -0.05196,
+       -0.03
+      ],
+      [
+       -0.04596,
+       -0.03857
+      ],
+      [
+       -0.03857,
+       -0.04596
+      ],
+      [
+       -0.03,
+       -0.05196
+      ],
+      [
+       -0.02052,
+       -0.05638
+      ],
+      [
+       -0.01042,
+       -0.05909
+      ],
+      [
+       0,
+       -0.06
+      ],
+      [
+       0.01042,
+       -0.05909
+      ],
+      [
+       0.02052,
+       -0.05638
+      ],
+      [
+       0.03,
+       -0.05196
+      ],
+      [
+       0.03857,
+       -0.04596
+      ],
+      [
+       0.04596,
+       -0.03857
+      ],
+      [
+       0.05196,
+       -0.03
+      ],
+      [
+       0.05638,
+       -0.02052
+      ],
+      [
+       0.05909,
+       -0.01042
+      ]
+     ]
+    },
+    "depth": 0.075,
+    "edgeRadius": 0.008,
+    "plane": "xz"
+   },
+   "offset": [
+    1.98,
+    1.28,
+    0.35
+   ],
+   "rotate": [
+    0,
+    0,
+    25
+   ],
+   "material": "nhuaDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "gheDemMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.5,
+       0.1
+      ],
+      [
+       1.94,
+       0.1
+      ],
+      [
+       1.94,
+       0.56
+      ],
+      [
+       1.5,
+       0.56
+      ]
+     ],
+     "round": [
+      0.05,
+      0.05,
+      0.05,
+      0.05
+     ]
+    },
+    "depth": 0.13,
+    "edgeRadius": 0.02,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    1.03,
+    0
+   ],
+   "material": "gheVai"
+  },
+  {
+   "id": "gheLungMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.36,
+       1.02
+      ],
+      [
+       1.5,
+       1.02
+      ],
+      [
+       1.5,
+       1.62
+      ],
+      [
+       1.36,
+       1.62
+      ]
+     ],
+     "round": [
+      0.04,
+      0.04,
+      0.04,
+      0.04
+     ]
+    },
+    "depth": 0.46,
+    "edgeRadius": 0.02,
+    "plane": "xy"
+   },
+   "offset": [
+    0,
+    0,
+    0.33
+   ],
+   "material": "gheVai"
+  },
+  {
+   "id": "gheMot",
+   "op": "boolean",
+   "params": {
+    "op": "union"
+   },
+   "inputs": [
+    "gheDemMot",
+    "gheLungMot"
+   ],
+   "material": "gheVai"
+  },
+  {
+   "id": "ghe",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "gheMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "denCabin",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       0.055,
+       0
+      ],
+      [
+       0.05362,
+       0.01224
+      ],
+      [
+       0.04955,
+       0.02386
+      ],
+      [
+       0.043,
+       0.03429
+      ],
+      [
+       0.03429,
+       0.043
+      ],
+      [
+       0.02386,
+       0.04955
+      ],
+      [
+       0.01224,
+       0.05362
+      ],
+      [
+       0,
+       0.055
+      ],
+      [
+       -0.01224,
+       0.05362
+      ],
+      [
+       -0.02386,
+       0.04955
+      ],
+      [
+       -0.03429,
+       0.043
+      ],
+      [
+       -0.043,
+       0.03429
+      ],
+      [
+       -0.04955,
+       0.02386
+      ],
+      [
+       -0.05362,
+       0.01224
+      ],
+      [
+       -0.055,
+       0
+      ],
+      [
+       -0.05362,
+       -0.01224
+      ],
+      [
+       -0.04955,
+       -0.02386
+      ],
+      [
+       -0.043,
+       -0.03429
+      ],
+      [
+       -0.03429,
+       -0.043
+      ],
+      [
+       -0.02386,
+       -0.04955
+      ],
+      [
+       -0.01224,
+       -0.05362
+      ],
+      [
+       0,
+       -0.055
+      ],
+      [
+       0.01224,
+       -0.05362
+      ],
+      [
+       0.02386,
+       -0.04955
+      ],
+      [
+       0.03429,
+       -0.043
+      ],
+      [
+       0.043,
+       -0.03429
+      ],
+      [
+       0.04955,
+       -0.02386
+      ],
+      [
+       0.05362,
+       -0.01224
+      ]
+     ]
+    },
+    "depth": 0.02,
+    "edgeRadius": 0.006,
+    "plane": "xz"
+   },
+   "offset": [
+    1.55,
+    1.795,
+    0
+   ],
+   "material": "denCabin",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "muiDem",
+   "op": "loft",
+   "params": {
+    "sections": [
+     {
+      "x": 2.42,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.73,
+         0.66
+        ],
+        [
+         0.775,
+         0.69
+        ],
+        [
+         0.79,
+         0.74
+        ],
+        [
+         0.79,
+         1.27
+        ],
+        [
+         0.755,
+         1.315
+        ],
+        [
+         0.52,
+         1.338
+        ],
+        [
+         0,
+         1.345
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0
+       ]
+      }
+     },
+     {
+      "x": 2.95,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.7250000000000001,
+         0.66
+        ],
+        [
+         0.77,
+         0.69
+        ],
+        [
+         0.785,
+         0.74
+        ],
+        [
+         0.785,
+         1.25
+        ],
+        [
+         0.75,
+         1.295
+        ],
+        [
+         0.52,
+         1.318
+        ],
+        [
+         0,
+         1.325
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0
+       ]
+      }
+     },
+     {
+      "x": 3.45,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.7150000000000001,
+         0.66
+        ],
+        [
+         0.76,
+         0.69
+        ],
+        [
+         0.775,
+         0.74
+        ],
+        [
+         0.775,
+         1.223
+        ],
+        [
+         0.74,
+         1.268
+        ],
+        [
+         0.52,
+         1.2910000000000001
+        ],
+        [
+         0,
+         1.298
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0
+       ]
+      }
+     },
+     {
+      "x": 3.78,
+      "profile": {
+       "pts": [
+        [
+         0,
+         0.66
+        ],
+        [
+         0.7,
+         0.66
+        ],
+        [
+         0.745,
+         0.69
+        ],
+        [
+         0.76,
+         0.74
+        ],
+        [
+         0.76,
+         1.201
+        ],
+        [
+         0.725,
+         1.246
+        ],
+        [
+         0.52,
+         1.2690000000000001
+        ],
+        [
+         0,
+         1.276
+        ]
+       ],
+       "round": [
+        0,
+        0.02,
+        0.02,
+        0.02,
+        0.05,
+        0.04,
+        0.05,
+        0
+       ]
+      }
+     }
+    ],
+    "symmetric": true,
+    "points": 72,
+    "samples": 10,
+    "caps": "flat"
+   },
+   "material": "sonTrang"
+  },
+  {
+   "id": "hocMuiMot",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.44,
+       0
+      ],
+      [
+       0.46,
+       0.02
+      ],
+      [
+       0.46,
+       0.47
+      ],
+      [
+       0.44,
+       0.49
+      ],
+      [
+       0,
+       0.49
+      ]
+     ]
+    },
+    "segments": 64
+   },
+   "offset": [
+    3.05,
+    0.405,
+    0.56
+   ]
+  },
+  {
+   "id": "hocMui",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "hocMuiMot"
+   ]
+  },
+  {
+   "id": "muiCat",
+   "op": "boolean",
+   "params": {
+    "op": "subtract"
+   },
+   "inputs": [
+    "muiDem",
+    "hocMui"
+   ],
+   "material": "sonTrang"
+  },
+  {
+   "id": "muiMem",
+   "op": "roundEdges",
+   "params": {
+    "radius": 0.016,
+    "angle": 26,
+    "maxTriangles": 200000
+   },
+   "inputs": [
+    "muiCat"
+   ],
+   "material": "sonTrang",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "khungMuiMot",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       2.3,
+       0.28
+      ],
+      [
+       3.72,
+       0.28
+      ],
+      [
+       3.72,
+       0.4
+      ],
+      [
+       2.3,
+       0.4
+      ]
+     ],
+     "round": [
+      0.004,
+      0.004,
+      0.004,
+      0.004
+     ]
+    },
+    "depth": 0.21,
+    "edgeRadius": 0.004,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    0.635,
+    0
+   ],
+   "material": "satDam"
+  },
+  {
+   "id": "khungMui",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "khungMuiMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "khungMuiNgang",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       3.46,
+       -0.4
+      ],
+      [
+       3.6,
+       -0.4
+      ],
+      [
+       3.6,
+       0.4
+      ],
+      [
+       3.46,
+       0.4
+      ]
+     ],
+     "round": [
+      0.004,
+      0.004,
+      0.004,
+      0.004
+     ]
+    },
+    "depth": 0.13,
+    "edgeRadius": 0.004,
+    "plane": "xz"
+   },
+   "offset": [
+    0,
+    0.595,
+    0
+   ],
+   "material": "satDam",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "gicMot",
+   "op": "splitRegion",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       1.4,
+       0.645
+      ],
+      [
+       2.455,
+       0.645
+      ],
+      [
+       2.455,
+       0.795
+      ],
+      [
+       1.4,
+       0.795
+      ]
+     ],
+     "round": [
+      0.02,
+      0.02,
+      0.02,
+      0.02
+     ]
+    },
+    "plane": "xy",
+    "range": [
+     0.5,
+     1
+    ],
+    "thickness": 0.007,
+    "lift": 0.0015
+   },
+   "inputs": [
+    "thanDem"
+   ],
+   "material": "sonTrang"
+  },
+  {
+   "id": "gic",
+   "op": "mirror",
+   "params": {
+    "plane": "z",
+    "keepOriginal": true
+   },
+   "inputs": [
+    "gicMot"
+   ],
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  },
+  {
+   "id": "kinhChanTrong",
+   "op": "extrude",
+   "params": {
+    "outline": {
+     "pts": [
+      [
+       -0.695,
+       1.36
+      ],
+      [
+       -0.655,
+       1.838
+      ],
+      [
+       0.655,
+       1.838
+      ],
+      [
+       0.695,
+       1.36
+      ]
+     ],
+     "round": [
+      0.05,
+      0.05,
+      0.05,
+      0.05
+     ]
+    },
+    "depth": 0.008,
+    "edgeRadius": 0.003,
+    "plane": "zy"
+   },
+   "offset": [
+    2.449,
+    0,
+    0
+   ],
+   "material": "kinhDen",
+   "anchors": {
+    "goc": {
+     "kind": "point",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "điểm neo goc (agent đặt)"
+    }
+   }
+  }
+ ],
+ "types": {
+  "banhTai": {
+   "description": "Bánh xe tải 7.50R16: lốp R0,405 có rãnh chạy vòng, vành thép 6 ốc, nắp moay-ơ; điểm neo axis",
+   "source": "banh-tai",
+   "root": "vo",
+   "doc": {
+    "id": "banhTai",
+    "title": "Bánh xe tải 7.50R16: lốp R0,405 có rãnh chạy vòng, vành thép 6 ốc, nắp moay-ơ; điểm neo axis",
+    "parts": [
+     {
+      "id": "vo",
+      "type": "shape:vo",
+      "params": {},
+      "place": {
+       "kind": "onto",
+       "a": "vo.bottom",
+       "b": "ground.top"
+      },
+      "material": "voCaoSu"
+     },
+     {
+      "id": "vanh",
+      "type": "shape:vanh",
+      "params": {},
+      "place": {
+       "kind": "coaxial",
+       "a": "vanh.axis",
+       "b": "vo.axis"
+      }
+     },
+     {
+      "id": "nap",
+      "type": "shape:napMo",
+      "params": {},
+      "place": {
+       "kind": "coaxial",
+       "a": "nap.axis",
+       "b": "vo.axis"
+      }
+     },
+     {
+      "id": "oc",
+      "type": "shape:oc",
+      "params": {},
+      "place": {
+       "kind": "coaxial",
+       "a": "oc.patternAxis",
+       "b": "vo.axis"
+      }
+     }
+    ],
+    "routes": [],
+    "joints": [],
+    "shapes": [
+     {
+      "id": "voDem",
+      "op": "lathe",
+      "params": {
+       "profile": {
+        "pts": [
+         [
+          0,
+          0
+         ],
+         [
+          0.203,
+          0
+         ],
+         [
+          0.3,
+          0
+         ],
+         [
+          0.36,
+          0.004
+         ],
+         [
+          0.392,
+          0.028
+         ],
+         [
+          0.404,
+          0.058
+         ],
+         [
+          0.405,
+          0.072
+         ],
+         [
+          0.405,
+          0.093
+         ],
+         [
+          0.392,
+          0.098
+         ],
+         [
+          0.392,
+          0.11
+         ],
+         [
+          0.405,
+          0.115
+         ],
+         [
+          0.405,
+          0.125
+         ],
+         [
+          0.392,
+          0.13
+         ],
+         [
+          0.392,
+          0.142
+         ],
+         [
+          0.405,
+          0.147
+         ],
+         [
+          0.404,
+          0.162
+         ],
+         [
+          0.392,
+          0.192
+         ],
+         [
+          0.36,
+          0.216
+         ],
+         [
+          0.3,
+          0.22
+         ],
+         [
+          0.203,
+          0.22
+         ],
+         [
+          0,
+          0.22
+         ]
+        ],
+        "round": [
+         0,
+         0,
+         0.02,
+         0.02,
+         0.02,
+         0.01,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0.01,
+         0.02,
+         0.02,
+         0.02,
+         0,
+         0
+        ]
+       },
+       "segments": 96
+      },
+      "material": "voCaoSu"
+     },
+     {
+      "id": "longTrong",
+      "op": "lathe",
+      "params": {
+       "profile": {
+        "pts": [
+         [
+          0,
+          -0.05
+         ],
+         [
+          0.2045,
+          -0.05
+         ],
+         [
+          0.2045,
+          0.27
+         ],
+         [
+          0,
+          0.27
+         ]
+        ]
+       },
+       "segments": 64
+      }
+     },
+     {
+      "id": "vo",
+      "op": "boolean",
+      "params": {
+       "op": "subtract"
+      },
+      "inputs": [
+       "voDem",
+       "longTrong"
+      ],
+      "material": "voCaoSu"
+     },
+     {
+      "id": "vanh",
+      "op": "lathe",
+      "params": {
+       "profile": {
+        "pts": [
+         [
+          0,
+          0.03
+         ],
+         [
+          0.175,
+          0.03
+         ],
+         [
+          0.196,
+          0.05
+         ],
+         [
+          0.203,
+          0.07
+         ],
+         [
+          0.203,
+          0.15
+         ],
+         [
+          0.196,
+          0.175
+         ],
+         [
+          0.175,
+          0.19
+         ],
+         [
+          0,
+          0.19
+         ]
+        ],
+        "round": [
+         0,
+         0.01,
+         0.008,
+         0,
+         0,
+         0.008,
+         0.01,
+         0
+        ]
+       },
+       "segments": 64
+      },
+      "material": "paintedMetal"
+     },
+     {
+      "id": "napMo",
+      "op": "lathe",
+      "params": {
+       "profile": {
+        "pts": [
+         [
+          0,
+          0.183
+         ],
+         [
+          0.088,
+          0.183
+         ],
+         [
+          0.092,
+          0.193
+         ],
+         [
+          0.08,
+          0.212
+         ],
+         [
+          0.04,
+          0.222
+         ],
+         [
+          0,
+          0.224
+         ]
+        ],
+        "round": [
+         0,
+         0.004,
+         0.004,
+         0.004,
+         0.004,
+         0
+        ]
+       },
+       "segments": 48
+      },
+      "material": "chrome"
+     },
+     {
+      "id": "ocMot",
+      "op": "lathe",
+      "params": {
+       "profile": {
+        "pts": [
+         [
+          0,
+          0
+         ],
+         [
+          0.018,
+          0
+         ],
+         [
+          0.018,
+          0.015
+         ],
+         [
+          0.013,
+          0.022
+         ],
+         [
+          0.008,
+          0.024
+         ],
+         [
+          0,
+          0.024
+         ]
+        ],
+        "round": [
+         0,
+         0.003,
+         0.003,
+         0.004,
+         0.003,
+         0
+        ]
+       },
+       "segments": 12
+      },
+      "offset": [
+       0.128,
+       0.185,
+       0
+      ],
+      "material": "chrome"
+     },
+     {
+      "id": "oc",
+      "op": "pattern",
+      "params": {
+       "kind": "radial",
+       "count": 6,
+       "axis": "y",
+       "center": [
+        0,
+        0,
+        0
+       ]
+      },
+      "inputs": [
+       "ocMot"
+      ],
+      "material": "chrome"
+     }
+    ],
+    "materials": {
+     "voCaoSu": {
+      "preset": "tireRubber",
+      "overrides": {
+       "roughness": 0.92,
+       "color": "#151619"
+      },
+      "textures": {
+       "normal": {
+        "kind": "noise",
+        "scale": 26,
+        "strength": 0.25
+       },
+       "roughness": {
+        "kind": "noise",
+        "scale": 18,
+        "strength": 0.35
+       }
+      }
+     }
+    }
+   },
+   "rootMatrix": [
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "anchors": {
+    "axis": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      1
+     ],
+     "radius": 0.405,
+     "desc": "axis: trục quay (y), R 0.405 (vo.axis)"
+    },
+    "matNgoai": {
+     "kind": "face",
+     "origin": [
+      0,
+      0.2199999988079071,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "up": [
+      0,
+      0,
+      -1
+     ],
+     "uv": [
+      [
+       1,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       1
+      ]
+     ],
+     "desc": "matNgoai: mặt trên; at = [x, z] (vo.top)"
+    }
+   },
+   "bounds": {
+    "min": [
+     -0.4050000011920929,
+     0,
+     -0.4050000011920929
+    ],
+    "max": [
+     0.4050000011920929,
+     0.2240000069141388,
+     0.4050000011920929
+    ]
+   }
+  }
+ },
+ "scene": {
+  "environment": "studio",
+  "stage": "road"
+ },
+ "decals": [
+  {
+   "id": "bienSoTruoc",
+   "target": "bienSo",
+   "at": "bienSo.right",
+   "size": [
+    0.42,
+    0.105
+   ],
+   "content": {
+    "text": "51C-682.94",
+    "color": "#111820",
+    "background": "#eef1ea",
+    "font": "bold 96px Arial"
+   },
+   "mode": "print"
+  },
+  {
+   "id": "chuHong",
+   "target": "thanhBen",
+   "at": "thanhBen.chu",
+   "size": [
+    1.35,
+    0.14
+   ],
+   "content": {
+    "text": "XE BEN 5T",
+    "color": "#2b2213",
+    "font": "bold 150px Arial"
+   },
+   "mode": "print"
+  }
+ ],
+ "physics": {
+  "free": []
+ }
+}

@@ -1,7 +1,7 @@
 /**
  * Kiểu dữ liệu của bộ lắp ráp 3D (xem docs/assembly-tool-design.md).
  *
- * Agent chọn bộ phận trong thư viện và nói quan hệ giữa chúng; bộ giải (solve.ts) tính tư thế bằng hình học.
+ * Agent tự dựng từng bộ phận (hình tự dựng, cụm đã lưu) và nói quan hệ giữa chúng; bộ giải (solve.ts) tính tư thế bằng hình học.
  * Toàn bộ file này không phụ thuộc three.js: server MCP trong Node dùng được.
  */
 
@@ -97,7 +97,7 @@ export interface Bounds {
 /** Hàm dựng hình nhận module three và bộ vật liệu; kiểu để `unknown` để lõi không phụ thuộc three. */
 export interface PartType {
   type: string;
-  category: "primitive" | "mechanical" | "electrical" | "lab" | "shape" | "composite";
+  category: "shape" | "composite";
   description: string;
   params: ParamSchema;
   anchors(p: Params): Record<string, AnchorSpec>;

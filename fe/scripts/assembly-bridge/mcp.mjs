@@ -18,13 +18,13 @@ import { FE_ROOT, findAssembly, meshFile, physicsFile, readSnapshotMeta, readSta
 const SERVER = { name: "neviad-assembly", version: "0.2.0" };
 const PAGE = "/lap-rap-3d";
 
-// assembly-kit viết bằng TypeScript: đóng gói phần lõi + thư viện vào node_modules/.cache để "three" tự tìm thấy.
+// assembly-kit viết bằng TypeScript: đóng gói assembly-kit vào node_modules/.cache để "three" tự tìm thấy.
 const cache = join(FE_ROOT, "node_modules/.cache/assembly-bridge");
 mkdirSync(cache, { recursive: true });
 const kitFile = join(cache, "kit.mjs");
 await build({ entryPoints: [join(FE_ROOT, "assembly-kit/node.ts")], bundle: true, platform: "node", format: "esm", outfile: kitFile, external: ["three", "manifold-3d"], logLevel: "error" });
 const kit = await import(`${pathToFileURL(kitFile).href}?t=${Date.now()}`);
-const { PARTS, solve, partReport, describeTree, typeInfo, typeList, solveRoute, MATERIAL_NAMES, registryFor, checkDocExtras, buildShapes, PRESETS, TEXTURE_KINDS, anchorFrame, worldBounds, SHAPE_PREFIX, initKernel, physicsKey, encodeShape, keyHash, usedShapeIds, shapeKeys, buildPhysicsModel, bodyOfPart, World, flatten, worldGeometry, descendants, partOrCluster, toManifold, kernel: kernelOf, transformAnchorSpec, transformBounds, checkTypeName, chain, invertRigid } = kit;
+const { PARTS, solve, partReport, describeTree, typeInfo, solveRoute, MATERIAL_NAMES, registryFor, checkDocExtras, buildShapes, PRESETS, TEXTURE_KINDS, anchorFrame, worldBounds, SHAPE_PREFIX, initKernel, physicsKey, encodeShape, keyHash, usedShapeIds, shapeKeys, buildPhysicsModel, bodyOfPart, World, flatten, worldGeometry, descendants, partOrCluster, toManifold, kernel: kernelOf, transformAnchorSpec, transformBounds, checkTypeName, chain, invertRigid } = kit;
 // lõi hình khối kín (boolean, khắc rãnh): nạp WASM một lần trước khi phục vụ
 await initKernel(() => import("manifold-3d"));
 
@@ -55,7 +55,7 @@ const placeSchema = {
 };
 
 const TOOLS = [
-  { name: "part_types_list", description: "Liệt kê các loại bộ phận trong thư viện (khối cơ bản, cơ khí, điện).", inputSchema: { type: "object", properties: {} } },
+  { name: "part_types_list", description: "Liệt kê các loại bộ phận dùng được: hình tự dựng (shape:<id>) và cụm đã lưu bằng part_save_as_type.", inputSchema: { type: "object", properties: {} } },
   { name: "part_type_info", description: "Tham số (đơn vị, mặc định, miền) và điểm neo của một loại bộ phận. Với hình tự dựng (shape:<id>) thì cho thêm assembly.", inputSchema: { type: "object", properties: { type: { type: "string" }, assembly: assemblyArg }, required: ["type"] } },
   { name: "assembly_create", description: "Tạo bản lắp ráp rỗng (có sẵn ground.top là mặt bàn y = 0).", inputSchema: { type: "object", properties: { id: { type: "string", description: "chữ, số, -, _; bỏ trống để tự đặt" }, title: { type: "string" } }, required: ["title"] } },
   { name: "assembly_list", description: "Liệt kê các bản lắp ráp.", inputSchema: { type: "object", properties: {} } },
@@ -64,7 +64,7 @@ const TOOLS = [
   {
     name: "part_add",
     description: "Thêm một bộ phận và đặt nó vào bộ phận đã có. Trả về tư thế đã giải, khung bao và toạ độ thế giới của các điểm neo.",
-    inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, type: { type: "string", description: "loại trong thư viện, hoặc shape:<idHinh>" }, params: { type: "object" }, place: placeSchema, material: materialArg }, required: ["assembly", "id", "type", "place"] },
+    inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, type: { type: "string", description: "shape:<idHinh>, hoặc tên cụm đã lưu" }, params: { type: "object" }, place: placeSchema, material: materialArg }, required: ["assembly", "id", "type", "place"] },
   },
   {
     name: "part_update",
@@ -73,7 +73,7 @@ const TOOLS = [
   },
   {
     name: "part_remove",
-    description: "Xoá một bộ phận. Có bộ phận ghép vào nó thì báo lỗi, trừ khi cascade = true (xoá cả nhánh).",
+    description: "Xoá một bộ phận cùng khớp, dây, decal và thiết lập vật lý trỏ tới nó. Có bộ phận ghép vào nó, hoặc khớp khác couple theo khớp bị xoá, thì báo lỗi, trừ khi cascade = true (xoá cả nhánh).",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, cascade: { type: "boolean" } }, required: ["assembly", "id"] },
   },
   {
@@ -92,7 +92,7 @@ const TOOLS = [
     description: `Ghi bản lắp ráp ra một file trong repo (đường dẫn tính từ gốc repo). .json: tài liệu để trang/route dựng lại (buildAssembly(doc, kit) rồi setPose({khop: giaTri})). .glb: lưới + vật liệu glTF để dùng ngoài (trang ${PAGE} phải đang mở; pose tuỳ chọn).`,
     inputSchema: { type: "object", properties: { assembly: assemblyArg, path: { type: "string", description: "vd fe/app/ten-route/vat.assembly.json hoặc .glb" }, pose: { type: "object" }, wait_ms: { type: "integer", minimum: 0, maximum: 60000 } }, required: ["assembly", "path"] },
   },
-  { name: "joint_remove", description: "Xoá một khớp.", inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" } }, required: ["assembly", "id"] } },
+  { name: "joint_remove", description: "Xoá một khớp (cả động cơ của nó). Khớp khác đang couple theo nó thì báo lỗi, trừ khi cascade = true (xoá cả chuỗi).", inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, cascade: { type: "boolean" } }, required: ["assembly", "id"] } },
   {
     name: "route_add",
     description: `Thêm (hoặc thay, cùng id) một dây nối giữa hai điểm neo (điểm hoặc mặt), tuỳ chọn bám các mặt via. Vật liệu: ${MATERIAL_NAMES.join(", ")}.`,
@@ -146,27 +146,27 @@ const TOOLS = [
   },
   {
     name: "shape_loft",
-    description: "LOFT (thân xe, thân tàu, vỏ máy): nối mượt nhiều mặt cắt ngang KHÁC DÁNG đặt tại các x tăng dần. Mỗi mặt cắt là đường kín trong mặt (z, y). symmetric: true thì chỉ cho NỬA z ≥ 0, đi từ tâm đáy (z = 0) lên tâm nóc (z = 0), tool tự lấy đối xứng. round bo góc từng mặt cắt. caps round (mũi/đuôi tròn) | flat | open. Điểm neo s0…sN (tâm mặt cắt), nose, tail. Thêm mặt cắt ở chỗ dáng đổi nhanh (kính chắn gió, đuôi).",
+    description: "LOFT — THÂN VỎ (xe, tàu, vỏ máy: mặt cong hai chiều; đừng đùn hình nhìn ngang, hông sẽ phẳng như bánh quy): nối mượt nhiều mặt cắt ngang KHÁC DÁNG tại các x tăng dần, mỗi mặt cắt là đường kín trong mặt (z, y). symmetric: true thì chỉ cho NỬA z ≥ 0, từ tâm đáy (z = 0) lên tâm nóc (z = 0), tool tự đối xứng. round bo góc từng mặt cắt; caps round | flat | open. Điểm neo s0…sN (tâm mặt cắt), nose, tail. Quy trình thân xe: 1) loft 6–10 mặt cắt theo thông số thật (gầm, capo, chân kính, nóc, cốp), thêm mặt cắt ở chỗ dáng đổi nhanh, so bảng rộng × cao trả về; 2) shape_boolean subtract hốc bánh (shape_lathe trụ, rotate trục theo z) và ô kính; 3) shape_round_edges radius 0,01–0,02 cho mép hốc, ô kính; 4) shape_groove khe cửa, capo, cốp; 5) shape_split_region kính ôm thân (lift âm vài mm); 6) part_add bánh coaxial vào điểm neo kế thừa \"than.hoc.axis\"; mirror plane z nếu chỉ dựng một bên.",
     inputSchema: { type: "object", properties: { ...shapeCommon, sections: { type: "array", items: { type: "object", properties: { x: { type: "number" }, profile: path2dArg("mặt cắt [z, y]") }, required: ["x", "profile"] } }, symmetric: { type: "boolean" }, points: { type: "integer", description: "số điểm mỗi vòng (mặc định 64)" }, samples: { type: "integer", description: "số vòng giữa hai mặt cắt (mặc định 10)" }, caps: { type: "string", enum: ["round", "flat", "open"] }, capLength: { type: "number" } }, required: ["assembly", "id", "sections"] },
   },
   {
     name: "shape_boolean",
-    description: "BOOLEAN (lõi manifold): op subtract (khoét hốc bánh, ô kính, lỗ), union (gộp), intersect (giao) giữa input và các hình tools. Mọi hình phải kín và đã nằm đúng chỗ trong cùng khung (dùng offset / rotate của chúng). Trả về thể tích trước / sau. Mép cắt sắc: bo tiếp bằng shape_round_edges.",
-    inputSchema: { type: "object", properties: { ...shapeCommon, op: { type: "string", enum: ["subtract", "union", "intersect"] }, input: { type: "string" }, tools: { type: "array", items: { type: "string" } } }, required: ["assembly", "id", "op", "input", "tools"] },
+    description: "BOOLEAN (lõi manifold): op subtract (khoét hốc bánh, ô kính, lỗ), union (gộp), intersect (giao) giữa input và các hình tools. Mọi hình phải kín và đã nằm đúng chỗ trong cùng khung (offset / rotate của chúng). Trả về thể tích trước / sau. Kết quả GIỮ điểm neo của dao cắt, tên \"<idDao>.<diemNeo>\" (khoét hốc bằng trụ \"hoc\" thì thân có \"hoc.axis\"; bo cạnh, khắc rãnh giữ nguyên; pattern đánh số \"<input>[i].<diemNeo>\"): ghép tiếp vào đó thay vì gõ toạ độ. smooth: true cho pháp tuyến liền mạch (mặt cong lớn). Mép cắt sắc: bo tiếp bằng shape_round_edges.",
+    inputSchema: { type: "object", properties: { ...shapeCommon, op: { type: "string", enum: ["subtract", "union", "intersect"] }, input: { type: "string" }, tools: { type: "array", items: { type: "string" } }, smooth: { type: "boolean", description: "pháp tuyến liền mạch trên cả lưới (mặc định false: gãy ở cạnh > 30°)" } }, required: ["assembly", "id", "op", "input", "tools"] },
   },
   {
     name: "shape_weld",
-    description: "HÀN MỐI NỐI: gộp hai hình KÍN rồi làm mượt một dải quanh chỗ chúng chạm nhau, để góc lõm chảy thành cung thay vì gãy/khe. Dùng cho chỗ nối cần liền như người thật: ống tay vào vai, ống quần vào hông, tay vào cổ tay, ống vào thân. KHÁC shape_round_edges: round_edges chỉ bắt cạnh có góc gãy lớn, còn hai mặt chạm nhau gần song song (khe ở vai) thì round_edges bỏ qua — weld xử lý đúng ca đó. radius = bán kính cung đắp vào (mét, mặc định tự tính 0,35 × bề dày nhỏ hơn, chặn 4–30 mm); strength 0..1 = độ mềm (mặc định 0,6); detail = cỡ cạnh lưới trong dải (mặc định radius/3); maxTriangles mặc định 200000. Hai hình phải CHỒNG nhau (cắm vào nhau vài mm), chỉ chạm một đường thì báo lỗi. Kết quả là MỘT hình, MỘT vật liệu.",
+    description: "MIẾT MỐI NỐI (không thêm vật liệu): gộp hai hình KÍN rồi làm mượt dải quanh chỗ chạm. Dùng khi hai mặt chạm nhau GẦN SONG SONG thành khe hẹp (vai áo, gấu áo chạm quần) — round_edges bỏ qua ca này. Cần đắp vật liệu vào góc lõm (ống nhánh vào ống chính) thì dùng shape_bevel. Hai hình phải cắm vào nhau vài mm. radius (m, mặc định 0,35 × bề dày nhỏ hơn, 4–30 mm), strength 0..1 (0,6), detail = cỡ lưới trong dải (radius/3). Kết quả: MỘT hình, MỘT vật liệu, kèm dòng \"lưới: … gấp mép …\".",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string", description: "hình thứ nhất (a)" }, tools: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 1, description: "[hình thứ hai (b)]" }, radius: { type: ["number", "string"], description: "bán kính cung hàn (m) hoặc \"auto\"" }, strength: { type: "number", description: "0..1, mặc định 0,6" }, detail: { type: ["number", "string"], description: "cỡ cạnh lưới trong dải (m) hoặc \"auto\"" }, maxTriangles: { type: "integer" } }, required: ["assembly", "id", "input", "tools"] },
   },
   {
     name: "shape_bevel",
-    description: "BO / ĐẮP ĐÚNG MỘT MỐI NỐI giữa hai hình (thay cho việc tự dựng miếng đắp). input = hình thứ nhất, tools: [hình thứ hai] = hình thứ hai (hai hình phải CHỒNG nhau vài mm). mode: \"add\" (mặc định khi có hình thứ hai) = ĐẮP vật liệu vào góc lõm thành cung như đất nặn — đây là cái shape_weld không làm được (weld chỉ miết dải đã có); \"cut\" = gọt cạnh lồi (lăn bi như round_edges nhưng chỉ trên cạnh nằm trong mối nối); \"auto\" = có hình thứ hai thì add, chỉ một hình thì cut. radius (m) = bán kính cung, bỏ trống = 0,35 × bề dày nhỏ nhất (3–30 mm); profile 0..1 (0,5 = cung tròn đều, >0,5 phình hơn); strength 0..1 = độ miết; loop = khi mối nối ra nhiều vòng thì chọn vòng (0 = vòng dài nhất); angle = ngưỡng cạnh gãy khi mode cut; detail = cỡ cạnh lưới trong dải (mặc định radius/4); maxTriangles 300000. Với ống/vỏ RỖNG phải bo trên khối ĐẶC rồi mới khoét lòng (nếu không cung sẽ cắt xuyên vách). Bỏ tool này khi chỉ cần bo mọi cạnh (dùng shape_round_edges) hoặc khi cần miết khe hẹp (shape_weld).",
+    description: "ĐẮP / GỌT ĐÚNG MỘT MỐI NỐI giữa hai hình đã cắm vào nhau vài mm. mode \"add\" (mặc định khi có hình thứ hai): đắp vật liệu vào góc lõm thành cung như đất nặn — ống nhánh vào ống chính, ống vào thân, tay vào vai. \"cut\": gọt cạnh lồi nằm trong mối nối. radius (m, mặc định 0,35 × bề dày nhỏ nhất, 3–30 mm); profile 0..1 (> 0,5 mối dày hơn); strength 0..1 = độ miết; loop chọn vòng khi mối ra nhiều vòng (0 = dài nhất); angle = ngưỡng cạnh gãy cho cut. Ống/vỏ RỖNG: đắp trên khối ĐẶC rồi mới khoét lòng, nếu không cung cắt xuyên vách. Chỉ cần bo mọi cạnh: shape_round_edges; khe hẹp gần song song: shape_weld. Còn gợn sau khi đắp: shape_sand.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string", description: "hình thứ nhất" }, tools: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 1, description: "[hình thứ hai] — có nó thì chỉ bo đúng mối nối giữa hai hình" }, mode: { type: "string", enum: ["cut", "add", "auto"] }, radius: { type: ["number", "string"], description: "bán kính cung (m) hoặc \"auto\"" }, profile: { type: "number", description: "0..1, mặc định 0,5" }, strength: { type: "number", description: "0..1, mặc định 0,6" }, loop: { type: "integer", description: "chọn vòng mối nối (0 = dài nhất)" }, angle: { type: "number", description: "ngưỡng cạnh gãy cho mode cut (mặc định 40°)" }, detail: { type: ["number", "string"], description: "cỡ cạnh lưới trong dải (m) hoặc \"auto\"" }, maxTriangles: { type: "integer" } }, required: ["assembly", "id", "input"] },
   },
   {
     name: "shape_sand",
-    description: "MÀI BỀ MẶT (\"giấy ráp\") — bào lớp gợn còn lại sau boolean / bevel / weld mà KHÔNG đổi dáng: đỉnh chỉ dời THEO PHÁP TUYẾN về một mặt bậc 2 khớp với các đỉnh quanh nó, nên mặt phẳng / mặt trụ đều đứng yên và chỉ chỗ gợn bị bào; mỗi đỉnh dời tối đa `limit` (mặc định 5 % cạnh lưới, chặn 0,05–0,5 mm) so với chỗ nó đứng, nên chạy 1 lần hay 5 lần cũng không trôi hình. Dùng khi thấy vòng gợn đồng tâm quanh mối nối, bề mặt lăn tăn, gờ đắp dày mỏng không đều. radius = cỡ \"miếng giấy ráp\" (m): gợn NGẮN hơn radius mới bị bào, sóng dài hơn thì còn — sóng 10–20 mm phải dùng 0,015–0,02 (bỏ trống = max(3×limit, 4×cạnh ngắn), chỉ hợp gợn sát nhau). region: \"all\" (cả hình) | \"near\" (chỉ quanh tools[0]) | \"keep\" (mọi nơi trừ quanh tools[0]); reach = bán kính vùng (m, mặc định max(6×limit, 3×cạnh lưới)); lock = độ (mặc định 30): đỉnh nằm trên cạnh gãy hơn mức đó KHÔNG bị mài → miệng ống, mép khoét, cạnh hộp vẫn sắc (dùng lock: 180 nếu muốn mài cả cạnh sắc). strength 0..1 → số lượt (mặc định 0,5); passes để chỉnh tay. Số đỉnh chạm trần nhiều (> 5 %) nghĩa là gợn lớn hơn limit — mài thêm không hết, phải sửa tham số op sinh ra gợn hoặc tăng limit. KHÔNG sửa được hình sai, không khôi phục vật liệu đã mất, không dọn mảnh vụn boolean.",
+    description: "MÀI GỢN (\"giấy ráp\") còn lại sau boolean / bevel / weld mà KHÔNG đổi dáng: đỉnh chỉ dời theo pháp tuyến về mặt bậc 2 khớp với hàng xóm, tối đa `limit` (mặc định 5 % cạnh lưới, 0,05–0,5 mm) so với hình gốc, nên gọi nhiều lần cũng không trôi; đỉnh nào làm lật/gấp tam giác thì được trả về chỗ cũ. Dùng khi thấy vòng gợn quanh mối nối, mặt lăn tăn. radius = cỡ miếng ráp: gợn NGẮN hơn radius mới bị bào (sóng 10–20 mm cần 0,015–0,02). region all | near | keep quanh tools[0], reach = bán kính vùng. lock (30°): đỉnh trên cạnh gãy hơn mức đó không bị mài (miệng ống vẫn sắc; 180 = mài cả cạnh). strength 0..1 hoặc passes. Đọc dòng \"đẩy theo pháp tuyến\" và \"đỉnh chạm trần\": chạm trần > 5 % là gợn to hơn limit — sửa tham số phép sinh ra gợn hoặc tăng limit. Không sửa được hình sai.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string", description: "hình cần mài" }, tools: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 1, description: "[hình dùng làm vùng cho region near/keep]" }, region: { type: "string", enum: ["all", "near", "keep"] }, reach: { type: "number", description: "bán kính vùng (m), bỏ trống = tự tính" }, limit: { type: "number", description: "trần dời mỗi đỉnh (m), bỏ trống = 5 % cạnh lưới" }, radius: { type: "number", description: "bán kính miếng ráp (m), bỏ trống = max(3×limit, 4×cạnh ngắn)" }, strength: { type: "number", description: "0..1, mặc định 0,5" }, passes: { type: "integer", description: "1..200, ghi đè strength" }, lock: { type: "number", description: "độ, mặc định 30" }, maxTriangles: { type: "integer" } }, required: ["assembly", "id", "input"] },
   },
   {
@@ -192,7 +192,7 @@ const TOOLS = [
   // ───── vật lý (bộ giải chung XPBD) ─────
   {
     name: "physics_setup",
-    description: "Bật mô phỏng cho bản lắp ráp: bộ phận gom thành vật rắn (ghép chặt thì chung vật, mỗi khớp mở vật mới, bộ phận gắn ground đứng yên), khối lượng / trọng tâm / quán tính tính từ lưới × khối lượng riêng vật liệu, va chạm bằng bao lồi. free = các khớp bỏ đi để vật thành tự do (vd xe trượt dọc ground.x → xe chạy tự do trên đường). Báo danh sách vật và khớp.",
+    description: "Bật mô phỏng (bộ giải chung XPBD, chạy cả trong Node lẫn trang): bộ phận gom thành vật rắn (ghép chặt thì chung vật, mỗi khớp mở vật mới, gắn ground thì đứng yên), khối lượng / trọng tâm / quán tính từ lưới × khối lượng riêng, va chạm bằng bao lồi. free = các khớp bỏ đi để vật thành tự do (xe trượt dọc ground.x → xe chạy tự do). Tiếp theo: body_set (khối lượng thật nếu vật rỗng, ma sát, phục hồi) → initial_set (vận tốc đầu; bánh lăn sẵn thì cho cả ω) → drive_add → simulate đọc bảng số → sim_export .physics.json cho trang (new World(model), world.step(dt), view.setWorld(path, chain(world.matrix(body), part.offset))). Khớp trong cụm viết \"<idBoPhan>/<khop>\".",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, gravity: v3Arg, groundPlane: { type: "boolean", description: "mặt phẳng va chạm y = 0 (mặc định có)" }, substeps: { type: "integer" }, free: { type: "array", items: { type: "string" } } }, required: ["assembly"] },
   },
   {
@@ -252,7 +252,7 @@ const TOOLS = [
   { name: "material_presets", description: "Danh mục vật liệu PBR có sẵn và tham số chỉnh được (màu \"#rrggbb\", độ nhám, kim loại, clearcoat, transmission…), cùng các loại texture thủ tục.", inputSchema: { type: "object", properties: {} } },
   {
     name: "material_define",
-    description: "Định nghĩa (hoặc thay) một vật liệu có tên từ một preset, ghi đè tham số và gắn texture thủ tục: textures {normal|roughness|color: {kind: noise|flakes|tread|grain|scratches, scale (số lần lặp), seed, strength}}.",
+    description: "Định nghĩa (hoặc thay) một vật liệu có tên từ một preset, ghi đè tham số và gắn texture thủ tục: textures {normal|roughness|color: {kind: noise|flakes|tread|grain|scratches, scale (số lần lặp), seed, strength}}. Vật thật không đều tăm tắp: noise cho nhựa sần, grain cho kim loại chải, tread cho gai lốp trên một dải tiện riêng, scratches cho độ nhám. Gán bằng material_assign (bộ phận, hoặc \"shape:<id>\").",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, preset: { type: "string" }, overrides: { type: "object" }, textures: { type: "object" } }, required: ["assembly", "id", "preset"] },
   },
   {
@@ -400,12 +400,7 @@ function upsertShape(op, args) {
  */
 async function requestBrowser(assembly, spec, wait_ms) {
   const a = findAssembly(readState(), assembly);
-  for (const [k, v] of Object.entries(spec.pose ?? {})) {
-    const j = findJoint(a.doc, k);
-    if (!j) throw new Error(`pose: không có khớp "${k}". Có: ${jointNames(a.doc).join(", ") || "(chưa có khớp)"}.`);
-    if (typeof v !== "number") throw new Error(`pose.${k} phải là số.`);
-    if (j.limits && (v < j.limits[0] || v > j.limits[1])) throw new Error(`pose.${k} = ${v} ngoài giới hạn ${JSON.stringify(j.limits)}.`);
-  }
+  checkPose(a.doc, spec.pose);
   if (spec.focus && !a.doc.parts.some((p) => p.id === spec.focus)) throw new Error(`focus: không có bộ phận "${spec.focus}".`);
   const detail = /^detail:(.+)$/.exec(spec.camera ?? "");
   if (detail && !a.doc.parts.some((p) => p.id === detail[1])) throw new Error(`camera: không có bộ phận "${detail[1]}".`);
@@ -435,6 +430,34 @@ function jointNames(doc, prefix = "") {
   const out = doc.joints.map((j) => `${prefix}${j.id}`);
   for (const p of doc.parts) if (doc.types?.[p.type]) out.push(...jointNames(doc.types[p.type].doc, `${prefix}${p.id}/`));
   return out;
+}
+
+/** pose {tenKhop: giaTri}: khớp phải có thật (kể cả "cum/khop"), giá trị là số trong giới hạn. `topOnly` khi chỉ giải được cấp ngoài. */
+function checkPose(doc, pose = {}, topOnly = false) {
+  for (const [k, v] of Object.entries(pose)) {
+    if (topOnly && k.includes("/")) throw new Error(`pose.${k}: lệnh này chỉ đặt được khớp cấp ngoài (${doc.joints.map((j) => j.id).join(", ") || "chưa có"}); khớp trong cụm thì xem bằng assembly_view.`);
+    const j = findJoint(doc, k);
+    if (!j) throw new Error(`pose: không có khớp "${k}". Có: ${jointNames(doc).join(", ") || "(chưa có khớp)"}.`);
+    if (typeof v !== "number") throw new Error(`pose.${k} phải là số.`);
+    if (j.limits && (v < j.limits[0] || v > j.limits[1])) throw new Error(`pose.${k} = ${v} ngoài giới hạn ${JSON.stringify(j.limits)}.`);
+  }
+}
+
+/**
+ * Bỏ các khớp `ids` khỏi tài liệu cùng mọi thứ trỏ tới chúng (động cơ). Khớp khác đang couple theo chúng thì báo
+ * lỗi, trừ khi `cascade` (bỏ luôn cả chuỗi). Trả về danh sách khớp đã bỏ.
+ */
+function dropJoints(doc, ids, cascade) {
+  const gone = new Set(ids);
+  for (let grew = true; grew;) {
+    grew = false;
+    const deps = doc.joints.filter((j) => !gone.has(j.id) && j.couple && gone.has(j.couple.joint));
+    if (deps.length && !cascade) throw new Error(`Khớp ${deps.map((j) => `${j.id} (couple theo ${j.couple.joint})`).join(", ")} đang chạy theo khớp sắp xoá. Xoá hoặc đổi couple của chúng trước, hoặc dùng cascade: true.`);
+    for (const j of deps) { gone.add(j.id); grew = true; }
+  }
+  doc.joints = doc.joints.filter((j) => !gone.has(j.id));
+  if (doc.physics?.drives) doc.physics.drives = Object.fromEntries(Object.entries(doc.physics.drives).filter(([k]) => !gone.has(k)));
+  return [...gone];
 }
 
 // ───── vật lý: mô hình có cache, báo cáo, khối đặc để kiểm tra ─────
@@ -495,10 +518,8 @@ function solidsOf(list) {
 
 const boxesOverlap = (a, b, tol = 0) => [0, 1, 2].every((k) => a.min[k] <= b.max[k] + tol && b.min[k] <= a.max[k] + tol);
 
-/** Thư viện chung kèm mục hình tự dựng. */
-const typList = () => `${typeList(PARTS)}
-
-## shape
+/** Loại dùng được: hình tự dựng (không có thư viện bộ phận viết sẵn). */
+const typList = () => `## shape
 - shape:<id>: hình tự dựng bằng shape_lathe / shape_extrude / shape_sweep / shape_loft / shape_boolean… (xem shape_list).`;
 
 function children(doc, id) {
@@ -547,6 +568,7 @@ const handlers = {
   },
 
   part_add: ({ assembly, id, type, params = {}, place, material }) => {
+    if (!ID.test(id ?? "")) throw new Error(`id bộ phận "${id}" không hợp lệ (chữ, số, -, _; không có dấu chấm hay /, vì chúng tách tên điểm neo và đường dẫn cụm).`);
     const lib = readState().library ?? {};
     const { solved, reg } = editDoc(assembly, (doc) => {
       if (doc.parts.some((p) => p.id === id)) throw new Error(`Đã có bộ phận "${id}"; dùng part_update để sửa.`);
@@ -578,15 +600,22 @@ const handlers = {
       }
       if (gone.size > 1 && !cascade) throw new Error(`Có bộ phận ghép vào ${id}: ${[...gone].filter((x) => x !== id).join(", ")}. Đặt lại chúng trước, hoặc dùng cascade: true.`);
       doc.parts = doc.parts.filter((p) => !gone.has(p.id));
-      doc.joints = doc.joints.map((j) => ({ ...j, moves: j.moves.filter((m) => !gone.has(m)) })).filter((j) => j.moves.length && !gone.has(j.axis.split(".")[0]));
+      doc.joints = doc.joints.map((j) => ({ ...j, moves: j.moves.filter((m) => !gone.has(m)) }));
+      const jointsGone = dropJoints(doc, doc.joints.filter((j) => !j.moves.length || gone.has(j.axis.split(".")[0])).map((j) => j.id), cascade);
       doc.routes = doc.routes.filter((r) => ![r.from, r.to, ...(r.via ?? []).map((v) => v.on)].some((ref) => gone.has(ref.split(".")[0])));
-      return [...gone];
+      if (doc.decals) doc.decals = doc.decals.filter((d) => !gone.has(d.target));
+      // tính chất vật lý ghi theo đường dẫn bộ phận ("id" hoặc "id/con")
+      const keep = ([path]) => !gone.has(path.split("/")[0]);
+      for (const k of ["bodies", "initial"]) if (doc.physics?.[k]) doc.physics[k] = Object.fromEntries(Object.entries(doc.physics[k]).filter(keep));
+      if (doc.physics?.drives) doc.physics.drives = Object.fromEntries(Object.entries(doc.physics.drives).filter(keep));
+      return { parts: [...gone], joints: jointsGone };
     });
-    return text(`Đã xoá: ${info.join(", ")}.`);
+    return text(`Đã xoá: ${info.parts.join(", ")}.${info.joints.length ? ` Khớp bỏ theo: ${info.joints.join(", ")}.` : ""}`);
   },
 
   joint_add: ({ assembly, id, kind, axis, moves, limits, couple }) => {
     if (!ID.test(id)) throw new Error(`id khớp "${id}" không hợp lệ.`);
+    if (limits && !(limits[0] < limits[1])) throw new Error(`limits phải là [nhỏ, lớn], đang là ${JSON.stringify(limits)}.`);
     const { doc, solved } = editDoc(assembly, (d) => {
       d.joints = d.joints.filter((j) => j.id !== id);
       d.joints.push({ id, kind, axis, moves, ...(limits ? { limits } : {}), ...(couple ? { couple } : {}) });
@@ -597,7 +626,10 @@ const handlers = {
       const probe = clone(doc);
       for (const j of probe.joints) j.value = j.id === couple.joint ? 1 : 0;
       const v = solve(probe, registryFor(probe)).values.get(id);
-      coupled = ` Ghép theo ${couple.joint}: ${+v.toFixed(4)} ${kind === "revolute" ? "°" : "m"} cho mỗi 1 ${probe.joints.find((j) => j.id === couple.joint).kind === "revolute" ? "°" : "m"} của khớp dẫn.`;
+      const lead = findJoint(probe, couple.joint);
+      coupled = typeof v === "number" && lead
+        ? ` Ghép theo ${couple.joint}: ${+v.toFixed(4)} ${kind === "revolute" ? "°" : "m"} cho mỗi 1 ${lead.kind === "revolute" ? "°" : "m"} của khớp dẫn.`
+        : ` Ghép theo ${couple.joint} (không đo được tỉ số).`;
     }
     return text(`Khớp ${id} (${kind} quanh ${axis}) kéo theo: ${solved.clusters.get(id).join(", ")}.${coupled}`);
   },
@@ -639,12 +671,12 @@ const handlers = {
 `);
     return text(`Đã ghi ${relative(root, file).replaceAll("\\", "/")} (${doc.parts.length} bộ phận, khớp: ${doc.joints.map((j) => j.id).join(", ") || "không"}). ${copied ? ` Chép ${copied} lưới nướng sẵn vào fe/public/assembly-meshes: trang gọi preloadMeshes(doc, (h) => \`/assembly-meshes/\${h}.bin\`) trước khi dựng.` : ""} Trong trang: buildAssembly(doc, createMaterialKit()) từ @/assembly-kit/three/build-scene, rồi view.setPose({...}) mỗi khung hình; khớp ghép tự đi theo khớp dẫn.`);
   },
-  joint_remove: ({ assembly, id }) => {
-    editDoc(assembly, (doc) => {
+  joint_remove: ({ assembly, id, cascade = false }) => {
+    const { info } = editDoc(assembly, (doc) => {
       if (!doc.joints.some((j) => j.id === id)) throw new Error(`Không có khớp "${id}".`);
-      doc.joints = doc.joints.filter((j) => j.id !== id);
+      return dropJoints(doc, [id], cascade);
     });
-    return text(`Đã xoá khớp ${id}.`);
+    return text(`Đã xoá khớp ${info.join(", ")}.`);
   },
   route_add: ({ assembly, id, from, to, via, radius, material }) => {
     if (!ID.test(id)) throw new Error(`id dây "${id}" không hợp lệ.`);
@@ -712,6 +744,7 @@ const handlers = {
   },
   simulate: ({ assembly, duration, dt = 1 / 120, samples = 10, record }) => {
     if (!(duration > 0 && duration <= 60)) throw new Error("duration trong (0, 60] giây.");
+    if (record && record.length > 6) throw new Error(`record tối đa 6 vật (đang ${record.length}); bảng mẫu rộng hơn thì khó đọc — chạy nhiều lần.`);
     const doc = findAssembly(readState(), assembly).doc;
     const model = physicsModel(doc);
     const w = new World(model);
@@ -1019,6 +1052,7 @@ const handlers = {
   // ───── đo ─────
   measure: ({ assembly, kind, target, a, b, pose = {}, spec }) => {
     const doc = clone(findAssembly(readState(), assembly).doc);
+    checkPose(doc, pose, true);
     for (const j of doc.joints) j.value = pose[j.id] ?? 0;
     const reg = registryFor(doc);
     const solved = solve(doc, reg);
@@ -1106,74 +1140,94 @@ async function selftest() {
   const callAsync = async (name, args) => (await handlers[name](args)).content[0].text;
   const fails = [];
   const near = (label, got, want, tol = 1e-4) => { if (Math.abs(got - want) > tol) fails.push(`${label}: ${got} ≠ ${want}`); };
-  const worldOf = () => solve(findAssembly(readState(), "gen").doc, PARTS);
+  const solved = (aid) => { const d = findAssembly(readState(), aid).doc; return solve(d, registryFor(d)); };
+  // khối dựng bằng hình tự dựng (không còn thư viện bộ phận): hộp đùn kèm trục qua tâm, thân tròn tiện quanh y
+  const boxShape = (Q, sid, [w, h, d], edgeRadius = 0) => {
+    Q("shape_extrude", { id: sid, outline: { pts: [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]], closed: true }, depth: d, edgeRadius });
+    for (const [name, dir, up] of [["axisX", [1, 0, 0], [0, 1, 0]], ["axisY", [0, 1, 0], [0, 0, 1]], ["axisZ", [0, 0, 1], [0, 1, 0]]]) {
+      Q("anchor_define", { shape: sid, name, kind: "axis", origin: [0, 0, 0], dir, up });
+    }
+  };
+  // vành hơi phồng ở giữa để điểm neo surface (bán kính lớn nhất) nằm giữa chiều dài
+  const roundShape = (Q, sid, length, diameter, extra = {}) => {
+    const L = length / 2, R = diameter / 2;
+    Q("shape_lathe", { id: sid, profile: { pts: [[0, -L], [R * 0.995, -L], [R, 0], [R * 0.995, L], [0, L]] }, segments: 96, ...extra });
+  };
   try {
-    call("assembly_create", { id: "gen", title: "Máy phát điện xoay chiều" });
-    const add = (id, type, place, params) => call("part_add", { assembly: "gen", id, type, place, params });
-    add("base", "basePlate", { kind: "onto", a: "base.bottom", b: "ground.top", at: [0.04, 0] });
-    add("mag", "horseshoeMagnet", { kind: "onto", a: "mag.bottom", b: "base.top", at: [-0.04, 0] });
-    add("brgL", "bearingBlock", { kind: "onto", a: "brgL.foot", b: "base.top", at: [-0.138, 0] });
-    add("brgR", "bearingBlock", { kind: "onto", a: "brgR.foot", b: "base.top", at: [0.058, 0] });
-    add("shaft", "shaft", { kind: "through", a: "shaft.axis", b: "brgL.bore", offset: 0.082 }, { length: 0.412 });
-    add("coil", "coil", { kind: "coaxial", a: "coil.axis", b: "shaft.axis", offset: 0.016 });
-    add("ring1", "slipRing", { kind: "coaxial", a: "ring1.axis", b: "shaft.axis", offset: 0.144 });
-    add("ring2", "slipRing", { kind: "coaxial", a: "ring2.axis", b: "shaft.axis", offset: 0.17 });
-    add("brush1", "carbonBrush", { kind: "touch", a: "brush1.tip", b: "ring1.surface@bottom", follow: false }, { standHeight: 0.078 });
-    add("crank", "crank", { kind: "coaxial", a: "crank.axis", b: "shaft.axis", offset: -0.198 });
-    add("meter", "analogMeter", { kind: "onto", a: "meter.bottom", b: "base.top", at: [0.245, -0.05] });
-    add("needle", "needle", { kind: "coaxial", a: "needle.axis", b: "meter.pivot" });
-    add("postR", "bindingPost", { kind: "onto", a: "postR.bottom", b: "base.top", at: [0.165, 0.105] });
-    call("joint_add", { assembly: "gen", id: "rotor", kind: "revolute", axis: "brgL.bore", moves: ["shaft"] });
-    call("joint_add", { assembly: "gen", id: "needleJ", kind: "revolute", axis: "meter.pivot", moves: ["needle"], limits: [-45, 45] });
-    call("route_add", { assembly: "gen", id: "w1", from: "brush1.terminal", to: "postR.terminal", via: [{ on: "base.top" }], radius: 0.0016, material: "wireRed" });
+    // trục quay trên hai gối, vành trượt và chổi tì vành (follow: false), dây nối
+    call("assembly_create", { id: "gen", title: "Trục trên gối" });
+    const G = (tool, args) => call(tool, { assembly: "gen", ...args });
+    const add = (id, type, place) => G("part_add", { id, type, place });
+    boxShape(G, "baseS", [0.58, 0.028, 0.28]);
+    G("shape_extrude", { id: "brgBody", outline: { pts: [[-0.015, -0.08], [0.015, -0.08], [0.015, 0.08], [-0.015, 0.08]], closed: true }, depth: 0.05, edgeRadius: 0 });
+    roundShape(G, "boreS", 0.1, 0.014, { rotate: [0, 0, -90], offset: [0, 0.055, 0] });
+    G("shape_boolean", { id: "brgS", op: "subtract", input: "brgBody", tools: ["boreS"] });
+    roundShape(G, "shaftS", 0.42, 0.012, { rotate: [0, 0, -90] });
+    roundShape(G, "fatS", 0.1, 0.03, { rotate: [0, 0, -90] });
+    boxShape(G, "coilS", [0.11, 0.084, 0.021]);
+    roundShape(G, "ringS", 0.012, 0.032, { rotate: [0, 0, -90] });
+    boxShape(G, "brushS", [0.008, 0.03, 0.0105]);
+    boxShape(G, "crankS", [0.012, 0.08, 0.02]);
+    boxShape(G, "postS", [0.01, 0.03, 0.01]);
+    add("base", "shape:baseS", { kind: "onto", a: "base.bottom", b: "ground.top", at: [0.04, 0] });
+    add("brgL", "shape:brgS", { kind: "onto", a: "brgL.bottom", b: "base.top", at: [-0.14, 0] });
+    add("brgR", "shape:brgS", { kind: "onto", a: "brgR.bottom", b: "base.top", at: [0.06, 0] });
+    add("shaft", "shape:shaftS", { kind: "through", a: "shaft.axis", b: "brgL.boreS.axis", offset: 0.1 });
+    add("coil", "shape:coilS", { kind: "coaxial", a: "coil.axisX", b: "shaft.axis" });
+    add("ring1", "shape:ringS", { kind: "coaxial", a: "ring1.axis", b: "shaft.axis", offset: 0.12 });
+    add("ring2", "shape:ringS", { kind: "coaxial", a: "ring2.axis", b: "shaft.axis", offset: 0.15 });
+    G("part_add", { id: "brush1", type: "shape:brushS", place: { kind: "touch", a: "brush1.top", b: "ring1.surface@bottom", follow: false } });
+    add("crank", "shape:crankS", { kind: "coaxial", a: "crank.axisX", b: "shaft.axis", offset: -0.18 });
+    add("postR", "shape:postS", { kind: "onto", a: "postR.bottom", b: "base.top", at: [0.165, 0.105] });
+    G("joint_add", { id: "rotor", kind: "revolute", axis: "brgL.boreS.axis", moves: ["shaft"] });
+    G("route_add", { id: "w1", from: "brush1.bottom", to: "postR.top", via: [{ on: "base.top" }], radius: 0.0016, material: "wireRed" });
 
-    const s = worldOf();
-    const at = (id, p = [0, 0, 0]) => {
-      const m = s.parts.get(id).world;
-      return [0, 1, 2].map((i) => m[i] * p[0] + m[4 + i] * p[1] + m[8 + i] * p[2] + m[12 + i]);
-    };
+    const s = solved("gen");
+    const at = (id) => [12, 13, 14].map((i) => s.parts.get(id).world[i]);
     const SY = 0.028 + 0.135;
-    near("base.top y", at("base")[1], 0.028);
-    near("ring1 x", at("ring1")[0], 0.128); near("ring1 y", at("ring1")[1], SY);
+    near("base.top y", at("base")[1] + 0.014, 0.028);
+    near("shaft x", at("shaft")[0], 0); near("shaft y", at("shaft")[1], SY);
+    near("ring1 x", at("ring1")[0], 0.12); near("ring1 y", at("ring1")[1], SY);
     near("coil x", at("coil")[0], 0); near("coil y", at("coil")[1], SY);
-    near("brush1 tip y", at("brush1")[1], SY - 0.017); near("brush1 tip x", at("brush1")[0], 0.128);
-    near("brush1 foot y", at("brush1", [0, -0.02 + 0.006 - 0.026 - 0.078, 0])[1], 0.028);
-    near("crank x", at("crank")[0], -0.214);
-    near("needle z", at("needle")[2], -0.05 + 0.017 + 0.0015);
+    near("brush1 y", at("brush1")[1], SY - 0.016 - 0.015); near("brush1 x", at("brush1")[0], 0.12);
+    near("crank x", at("crank")[0], -0.18);
     // quay rô-to 90°: khung dây đổi hướng, chổi than đứng yên
     const doc = findAssembly(readState(), "gen").doc;
     doc.joints.find((j) => j.id === "rotor").value = 90;
-    const s90 = solve(doc, PARTS);
-    const coilNormal = [8, 9, 10].map((i) => s90.parts.get("coil").world[i]);
-    near("coil normal y @90°", Math.abs(coilNormal[1]), 1);
-    near("brush1 x @90°", s90.parts.get("brush1").world[12], 0.128);
+    const s90 = solve(doc, registryFor(doc));
+    const n0 = [8, 9, 10].map((i) => s.parts.get("coil").world[i]), n90 = [8, 9, 10].map((i) => s90.parts.get("coil").world[i]);
+    near("coil pháp tuyến xoay 90°", n0.reduce((acc, v, i) => acc + v * n90[i], 0), 0);
+    near("coil pháp tuyến vuông góc trục @90°", n90[0], 0);
+    near("brush1 x @90°", s90.parts.get("brush1").world[12], 0.12);
     near("ring1 y @90°", s90.parts.get("ring1").world[13], SY);
     if (JSON.stringify(s90.clusters.get("rotor")) !== JSON.stringify(["shaft", "coil", "ring1", "ring2", "crank"])) fails.push(`cụm rotor: ${s90.clusters.get("rotor")}`);
 
     console.log(call("assembly_describe", { assembly: "gen" }));
     console.log("\n--- lỗi cố ý ---");
     for (const [label, args] of [
-      ["sai tên điểm neo", { id: "x1", type: "block", place: { kind: "onto", a: "x1.bottom", b: "base.topp" } }],
-      ["trục to hơn lỗ", { id: "x2", type: "rod", params: { diameter: 0.03 }, place: { kind: "through", a: "x2.axis", b: "brgR.bore" } }],
-      ["tham chiếu bộ phận chưa có", { id: "x3", type: "block", place: { kind: "onto", a: "x3.bottom", b: "lamp.top" } }],
-      ["ghép trục vào mặt", { id: "x4", type: "rod", place: { kind: "coaxial", a: "x4.axis", b: "base.top" } }],
-      ["tham số ngoài miền", { id: "x5", type: "coil", params: { turns: 0 }, place: { kind: "coaxial", a: "x5.axis", b: "shaft.axis" } }],
+      ["sai tên điểm neo", { id: "x1", type: "shape:postS", place: { kind: "onto", a: "x1.bottom", b: "base.topp" } }],
+      ["trục to hơn lỗ", { id: "x2", type: "shape:fatS", place: { kind: "through", a: "x2.axis", b: "brgR.boreS.axis" } }],
+      ["tham chiếu bộ phận chưa có", { id: "x3", type: "shape:postS", place: { kind: "onto", a: "x3.bottom", b: "lamp.top" } }],
+      ["ghép trục vào mặt", { id: "x4", type: "shape:shaftS", place: { kind: "coaxial", a: "x4.axis", b: "base.top" } }],
+      ["loại không có", { id: "x5", type: "coil", place: { kind: "coaxial", a: "x5.axis", b: "shaft.axis" } }],
     ]) {
-      try { add(args.id, args.type, args.place, args.params); fails.push(`${label}: không báo lỗi`); } catch (e) { console.log(`- ${label}: ${e.message}`); }
+      try { add(args.id, args.type, args.place); fails.push(`${label}: không báo lỗi`); } catch (e) { console.log(`- ${label}: ${e.message}`); }
     }
     if (findAssembly(readState(), "gen").doc.parts.some((p) => p.id.startsWith("x"))) fails.push("lệnh lỗi vẫn ghi vào tài liệu");
 
     // xe cỡ thật trượt dọc ground.x, bánh lăn theo bằng khớp ghép tự tính tỉ số
     console.log("\n--- xe lăn ---");
     call("assembly_create", { id: "car", title: "Xe" });
-    const addC = (id, type, place, params) => call("part_add", { assembly: "car", id, type, place, params });
+    const C = (tool, args) => call(tool, { assembly: "car", ...args });
     const R = 0.32;
-    addC("body", "block", { kind: "onto", a: "body.bottom", b: "ground.top", offset: 0.2 }, { size: [4.3, 0.62, 1.72], bevel: 0.08 });
-    addC("wheel", "disc", { kind: "touch", a: "wheel.end0", b: "body.front", at: [1.35, R - 0.51] }, { length: 0.22, diameter: 2 * R, material: "rubber" });
-    call("joint_add", { assembly: "car", id: "drive", kind: "prismatic", axis: "ground.x", moves: ["body"] });
-    console.log(call("joint_add", { assembly: "car", id: "roll", kind: "revolute", axis: "wheel.axis", moves: ["wheel"], couple: { joint: "drive" } }));
+    boxShape(C, "bodyS", [4.3, 0.62, 1.72], 0.08);
+    C("shape_lathe", { id: "wheelS", profile: { pts: [[0, -0.11], [R, -0.11], [R, 0.11], [0, 0.11]] }, segments: 96, rotate: [90, 0, 0] });
+    C("part_add", { id: "body", type: "shape:bodyS", place: { kind: "onto", a: "body.bottom", b: "ground.top", offset: 0.2 } });
+    C("part_add", { id: "wheel", type: "shape:wheelS", place: { kind: "touch", a: "wheel.back", b: "body.front", at: [1.35, R - 0.51] }, material: "rubber" });
+    C("joint_add", { id: "drive", kind: "prismatic", axis: "ground.x", moves: ["body"] });
+    console.log(C("joint_add", { id: "roll", kind: "revolute", axis: "wheel.axis", moves: ["wheel"], couple: { joint: "drive" } }));
     const carDoc = findAssembly(readState(), "car").doc;
-    const wheelAt = (s) => { carDoc.joints.find((j) => j.id === "drive").value = s; return solve(carDoc, PARTS).parts.get("wheel").world; };
+    const wheelAt = (v) => { carDoc.joints.find((j) => j.id === "drive").value = v; return solve(carDoc, registryFor(carDoc)).parts.get("wheel").world; };
     const m0 = wheelAt(0), m1 = wheelAt(Math.PI * R); // nửa vòng
     near("tâm bánh y", m0[13], R);
     // điểm vành đang chạm đất lúc đầu phải lên đỉnh sau nửa vòng, tâm dời πR
@@ -1338,7 +1392,7 @@ async function selftest() {
     { const d = findAssembly(readState(), "lv3").doc; const b = worldBounds(registryFor(d), solve(d, registryFor(d)).parts.get("h")); near("cụm lồng rộng", b.max[0] - b.min[0], 0.4 + 0.09, 2e-3); }
     if (!/Cụm đã lưu[\s\S]*coc/.test(call("part_types_list", {}))) fails.push("part_types_list thiếu cụm");
     for (const [label, args] of [
-      ["tên trùng loại có sẵn", { assembly: "src", name: "block" }],
+      ["tên mang tiền tố hình", { assembly: "src", name: "shape:coc" }],
       ["cụm không khép kín", { assembly: "src", name: "x1", parts: ["ring1"] }],
       ["root ngoài cụm", { assembly: "src", name: "x2", parts: ["cup1"], root: "ring1" }],
       ["expose sai điểm neo", { assembly: "src", name: "x3", expose: { a: "cup1.khongCo" } }],
@@ -1357,8 +1411,9 @@ async function selftest() {
       near("pattern bản 1 xoay 72°", Math.atan2(a.origin[2], a.origin[0]) - Math.atan2(b.origin[2], b.origin[0]) + (Math.atan2(a.origin[2], a.origin[0]) < 0 ? 0 : 0), 0, 10); // chỉ cần có mặt
     }
     S("part_add", { id: "holed1", type: "shape:holed", place: { kind: "onto", a: "holed1.bottom", b: "ground.top", at: [1, 1] } });
-    S("part_add", { id: "pin1", type: "rod", params: { length: 0.3, diameter: 0.02 }, place: { kind: "through", a: "pin1.axis", b: "holed1.bar.axis" } });
-    console.log(S("part_add", { id: "pin2", type: "rod", params: { length: 0.3, diameter: 0.02 }, place: { kind: "through", a: "pin2.axis", b: "holed1.bar.axis", offset: 0.01 } }).split("\n")[1]);
+    roundShape(S, "pinS", 0.3, 0.02);
+    S("part_add", { id: "pin1", type: "shape:pinS", place: { kind: "through", a: "pin1.axis", b: "holed1.bar.axis" } });
+    console.log(S("part_add", { id: "pin2", type: "shape:pinS", place: { kind: "through", a: "pin2.axis", b: "holed1.bar.axis", offset: 0.01 } }).split("\n")[1]);
 
     // khớp trong cụm: lưu cốc có khớp quay, xoay bằng "c1/xoay"
     console.log("\n--- khớp trong cụm ---");
@@ -1371,8 +1426,13 @@ async function selftest() {
 
     // vật lý: rơi tự do, va chạm, con lắc, đĩa lăn, bánh răng (đáp số tính tay)
     console.log("\n--- vật lý ---");
-    const P = (id, title) => { call("assembly_create", { id, title }); return (tool, args) => call(tool, { assembly: id, ...args }); };
-    const box = (Q, id, size, place, extra = {}) => Q("part_add", { id, type: "block", params: { size, bevel: 0, material: "steel" }, place, ...extra });
+    const P = (id, title) => { call("assembly_create", { id, title }); const Q = (tool, args) => call(tool, { assembly: id, ...args }); Q.boxes = new Map(); return Q; };
+    // hộp thép: mỗi cỡ một hình đùn trong bản lắp ráp
+    const box = (Q, id, size, place, extra = {}) => {
+      const key = size.join("x");
+      if (!Q.boxes.has(key)) { Q.boxes.set(key, `hop${Q.boxes.size}`); boxShape(Q, Q.boxes.get(key), size); }
+      return Q("part_add", { id, type: `shape:${Q.boxes.get(key)}`, place, material: "steel", ...extra });
+    };
     const bodyOf = (aid, id) => { const doc = findAssembly(readState(), aid).doc; const w = new World(physicsModel(doc)); return { w, b: w.byId.get(id) }; };
     {
       const Q = P("ph1", "Rơi");
@@ -1417,7 +1477,8 @@ async function selftest() {
     }
     {
       const Q = P("ph4", "Đĩa lăn");
-      Q("part_add", { id: "d", type: "disc", params: { length: 0.05, diameter: 0.4, material: "rubber" }, place: { kind: "touch", a: "d.surface@angle=0", b: "ground.top" } });
+      roundShape(Q, "dS", 0.05, 0.4);
+      Q("part_add", { id: "d", type: "shape:dS", material: "rubber", place: { kind: "touch", a: "d.surface@angle=0", b: "ground.top" } });
       Q("body_set", { part: "d", fixed: false });
       Q("initial_set", { part: "d", velocity: [2, 0, 0] });
       const { w, b } = bodyOf("ph4", "d");
@@ -1428,8 +1489,10 @@ async function selftest() {
     {
       const Q = P("ph5", "Bánh răng");
       box(Q, "base", [1, 0.1, 0.4], { kind: "onto", a: "base.bottom", b: "ground.top" });
-      Q("part_add", { id: "ga", type: "disc", params: { length: 0.02, diameter: 0.2 }, place: { kind: "onto", a: "ga.end0", b: "base.top", at: [-0.2, 0], offset: 0.05 } });
-      Q("part_add", { id: "gb", type: "disc", params: { length: 0.02, diameter: 0.4 }, place: { kind: "onto", a: "gb.end0", b: "base.top", at: [0.2, 0], offset: 0.05 } });
+      roundShape(Q, "gaS", 0.02, 0.2);
+      roundShape(Q, "gbS", 0.02, 0.4);
+      Q("part_add", { id: "ga", type: "shape:gaS", place: { kind: "onto", a: "ga.bottom", b: "base.top", at: [-0.2, 0], offset: 0.05 } });
+      Q("part_add", { id: "gb", type: "shape:gbS", place: { kind: "onto", a: "gb.bottom", b: "base.top", at: [0.2, 0], offset: 0.05 } });
       Q("joint_add", { id: "ja", kind: "revolute", axis: "ga.axis", moves: ["ga"] });
       Q("joint_add", { id: "jb", kind: "revolute", axis: "gb.axis", moves: ["gb"] });
       Q("physics_setup", { gravity: [0, 0, 0], groundPlane: false });
@@ -1466,6 +1529,35 @@ async function selftest() {
       console.log(phy.split("\n").slice(0, 2).join("\n"));
       if (!/bay|kéo rời|năng lượng tăng/.test(phy)) fails.push(`check_physics không bắt hai hộp đặt xuyên nhau: ${phy}`);
     }
+
+    // dọn dẹp khi xoá: khớp ghép, động cơ, vật lý, decal; kiểm tham số
+    console.log("\n--- xoá và kiểm tham số ---");
+    {
+      const throws = (label, fn) => { try { fn(); fails.push(`${label}: không báo lỗi`); } catch (e) { console.log(`- ${label}: ${e.message.split("\n")[0].slice(0, 120)}`); } };
+      if (CLAUDE_INSTRUCTIONS.length > 3500) fails.push(`instructions dài ${CLAUDE_INSTRUCTIONS.length} ký tự (> 3500, client sẽ cắt)`);
+      const Q = P("rm", "Xoá");
+      box(Q, "base", [0.6, 0.05, 0.3], { kind: "onto", a: "base.bottom", b: "ground.top" });
+      box(Q, "A", [0.1, 0.1, 0.1], { kind: "onto", a: "A.bottom", b: "base.top", at: [-0.15, 0] });
+      box(Q, "C", [0.1, 0.1, 0.1], { kind: "onto", a: "C.bottom", b: "base.top", at: [0.15, 0] });
+      throws("id bộ phận có dấu chấm", () => box(Q, "x.y", [0.1, 0.1, 0.1], { kind: "onto", a: "x.y.bottom", b: "base.top" }));
+      Q("joint_add", { id: "j1", kind: "revolute", axis: "A.axisY", moves: ["A"] });
+      Q("joint_add", { id: "j2", kind: "revolute", axis: "C.axisY", moves: ["C"], couple: { joint: "j1", ratio: 2 } });
+      throws("limits ngược", () => Q("joint_add", { id: "j3", kind: "revolute", axis: "C.axisY", moves: ["C"], limits: [10, -10] }));
+      Q("body_set", { part: "A", friction: 0.3 });
+      Q("initial_set", { part: "A", velocity: [1, 0, 0] });
+      Q("drive_add", { joint: "j1", kind: "speed", value: 90 });
+      Q("decal_add", { id: "d1", target: "A", at: "A.front", size: [0.05, 0.05], content: { text: "A" } });
+      throws("measure pose khớp không có", () => Q("measure", { kind: "bounds", pose: { khongCo: 1 } }));
+      throws("measure pose khớp trong cụm", () => Q("measure", { kind: "bounds", pose: { "A/x": 1 } }));
+      throws("joint_remove khớp đang được couple", () => Q("joint_remove", { id: "j1" }));
+      throws("part_remove làm mồ côi khớp couple", () => Q("part_remove", { id: "A" }));
+      console.log(Q("part_remove", { id: "A", cascade: true }));
+      const d = findAssembly(readState(), "rm").doc;
+      if (d.joints.length) fails.push(`part_remove còn khớp: ${d.joints.map((j) => j.id)}`);
+      if (Object.keys(d.physics?.bodies ?? {}).length || Object.keys(d.physics?.initial ?? {}).length || Object.keys(d.physics?.drives ?? {}).length) fails.push(`part_remove còn vật lý: ${JSON.stringify(d.physics)}`);
+      if (d.decals?.length) fails.push(`part_remove còn decal: ${d.decals.map((x) => x.id)}`);
+      Q("physics_setup", {}); // trước đây ném "physics.initial: không có bộ phận A"
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -1485,5 +1577,5 @@ else {
       } catch (e) { process.stderr.write(`không nướng được ${a.id}: ${e.message}\n`); }
     }
   }, 50);
-  process.stderr.write(`neviad-assembly ${SERVER.version}: ${Object.keys(PARTS).length} loại bộ phận, sẵn sàng\n`);
+  process.stderr.write(`neviad-assembly ${SERVER.version}: sẵn sàng\n`);
 }

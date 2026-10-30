@@ -104,7 +104,7 @@ export default function Studio() {
   const [pose, setPose] = useState<Record<string, number>>({});
   const [capturing, setCapturing] = useState<string | null>(null);
   const versionRef = useRef(-1);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const three = useRef<{ renderer: THREE.WebGLRenderer; stage: ReturnType<typeof createStage>; camera: THREE.PerspectiveCamera; controls: OrbitControls; kit: MaterialKit } | null>(null);
   const viewRef = useRef<{ key: string; view: AssemblyView } | null>(null);
   const fittedRef = useRef<string | null>(null);
@@ -117,6 +117,7 @@ export default function Studio() {
   const simRef = useRef<{ world: World | null; model: PhysicsModel | null; running: boolean; speed: number; acc: number }>({ world: null, model: null, running: false, speed: 1, acc: 0 });
   const [sim, setSim] = useState<{ status: "idle" | "loading" | "running" | "paused" | "missing"; t: number }>({ status: "idle", t: 0 });
   const [rebuild, setRebuild] = useState(0);
+  const [gpuLost, setGpuLost] = useState(false);
   useEffect(() => {
     loadBrowserKernel()
       .then(() => setKernelOk(true))
@@ -158,7 +159,11 @@ export default function Studio() {
 
   // Khởi tạo khung xem một lần.
   useEffect(() => {
-    const canvas = canvasRef.current!;
+    // canvas mới cho mỗi lần mount: cleanup gọi forceContextLoss(), nên dùng lại canvas cũ (StrictMode, Fast Refresh)
+    // sẽ nhận đúng ngữ cảnh đã mất và three.js đổ lỗi "reading 'precision'"
+    const canvas = document.createElement("canvas");
+    canvas.className = "block h-full w-full";
+    hostRef.current!.appendChild(canvas);
     const renderer = newRenderer(canvas);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     const stage = createStage(renderer);
@@ -196,13 +201,34 @@ export default function Studio() {
       controls.update();
       renderer.render(stage.scene, camera);
     });
+    // GPU cạn (máy yếu, cảnh nặng): giữ trang sống và báo thay vì để lỗi tràn ra; trình duyệt tự khôi phục được thì dựng lại
+    const lost = (e: Event) => {
+      e.preventDefault();
+      setGpuLost(true);
+    };
+    const restored = () => {
+      setGpuLost(false);
+      setRebuild((r) => r + 1);
+    };
+    canvas.addEventListener("webglcontextlost", lost);
+    canvas.addEventListener("webglcontextrestored", restored);
     return () => {
       ro.disconnect();
+      canvas.removeEventListener("webglcontextlost", lost);
+      canvas.removeEventListener("webglcontextrestored", restored);
       renderer.setAnimationLoop(null);
       controls.dispose();
+      // dispose() không nhả ngữ cảnh WebGL; mỗi lần Fast Refresh dựng lại trang sẽ để lại một ngữ cảnh, đủ nhiều thì
+      // trình duyệt mất ngữ cảnh và chặn trang. forceContextLoss() nhả hẳn.
       renderer.dispose();
-      capRef.current?.renderer.dispose();
+      renderer.forceContextLoss();
+      if (capRef.current) {
+        capRef.current.renderer.dispose();
+        capRef.current.renderer.forceContextLoss();
+        capRef.current = null;
+      }
       three.current = null;
+      canvas.remove();
     };
   }, []);
 
@@ -377,7 +403,12 @@ export default function Studio() {
         </ul>
       </aside>
       <section className="relative min-w-0 flex-1">
-        <canvas ref={canvasRef} className="block h-full w-full" />
+        <div ref={hostRef} className="h-full w-full" />
+        {gpuLost && (
+          <div className="absolute inset-x-3 top-3 rounded-md bg-red-900/80 px-3 py-2 text-[12px]">
+            Trình duyệt đã mất ngữ cảnh WebGL (GPU hết bộ nhớ). Đang chờ khôi phục; nếu không tự hiện lại thì tải lại trang.
+          </div>
+        )}
         {capturing && <div className="absolute right-3 top-3 rounded-md bg-black/60 px-3 py-1.5 text-[12px]">Đang chụp {capturing} cho Claude…</div>}
         {building && !capturing && <div className="absolute right-3 top-3 rounded-md bg-black/60 px-3 py-1.5 text-[12px]">Đang dựng {building}…</div>}
         {selected?.doc.physics && (

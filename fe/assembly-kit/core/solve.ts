@@ -268,7 +268,7 @@ function applyJoints(joints: Joint[], parts: Map<string, SolvedPart>, order: str
  * (prismatic). Tâm bánh đi s theo d thì góc quay θ thoả θ·R·(a × up) = s·d, nên θ/s = (d · (a × up)) / R.
  */
 export function rollingRatio(revolute: { d: V3; radius?: number }, prismatic: { d: V3 }, label: string): number {
-  if (!revolute.radius) throw new AssemblyError(`${label}: trục của khớp quay không có bán kính để tính lăn; cho "ratio" (độ mỗi mét) hoặc dùng trục bánh (disc.axis).`);
+  if (!revolute.radius) throw new AssemblyError(`${label}: trục của khớp quay không có bán kính để tính lăn; cho "ratio" (độ mỗi mét) hoặc dùng trục của bánh tiện (shape_lathe, "banh.axis").`);
   const k = dot(prismatic.d, cross(revolute.d, [0, 1, 0]));
   if (Math.abs(k) < 1e-6) throw new AssemblyError(`${label}: trục bánh song song với hướng trượt hoặc thẳng đứng, bánh không lăn theo được; cho "ratio".`);
   return k / revolute.radius / DEG;

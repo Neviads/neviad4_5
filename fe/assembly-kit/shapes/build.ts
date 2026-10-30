@@ -84,7 +84,11 @@ function transformAnchor(a: AnchorSpec, m: THREE.Matrix4): AnchorSpec {
 }
 
 // "v2": từ khi có điểm neo kế thừa (lưới nướng sẵn cũ không có chúng)
-const nodeKey = (node: ShapeNode, inputKeys: string[]) => JSON.stringify(["v2", node.op, node.params, node.offset, node.rotate, node.anchors, inputKeys]);
+// OP_REV: phép đổi cách dựng thì tăng số của riêng nó, để chỉ hình dùng phép đó (và hình dựng từ chúng) nướng lại.
+// weld / bevel / sand rev 2: gỡ tam giác hỏng + gom lưới đã chia mịn.
+const OP_REV: Partial<Record<ShapeNode["op"], number>> = { weld: 2, bevel: 2, sand: 2 };
+const nodeKey = (node: ShapeNode, inputKeys: string[]) =>
+  JSON.stringify(["v2", node.op, node.params, node.offset, node.rotate, node.anchors, inputKeys]) + (OP_REV[node.op] ? `#${OP_REV[node.op]}` : "");
 
 /** Nạp sẵn một hình đã dựng (lưới nướng sẵn do MCP ghi) vào cache, để trình duyệt khỏi dựng lại. */
 export function seedShape(built: Omit<BuiltShape, "id">): void {

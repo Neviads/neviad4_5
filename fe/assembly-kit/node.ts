@@ -1,5 +1,5 @@
 /**
- * Điểm vào cho server MCP neviad-assembly (đóng gói bằng esbuild, chạy trong Node): thư viện bộ phận, bộ giải,
+ * Điểm vào cho server MCP neviad-assembly (đóng gói bằng esbuild, chạy trong Node): registry gốc (rỗng), bộ giải,
  * dây nối, báo cáo, cây tính năng hình (shapes/), danh mục vật liệu. Không gọi tới phần dựng cảnh nên không cần document.
  */
 
@@ -12,6 +12,7 @@ export { MATERIAL_NAMES } from "./core/types";
 export { PRESETS, TEXTURE_KINDS, checkMaterialRef } from "./core/materials";
 export { buildShapes, shapeKeys, usedShapeIds } from "./shapes/build";
 export { sand } from "./shapes/sand";
+export { geometryStats } from "./shapes/quality";
 export { encodeShape, keyHash } from "./shapes/bake";
 export { initKernel } from "./shapes/kernel";
 export { SHAPE_PREFIX, checkDocExtras, checkTypeName, registryFor } from "./shapes/registry";

@@ -17,7 +17,8 @@ import { point } from "../parts/_common";
 import { fromManifoldIndexed, toManifold } from "./kernel";
 import { type OpResult, enumParam, numParam } from "./ops";
 import { type IMesh, rollEdgesToArc, roundEdges, sharpInfo } from "./ops-solid";
-import { type TMesh, cellKey, meshDistances, meshOf, neighbors, relax, sizeOf, smoothstep, triGrid } from "./weld";
+import { geometryStats, qualityLines, repairFolds, untangle } from "./quality";
+import { type TMesh, cellKey, leanMesh, meshDistances, meshOf, neighbors, relax, sizeOf, smoothstep, triGrid } from "./weld";
 
 type Raw = Record<string, unknown>;
 
@@ -241,26 +242,23 @@ export function bevel(p: Raw, label: string, inputs: THREE.BufferGeometry[]): Op
     }
   }
 
+  // đẩy dải ra rồi miết (hoặc lăn bi) trên lưới chia mịn có thể lật tam giác nhỏ ở mép sắc: kéo về lưới gộp
+  const fixed = untangle(pos, U.tri, U.pos).bad;
+  if (fixed) info.push(`gỡ ${fixed} tam giác hỏng (lật, ép dẹt hoặc gấp mép) bằng làm mượt tại chỗ`);
+
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(Float32Array.from(pos), 3));
   g.setIndex(new THREE.BufferAttribute(Uint32Array.from(U.tri), 1));
 
   let mOut = toManifold(g, `${label} (sau khi bevel)`);
   const volAfter = mOut.volume();
-  let tris = mOut.numTri();
-  if (tris > maxTri && typeof mOut.simplify === "function") {
-    const before = tris;
-    const lean = mOut.simplify(detail * 0.5);
-    if (!lean.isEmpty()) {
-      mOut.delete();
-      mOut = lean;
-      tris = mOut.numTri();
-      info.push(`giản lược ${before} → ${tris} tam giác (giới hạn ${maxTri})`);
-    }
-  }
+  mOut = leanMesh(mOut, detail, maxTri, info);
+  const tris = mOut.numTri();
   // pháp tuyến mượt toàn phần: toCreasedNormals tách nét ở các cạnh lưới lởm chởm do chia mịn
   // (đúng vệt răng cưa thấy trên ống ở bản đầu) — ở đây dải bo đã mượt nên không cần crease
   const geometry = fromManifoldIndexed(mOut);
+  const refolded = repairFolds(geometry);
+  if (refolded) info.push(`sửa ${refolded} tam giác gấp mép hoặc dẹt sau khi gom lưới`);
   geometry.computeVertexNormals();
   const status = typeof mOut.status === "function" ? mOut.status() : 0;
   mOut.delete();
@@ -287,6 +285,7 @@ export function bevel(p: Raw, label: string, inputs: THREE.BufferGeometry[]): Op
   if (mode === "add" && delta < 0.2) info.push(`cảnh báo: đắp mà thể tích gần như không đổi (${delta.toFixed(2)} %) — thử tăng radius hoặc profile`);
   if (mode === "add" && delta > 40) info.push(`cảnh báo: thể tích tăng ${delta.toFixed(0)} % — bán kính quá lớn, hình bị phình`);
   if (tris > maxTri) info.push(`cảnh báo: ${tris} tam giác vẫn vượt giới hạn ${maxTri}`);
+  info.push(...qualityLines(geometryStats(geometry)));
 
   return {
     geometry,

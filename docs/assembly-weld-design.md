@@ -1,9 +1,16 @@
 # Hàn mối nối (`shape_weld` / `part_weld`): thiết kế
 
-## 0. Trạng thái: đề xuất, chưa có trong kit
+## 0. Trạng thái: `shape_weld` ĐÃ CÓ trong kit và MCP; `part_weld` chưa làm
 
-Hiện kit có `shape_boolean` (gộp/cắt) và `shape_round_edges` (bo cạnh). **Chưa có gì làm mối nối
-giữa hai khối "chảy" vào nhau.** Tài liệu này là thiết kế cho phần đó.
+`shape_weld` ở `fe/assembly-kit/shapes/weld.ts`, kiểm bằng `fe/scripts/assembly-bridge/weld-selftest.mjs`.
+Phần dưới là thiết kế ban đầu: lúc đó kit có `shape_boolean` (gộp/cắt) và `shape_round_edges` (bo cạnh)
+nhưng chưa có gì làm mối nối giữa hai khối "chảy" vào nhau.
+
+**Chất lượng lưới (bổ sung sau):** weld, bevel và sand dùng chung `fe/assembly-kit/shapes/quality.ts`.
+- Sau khi dời đỉnh, tam giác bị lật, ép dẹt hoặc gấp mép (> 150°) được làm mượt tại chỗ (`untangle`). Riêng sand trả đỉnh hỏng về hình đầu vào.
+- Lưới đã chia mịn được gom lại bằng `simplify` dung sai nhỏ (`leanMesh` trong `weld.ts`), vì `refineToLength` chia mịn cả hình: hai hộp chữ L từng ra 83 390 tam giác, nay còn 418.
+- Mỗi phép trả dòng `lưới: N tam giác, X chỗ gấp mép, Y tam giác dẹt`, kèm cảnh báo khi có chỗ gấp.
+- Selftest có điều kiện trượt và dựng mọi ca tại chỗ, không đọc xưởng thật.
 
 Tài liệu liên quan:
 - `docs/assembly-tool-design.md`: lõi lắp ráp (đặt chỗ, điểm neo, khớp).

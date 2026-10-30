@@ -5,7 +5,13 @@
 `shape_sand` ở `fe/assembly-kit/shapes/sand.ts`, đăng ký trong `shapes/build.ts` (`OPS`, 1–2 input,
 kế thừa điểm neo), `core/types.ts` (`ShapeOp`), `fe/scripts/assembly-bridge/mcp.mjs` (schema +
 handler) và `instructions.mjs`. Kiểm bằng số: `fe/scripts/assembly-bridge/sand-selftest.mjs`
-(7 ca, đạt hết). Chạy thật: `fe/scripts/assembly-bridge/mai-ong.mjs` → bản `ong-gio-mai`.
+(8 ca, đạt hết; ca 2 dựng ống gió + bevel tại chỗ, ca 8 kiểm mài mặc định không làm lưới xấu đi).
+
+**Chất lượng lưới (bổ sung sau):** weld, bevel và sand dùng chung `fe/assembly-kit/shapes/quality.ts`.
+- Sau khi dời đỉnh, tam giác bị lật, ép dẹt hoặc gấp mép (> 150°) được làm mượt tại chỗ (`untangle`). Riêng sand trả đỉnh hỏng về hình đầu vào.
+- Lưới đã chia mịn được gom lại bằng `simplify` dung sai nhỏ (`leanMesh` trong `weld.ts`), vì `refineToLength` chia mịn cả hình: hai hộp chữ L từng ra 83 390 tam giác, nay còn 418.
+- Mỗi phép trả dòng `lưới: N tam giác, X chỗ gấp mép, Y tam giác dẹt`, kèm cảnh báo khi có chỗ gấp.
+- Selftest có điều kiện trượt và dựng mọi ca tại chỗ, không đọc xưởng thật.
 
 **Bản 2 (đang dùng) — sửa một lỗi nền của bản 1.** Bản 1 dời đỉnh về trung bình hàng xóm (Taubin).
 Đo trên ống thật: đỉnh dời trung bình 0,39 mm nhưng **thành phần pháp tuyến chỉ 0,009 mm** — 98 %
@@ -289,7 +295,7 @@ Mài dời đỉnh ≤ `limit`, nên:
 | `fe/scripts/assembly-bridge/mcp.mjs` | schema `shape_sand` + handler | xong |
 | `fe/scripts/assembly-bridge/instructions.mjs` | đoạn "MÀI" (khi nào dùng, khi nào không) | xong |
 | `fe/scripts/assembly-bridge/sand-selftest.mjs` | **mới** — 7 ca ở §12 | xong |
-| `fe/scripts/assembly-bridge/mai-ong.mjs` | **mới** — áp lên bộ ống gió, ghi bản `ong-gio-mai` | xong |
+| `fe/scripts/assembly-bridge/mai-ong.mjs` | áp lên bộ ống gió, ghi bản `ong-gio-mai` | đã gỡ (ca 2 của selftest thay thế) |
 | `fe/assembly-kit/shapes/weld.ts` | không sửa; dùng lại `triGrid`, `meshDistances`, `sizeOf`, `smoothstep` | — |
 | `docs/assembly-bevel-design.md` | ghi chú: 92 vòng Taubin trong `bevel` sẽ được thay bằng một bước `sand` **sau này** | chưa |
 
@@ -315,7 +321,7 @@ Bản 1 dùng "độ gợn" (Laplacian) nên báo giảm 57 % trong khi hình kh
 1. **Trụ có gợn nhân tạo**: trụ Ø120 × 300 mm (128 đoạn), nhiễu ±0,3 mm từng trục. Mài `limit 0,3`,
    `strength 0,6` → lệch bán kính 0,136 → 0,052 mm (**−62 %**), bán kính trung bình 59,995 →
    59,976 mm, thể tích −0,06 %. Đạt.
-2. **Ống gió thật** (`ong-gio-han`, 298 888 tam giác, cạnh trung vị 2,36 mm): mài `limit 1,0 mm`,
+2. **Ống gió thật** (lúc viết: `ong-gio-han`, 298 888 tam giác, cạnh trung vị 2,36 mm; nay selftest dựng ống gió + bevel tại chỗ, lưới đã gom còn 12 504 tam giác và đếm phần **diện tích** dời thay cho số đỉnh): mài `limit 1,0 mm`,
    `lock 30` → 12 619 / 149 433 đỉnh dời > 0,1 mm, p95 độ dời pháp tuyến 0,156 mm, thể tích
    −0,26 %, khung bao đổi 0,089 mm. Đạt.
 3. **Hộp 100 × 100 × 100 mm chia 20**, `lock 30`, `limit 0,5`, `strength 1` → dời 0,000 mm, thể

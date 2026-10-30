@@ -6,18 +6,16 @@ Bản nháp thiết kế cho bước **xây** vật thể 3D: agent chọn bộ 
 
 Giai đoạn 1–4 ở mục 8 đã có bản đầu. Chỗ nào khác với các mục bên dưới thì theo mục này.
 
-- **Server MCP** `neviad-assembly` (`fe/scripts/assembly-bridge/mcp.mjs`, đã khai báo trong `.mcp.json`). `node fe/scripts/assembly-bridge/mcp.mjs --selftest` dựng máy phát qua chính các handler, so tư thế với đáp số, và thử 5 lỗi cố ý, rồi dựng một xe cỡ thật trượt dọc `ground.x` và kiểm tra bánh ghép lăn đúng nửa vòng khi xe đi πR, kèm `assembly_export`.
+- **Server MCP** `neviad-assembly` (`fe/scripts/assembly-bridge/mcp.mjs`, đã khai báo trong `.mcp.json`). `node fe/scripts/assembly-bridge/mcp.mjs --selftest` dựng một trục quay trên hai gối (toàn bằng hình tự dựng) qua chính các handler, so tư thế với đáp số, và thử 5 lỗi cố ý, rồi dựng một xe cỡ thật trượt dọc `ground.x` và kiểm tra bánh ghép lăn đúng nửa vòng khi xe đi πR, kèm `assembly_export`.
 - **Lõi** `fe/assembly-kit/`:
   - `core/`: math, types, solve, route, report. Không phụ thuộc three; server đóng gói bằng esbuild.
-  - `parts/`: 18 loại bộ phận, gom theo nhóm trong `primitives.ts`, `mechanical.ts`, `electrical.ts`. Danh sách đăng ký ở `parts/index.ts`.
+  - `parts/`: **không còn thư viện bộ phận viết sẵn** (đã bỏ 18 loại primitives / mechanical / electrical, 2026-10-30, vì chúng tách từ chính máy phát dùng để thử nên agent chỉ còn việc xếp lại). `PARTS` trong `parts/index.ts` là registry gốc rỗng; `_common.ts` giữ các hàm khai báo điểm neo cho `shapes/`. Mọi bộ phận là hình tự dựng `shape:<id>` hoặc cụm agent tự lưu bằng `part_save_as_type`.
   - `three/`: vật liệu, texture, hình học dùng chung, `build-scene.ts`.
 - **Trang** `/lap-rap-3d` (`fe/app/lap-rap-3d`, API `fe/app/api/assembly-bridge`): xem bản lắp ráp, có thanh trượt cho từng khớp, tự chụp ảnh 2×2 (phối cảnh, trước +z, cạnh +x, trên +y) khi `assembly_view` yêu cầu.
 - **Tool:** `part_types_list`, `part_type_info`, `assembly_create|list|read|delete`, `part_add|update|remove`, `joint_add|remove`, `route_add|remove`, `assembly_describe`, `assembly_view {pose, focus, region}`, `assembly_export {path}` (ghi JSON vào repo để một route dùng `buildAssembly` + `setPose`).
 - **Kiểu ghép:** `onto` và `touch` là một phép (hai mặt áp vào nhau). `fixed` dời theo `shift: [x, y, z]` trong khung điểm neo b. `follow: false` cho tiếp xúc trượt (bộ phận không quay theo khớp của cha).
-- **Khớp:** `revolute` và `prismatic`, trục là điểm neo kiểu axis: của bộ phận, `block.axisX|axisY|axisZ` (qua tâm hộp) hoặc `ground.x|y|z` (trục thế giới). Khớp ghép `couple: {joint, ratio}`: giá trị = ratio × khớp dẫn. Bánh (revolute) theo khớp trượt mà bỏ `ratio` thì công cụ tự tính tỉ số lăn không trượt trên mặt ngang, θ/s = d·(a × up)/R, từ bán kính trục bánh. Chưa có `rod`.
-- **Cỡ vật:** khối và thanh dài tới 50 m, bo cạnh tới 0,3 m, nên dựng được cả vật cỡ thật như ô tô, không chỉ đồ đặt trên bàn.
+- **Khớp:** `revolute` và `prismatic`, trục là điểm neo kiểu axis: của hình (trục tiện, trục kế thừa từ dao cắt, trục đặt bằng `anchor_define`) hoặc `ground.x|y|z` (trục thế giới). Khớp ghép `couple: {joint, ratio}`: giá trị = ratio × khớp dẫn. Bánh (revolute) theo khớp trượt mà bỏ `ratio` thì công cụ tự tính tỉ số lăn không trượt trên mặt ngang, θ/s = d·(a × up)/R, từ bán kính trục bánh.
 - **Dây nối chưa tự tránh vật cản.** Muốn dây đi vòng thì thêm mặt `via` (ví dụ `meter.back`).
-- `carbonBrush.standHeight` vẫn là một con số. Agent đọc toạ độ `foot` trong kết quả `part_add` rồi `part_update` cho chạm mặt đế. Sau này nên có kiểu ghép "kéo dài tới mặt" để bỏ bước này.
 
 ## 1. Vấn đề
 
@@ -193,7 +191,9 @@ Nguyên tắc trả lỗi để agent tự sửa được:
 - `through` mà trục to hơn lỗ → báo hai đường kính.
 - Tham số ngoài miền hợp lệ → báo miền.
 
-## 6. Thư viện bộ phận ban đầu
+## 6. Thư viện bộ phận ban đầu (đã bỏ)
+
+> Mục này là kế hoạch ban đầu, giữ lại để tham khảo. Thư viện đã được làm rồi bỏ hẳn (xem mục 0): agent dựng mọi bộ phận bằng `shape_*`. Các ví dụ `slipRing`, `coil`, `basePlate`… ở mục 3–5 cũng chỉ còn là ví dụ lịch sử.
 
 Rút từ hai máy đã dựng. Hầu hết đã có hình học sẵn trong `generator-model.ts`, chỉ cần tách ra và gắn điểm neo.
 

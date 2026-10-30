@@ -17,47 +17,13 @@ import type { V3 } from "../core/math";
 import { AssemblyError } from "../core/solve";
 import { point } from "../parts/_common";
 import { type OpResult, enumParam, numParam } from "./ops";
+import { type Welded, meshStats, qualityLines, untangle, weldByPosition } from "./quality";
 import { type TMesh, meshDistances, neighbors, sizeOf, smoothstep, triGrid } from "./weld";
 
 type Raw = Record<string, unknown>;
 
 /** Vị trí gốc mang theo trên lưới để lần mài sau vẫn kẹp theo cùng một gốc (không trôi). */
 type SandOriginCarrier = THREE.BufferGeometry & { sandOrigin?: { pos: Float64Array } };
-
-interface Welded {
-  pos: Float64Array;
-  tri: Uint32Array;
-  /** đỉnh gốc i → đỉnh đã hàn map[i] (để ghi lại đúng thứ tự cho lưới có index) */
-  map: Int32Array;
-  nv: number;
-}
-
-/** Hàn đỉnh theo VỊ TRÍ (1e-7 m), giữ bảng ánh xạ để trả lại đúng thứ tự đỉnh của lưới gốc. */
-function weldByPosition(g: THREE.BufferGeometry, label: string): Welded {
-  const attr = g.attributes.position;
-  if (!attr) throw new AssemblyError(`${label}: hình không có thuộc tính vị trí.`);
-  const src = attr.array as ArrayLike<number>;
-  const n = attr.count;
-  const index = g.index ? g.index.array : null;
-  const key = new Map<string, number>();
-  const map = new Int32Array(n);
-  const out: number[] = [];
-  for (let i = 0; i < n; i++) {
-    const k = `${Math.round(src[i * 3] * 1e7)},${Math.round(src[i * 3 + 1] * 1e7)},${Math.round(src[i * 3 + 2] * 1e7)}`;
-    let j = key.get(k);
-    if (j === undefined) {
-      j = out.length / 3;
-      key.set(k, j);
-      out.push(src[i * 3], src[i * 3 + 1], src[i * 3 + 2]);
-    }
-    map[i] = j;
-  }
-  const nTri = index ? index.length : n;
-  const tri = new Uint32Array(nTri);
-  if (index) for (let i = 0; i < nTri; i++) tri[i] = map[index[i] as number];
-  else for (let i = 0; i < nTri; i++) tri[i] = map[i];
-  return { pos: Float64Array.from(out), tri, map, nv: out.length / 3 };
-}
 
 /** Cạnh biên (chỉ có một mặt) — dùng để biết lưới có kín hay không. */
 function boundaryCount(tri: Uint32Array): number {
@@ -432,6 +398,10 @@ export function sand(p: Raw, label: string, inputs: THREE.BufferGeometry[]): OpR
     if (maxMove < limit * 0.02) break; // đã bão hoà
   }
 
+  // đẩy theo pháp tuyến ở chỗ cong gắt có thể lật, gấp hoặc ép dẹt tam giác nhỏ: trả các đỉnh đó về hình đầu
+  // vào (mài chỉ dời ≤ limit, nên bỏ qua vài đỉnh không để lại bậc thấy được)
+  const untangled = untangle(pos, M.tri, M.pos, 40, "revert").bad;
+
   // độ dời lớn nhất thực tế + trung vị/p95 để báo cáo (dời dọc mặt không đổi hình nên phải
   // báo độ dời THEO PHÁP TUYẾN, không phải tổng)
   let maxDisp = 0;
@@ -493,6 +463,8 @@ export function sand(p: Raw, label: string, inputs: THREE.BufferGeometry[]): OpR
     );
   }
   if (tri > maxTri) info.push(`cảnh báo: ${tri} tam giác vượt ${maxTri}`);
+  if (untangled) info.push(`trả ${untangled} tam giác hỏng (lật, ép dẹt hoặc gấp mép) về hình đầu vào`);
+  info.push(...qualityLines(meshStats(pos, M.tri), meshStats(M.pos, M.tri)));
 
   const anchors: OpResult["anchors"] = {};
   geometry.computeBoundingBox();

@@ -38,19 +38,24 @@ export function renderView(renderer: THREE.WebGLRenderer, scene: THREE.Scene, bo
   renderer.setSize(w, h, false);
   const cam = cameraFor(camera.startsWith("detail:") ? "threeQuarterFront" : camera, box, w / h);
   if (quality === "final") {
-    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4 }));
+    const target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4 });
+    const composer = new EffectComposer(renderer, target);
     composer.setSize(w, h);
-    composer.addPass(new RenderPass(scene, cam));
     const ao = new GTAOPass(scene, cam, w, h);
     ao.updateGtaoMaterial({ radius: box.getSize(new THREE.Vector3()).length() * 0.04, distanceFallOff: 1, thickness: 1 });
     ao.blendIntensity = 0.85;
-    composer.addPass(ao);
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(w, h), 0.22, 0.35, 1.6));
-    composer.addPass(new OutputPass());
-    composer.render();
-    const url = renderer.domElement.toDataURL("image/png");
-    composer.dispose();
-    return url;
+    const passes = [new RenderPass(scene, cam), ao, new UnrealBloomPass(new THREE.Vector2(w, h), 0.22, 0.35, 1.6), new OutputPass()];
+    for (const p of passes) composer.addPass(p);
+    try {
+      composer.render();
+      return renderer.domElement.toDataURL("image/png");
+    } finally {
+      // composer.dispose() chỉ nhả hai đích của composer; AO và bloom giữ đích riêng cỡ w × h (nhiều mức mip),
+      // không nhả thì mỗi lần render rò vài chục MB GPU, đến lúc trình duyệt mất ngữ cảnh WebGL và chặn trang.
+      for (const p of passes) p.dispose();
+      composer.dispose();
+      target.dispose();
+    }
   }
   renderer.render(scene, cam);
   return renderer.domElement.toDataURL("image/png");
