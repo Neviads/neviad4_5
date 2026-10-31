@@ -72,6 +72,7 @@ export function checkDocExtras(doc: AssemblyDoc): void {
   }
   for (const s of doc.shapes ?? []) if (s.material) checkMaterialRef(doc, s.material, `[hình ${s.id}].material`);
   for (const p of doc.parts) if (p.material) checkMaterialRef(doc, p.material, `[${p.id}].material`);
+  for (const r of doc.routes ?? []) checkMaterialRef(doc, r.material, `[dây ${r.id}].material`);
   const partIds = new Set(doc.parts.map((p) => p.id));
   for (const d of doc.decals ?? []) {
     if (!partIds.has(d.target)) throw new AssemblyError(`[decal ${d.id}] không có bộ phận "${d.target}".`);

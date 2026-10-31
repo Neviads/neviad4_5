@@ -149,8 +149,10 @@ export interface Joint {
   moves: string[];
   limits?: [number, number]; // revolute: độ; prismatic: mét
   value?: number; // tư thế đang xem
-  /** Khớp ghép: giá trị = ratio × giá trị khớp `joint` (+ value). Bỏ ratio khi bánh (revolute) lăn theo khớp trượt: tự tính từ bán kính trục. */
-  couple?: { joint: string; ratio?: number };
+  /** Khớp ghép: giá trị = ratio × giá trị khớp `joint` (+ value). Bỏ ratio khi bánh (revolute) lăn theo khớp trượt: tự tính từ bán kính trục.
+   *  table [[giá trị khớp dẫn, giá trị khớp này], ...] (tăng dần theo khớp dẫn) thay cho ratio: nội suy từng đoạn, ngoài bảng giữ giá trị mút,
+   *  cho cơ cấu chạy theo nhiều giai đoạn (cam, nòng khoá rồi mới lật). */
+  couple?: { joint: string; ratio?: number; table?: [number, number][] };
 }
 
 export interface Route {
@@ -200,7 +202,13 @@ export interface TextureSpec {
 }
 
 export interface MaterialDef {
-  preset: string;
+  /** Tham số PBR do agent tự đặt (bảng MATERIAL_PARAMS ở core/materials.ts). */
+  params?: Record<string, number | string>;
+  /** Khối lượng riêng kg/m³ và hệ số ma sát của vật liệu thật (cho mô hình vật lý). */
+  density?: number;
+  friction?: number;
+  /** Chỉ còn để đọc tài liệu cũ: preset trong PRESETS, ghi đè bằng overrides. */
+  preset?: string;
   overrides?: Record<string, number | string>;
   textures?: { normal?: TextureSpec; roughness?: TextureSpec; color?: TextureSpec };
 }

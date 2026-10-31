@@ -274,7 +274,24 @@ export function rollingRatio(revolute: { d: V3; radius?: number }, prismatic: { 
   return k / revolute.radius / DEG;
 }
 
-/** Giá trị thật của từng khớp: khớp ghép (couple) = ratio × giá trị khớp dẫn + value riêng. */
+/** Nội suy từng đoạn trong bảng [[x, y], ...] (x tăng dần); ngoài bảng giữ giá trị mút. */
+export function interpolate(table: [number, number][], x: number, label: string): number {
+  if (!table.length) throw new AssemblyError(`${label}: couple.table rỗng.`);
+  for (let i = 1; i < table.length; i++) {
+    if (!(table[i][0] > table[i - 1][0])) throw new AssemblyError(`${label}: couple.table phải tăng dần theo giá trị khớp dẫn (cột đầu).`);
+  }
+  if (x <= table[0][0]) return table[0][1];
+  for (let i = 1; i < table.length; i++) {
+    const [x1, y1] = table[i];
+    if (x <= x1) {
+      const [x0, y0] = table[i - 1];
+      return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+    }
+  }
+  return table[table.length - 1][1];
+}
+
+/** Giá trị thật của từng khớp: khớp ghép (couple) = ratio × giá trị khớp dẫn (hoặc bảng nội suy) + value riêng. */
 export function jointValues(joints: Joint[], axes?: Map<string, { d: V3; radius?: number }>): Map<string, number> {
   const byId = new Map(joints.map((j) => [j.id, j]));
   const out = new Map<string, number>();
@@ -287,6 +304,13 @@ export function jointValues(joints: Joint[], axes?: Map<string, { d: V3; radius?
     if (j.couple) {
       const lead = byId.get(j.couple.joint);
       if (!lead) throw new AssemblyError(`[khớp ${j.id}] couple.joint "${j.couple.joint}" không có. Khớp hiện có: ${[...byId.keys()].join(", ")}.`);
+      const table = j.couple.table;
+      if (table) {
+        v += interpolate(table, val(lead), `[khớp ${j.id}]`);
+        visiting.delete(j.id);
+        out.set(j.id, v);
+        return v;
+      }
       let ratio = j.couple.ratio;
       if (ratio === undefined) {
         if (j.kind !== "revolute" || lead.kind !== "prismatic") throw new AssemblyError(`[khớp ${j.id}] thiếu couple.ratio; chỉ tự tính được khi khớp quay (bánh) theo khớp trượt.`);

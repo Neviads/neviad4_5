@@ -380,7 +380,35 @@ export default function Studio() {
     })();
   }, [state.view, state.assemblies]);
 
-  const joints = selected?.doc.joints ?? [];
+  // khớp ghép (couple) tự đi theo khớp dẫn: chỉ khớp dẫn có thanh trượt và chạy được
+  const joints = (selected?.doc.joints ?? []).filter((j) => !j.couple);
+  const limitsOf = (j: (typeof joints)[number]): [number, number] => j.limits ?? (j.kind === "revolute" ? [-180, 180] : [-0.1, 0.1]);
+
+  // "Chạy cơ cấu": mọi khớp dẫn đi từ mút dưới lên mút trên rồi về, lặp lại; khớp quay đủ một vòng (chu kỳ 0–360°)
+  // thì quay một chiều, vì đầu và cuối vòng là cùng một tư thế
+  const [playing, setPlaying] = useState(false);
+  const [period, setPeriod] = useState(2);
+  useEffect(() => {
+    if (!playing || !joints.length) return;
+    const t0 = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const phase = (now - t0) / 1000 / period;
+      const swing = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
+      const turn = phase - Math.floor(phase);
+      setPose((p) => ({
+        ...p,
+        ...Object.fromEntries(joints.map((j) => {
+          const [lo, hi] = limitsOf(j);
+          return [j.id, lo + (j.kind === "revolute" && hi - lo === 360 ? turn : swing) * (hi - lo)];
+        })),
+      }));
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, period, selected?.id, joints.map((j) => `${j.id}:${limitsOf(j)}`).join("|")]);
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -435,8 +463,18 @@ export default function Studio() {
         )}
         {joints.length > 0 && (
           <div className="absolute bottom-3 left-3 w-72 space-y-2 rounded-lg bg-black/55 p-3 text-[12px] backdrop-blur">
+            <div className="flex items-center gap-2">
+              <button type="button" className="rounded bg-white/10 px-2 py-1 hover:bg-white/20" onClick={() => setPlaying((x) => !x)}>
+                {playing ? "Dừng cơ cấu" : "Chạy cơ cấu"}
+              </button>
+              <select className="rounded bg-white/10 px-1 py-1" value={period} onChange={(e) => setPeriod(+e.target.value)}>
+                <option value="0.5">0,5 s/chu kỳ</option>
+                <option value="2">2 s/chu kỳ</option>
+                <option value="6">6 s/chu kỳ</option>
+              </select>
+            </div>
             {joints.map((j) => {
-              const [lo, hi] = j.limits ?? (j.kind === "revolute" ? [-180, 180] : [-0.1, 0.1]);
+              const [lo, hi] = limitsOf(j);
               const v = pose[j.id] ?? 0;
               return (
                 <label key={j.id} className="block">

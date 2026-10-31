@@ -1,6 +1,7 @@
 /**
- * Danh mục vật liệu PBR có sẵn (preset) và cách tra một tên vật liệu. Không phụ thuộc three: server MCP dùng để kiểm
- * tra và liệt kê; three/presets.ts dựng vật liệu thật trong trình duyệt theo đúng danh mục này.
+ * Vật liệu PBR: bảng tham số agent tự đặt (MATERIAL_PARAMS) và cách tra một tên vật liệu. Không phụ thuộc three: server
+ * MCP dùng để kiểm tra; three/presets.ts dựng vật liệu thật trong trình duyệt. PRESETS chỉ còn để đọc tài liệu cũ; MCP
+ * không liệt kê và không nhận chúng.
  */
 
 import { AssemblyError } from "./solve";
@@ -33,19 +34,56 @@ export const TEXTURE_KINDS: TextureSpec["kind"][] = ["noise", "flakes", "tread",
 
 const COLOR = /^#[0-9a-fA-F]{6}$/;
 
+/** Tham số PBR agent tự đặt trong MaterialDef.params: "color" = màu "#rrggbb", [min, max] = số trong khoảng. */
+export const MATERIAL_PARAMS: Record<string, { range: "color" | [number, number]; desc: string }> = {
+  color: { range: "color", desc: "màu nền (albedo)" },
+  roughness: { range: [0, 1], desc: "độ nhám: 0 bóng gương, 1 mờ hẳn" },
+  metalness: { range: [0, 1], desc: "1 = kim loại (màu nằm ở phản xạ), 0 = điện môi" },
+  clearcoat: { range: [0, 1], desc: "lớp phủ bóng trong suốt bên trên" },
+  clearcoatRoughness: { range: [0, 1], desc: "độ nhám của lớp phủ" },
+  transmission: { range: [0, 1], desc: "độ truyền sáng (vật trong suốt khúc xạ)" },
+  ior: { range: [1, 2.5], desc: "chiết suất" },
+  thickness: { range: [0, 1], desc: "bề dày quang học (m) cho khúc xạ" },
+  attenuationColor: { range: "color", desc: "màu ánh sáng còn lại sau khi đi qua vật" },
+  attenuationDistance: { range: [0, 1e6], desc: "quãng (m) ánh sáng đi được trước khi nhuốm attenuationColor" },
+  sheen: { range: [0, 1], desc: "ánh mượt ở góc nghiêng (vải, cao su)" },
+  sheenRoughness: { range: [0, 1], desc: "độ loang của sheen" },
+  sheenColor: { range: "color", desc: "màu của sheen" },
+  anisotropy: { range: [0, 1], desc: "phản xạ kéo dài theo một hướng (kim loại chải)" },
+  anisotropyRotation: { range: [-360, 360], desc: "hướng của anisotropy (độ)" },
+  emissive: { range: "color", desc: "màu tự phát sáng" },
+  emissiveIntensity: { range: [0, 100], desc: "cường độ tự phát sáng" },
+  flakes: { range: [0, 1], desc: "vảy kim loại nằm dưới lớp phủ" },
+};
+
+function checkParam(k: string, v: unknown, label: string, allowed: Record<string, number | string>): void {
+  const spec = MATERIAL_PARAMS[k];
+  if (!spec || !(k in allowed)) throw new AssemblyError(`${label}: không có tham số "${k}". Có: ${Object.keys(allowed).join(", ")}.`);
+  if (spec.range === "color") {
+    if (typeof v !== "string" || !COLOR.test(v)) throw new AssemblyError(`${label}.${k} phải là màu "#rrggbb".`);
+  } else if (typeof v !== "number" || !Number.isFinite(v) || v < spec.range[0] || v > spec.range[1]) {
+    throw new AssemblyError(`${label}.${k} phải là số trong [${spec.range.join(", ")}].`);
+  }
+}
+
+const ALL_PARAMS = Object.fromEntries(Object.keys(MATERIAL_PARAMS).map((k) => [k, 0]));
+
 export function checkMaterialDef(def: MaterialDef, label: string): void {
-  const preset = PRESETS[def.preset];
-  if (!preset) throw new AssemblyError(`${label}: không có preset "${def.preset}". Có: ${Object.keys(PRESETS).join(", ")}.`);
+  for (const [k, v] of Object.entries(def.params ?? {})) checkParam(k, v, `${label}.params`, ALL_PARAMS);
+  for (const [k, v] of [["density", def.density], ["friction", def.friction]] as const) {
+    if (v !== undefined && !(typeof v === "number" && v > 0 && Number.isFinite(v))) throw new AssemblyError(`${label}.${k} phải là số > 0.`);
+  }
+  const preset = def.preset === undefined ? null : PRESETS[def.preset];
+  if (def.preset !== undefined && !preset) throw new AssemblyError(`${label}: không có preset "${def.preset}".`);
+  if (!preset && def.density === undefined) throw new AssemblyError(`${label}: thiếu density (khối lượng riêng kg/m³ của vật liệu thật).`);
   for (const [k, v] of Object.entries(def.overrides ?? {})) {
     // wireframe: ô hiển thị dùng chung cho mọi preset (xem lưới tam giác), không phải tham số vật liệu
     if (k === "wireframe") {
       if (typeof v !== "boolean") throw new AssemblyError(`${label}.wireframe phải là true hoặc false.`);
       continue;
     }
-    if (!(k in preset.defaults)) throw new AssemblyError(`${label}: preset ${def.preset} không có tham số "${k}". Có: ${Object.keys(preset.defaults).join(", ")}.`);
-    const d = preset.defaults[k];
-    if (typeof d === "string" && (typeof v !== "string" || !COLOR.test(v))) throw new AssemblyError(`${label}.${k} phải là màu "#rrggbb".`);
-    if (typeof d === "number" && (typeof v !== "number" || !Number.isFinite(v))) throw new AssemblyError(`${label}.${k} phải là số.`);
+    if (!preset) throw new AssemblyError(`${label}.overrides: chỉ dùng cho tài liệu cũ có preset; đặt tham số trong params.`);
+    checkParam(k, v, `${label}.overrides`, preset.defaults);
   }
   for (const [slot, t] of Object.entries(def.textures ?? {})) {
     if (!["normal", "roughness", "color"].includes(slot)) throw new AssemblyError(`${label}.textures: ô "${slot}" không có; dùng normal, roughness, color.`);
@@ -53,8 +91,14 @@ export function checkMaterialDef(def: MaterialDef, label: string): void {
   }
 }
 
-/** Một tên vật liệu hợp lệ là: id trong doc.materials, tên preset, hoặc tên cũ trong MATERIAL_NAMES. */
+/** Vật liệu agent vừa chọn phải là id đã định nghĩa trong doc.materials (không nhận preset hay tên cũ). */
+export function checkDefinedMaterial(doc: AssemblyDoc, ref: string, label: string): void {
+  if (doc.materials?.[ref]) return;
+  throw new AssemblyError(`${label}: chưa có vật liệu "${ref}". Định nghĩa bằng material_define trước. Đã có: ${Object.keys(doc.materials ?? {}).join(", ") || "(chưa có)"}.`);
+}
+
+/** Một tên vật liệu đọc được là: id trong doc.materials, hoặc (tài liệu cũ) tên preset / tên trong MATERIAL_NAMES. */
 export function checkMaterialRef(doc: AssemblyDoc, ref: string, label: string): void {
-  if (doc.materials?.[ref] || PRESETS[ref] || (MATERIAL_NAMES as readonly string[]).includes(ref)) return;
-  throw new AssemblyError(`${label}: không có vật liệu "${ref}". Dùng id đã material_define (${Object.keys(doc.materials ?? {}).join(", ") || "chưa có"}), preset (${Object.keys(PRESETS).join(", ")}) hoặc tên cũ (${MATERIAL_NAMES.join(", ")}).`);
+  if (PRESETS[ref] || (MATERIAL_NAMES as readonly string[]).includes(ref)) return;
+  checkDefinedMaterial(doc, ref, label);
 }

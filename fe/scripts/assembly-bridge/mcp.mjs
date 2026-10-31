@@ -24,13 +24,13 @@ mkdirSync(cache, { recursive: true });
 const kitFile = join(cache, "kit.mjs");
 await build({ entryPoints: [join(FE_ROOT, "assembly-kit/node.ts")], bundle: true, platform: "node", format: "esm", outfile: kitFile, external: ["three", "manifold-3d"], logLevel: "error" });
 const kit = await import(`${pathToFileURL(kitFile).href}?t=${Date.now()}`);
-const { PARTS, solve, partReport, describeTree, typeInfo, solveRoute, MATERIAL_NAMES, registryFor, checkDocExtras, buildShapes, PRESETS, TEXTURE_KINDS, anchorFrame, worldBounds, SHAPE_PREFIX, initKernel, physicsKey, encodeShape, keyHash, usedShapeIds, shapeKeys, buildPhysicsModel, bodyOfPart, World, flatten, worldGeometry, descendants, partOrCluster, toManifold, kernel: kernelOf, transformAnchorSpec, transformBounds, checkTypeName, chain, invertRigid } = kit;
+const { PARTS, solve, partReport, describeTree, typeInfo, solveRoute, registryFor, checkDocExtras, buildShapes, MATERIAL_PARAMS, TEXTURE_KINDS, checkDefinedMaterial, anchorFrame, worldBounds, SHAPE_PREFIX, initKernel, physicsKey, encodeShape, keyHash, usedShapeIds, shapeKeys, buildPhysicsModel, bodyOfPart, World, flatten, worldGeometry, descendants, partOrCluster, toManifold, kernel: kernelOf, transformAnchorSpec, transformBounds, checkTypeName, chain, invertRigid } = kit;
 // lõi hình khối kín (boolean, khắc rãnh): nạp WASM một lần trước khi phục vụ
 await initKernel(() => import("manifold-3d"));
 
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const assemblyArg = { type: "string", description: "id bản lắp ráp" };
-const materialArg = { type: "string", description: "vật liệu cho cả bộ phận: id đã material_define, tên preset (material_presets) hoặc tên cũ; chuỗi rỗng để bỏ" };
+const materialArg = { type: "string", description: "vật liệu cho cả bộ phận: id đã material_define; chuỗi rỗng để bỏ" };
 const v3Arg = { type: "array", items: { type: "number" }, minItems: 3, maxItems: 3 };
 const path2dArg = (desc) => ({ type: "object", description: `${desc}. {pts: [[a, b], …] (mét), round?: [bán kính bo tại từng điểm, 0 = giữ góc], closed?}`, properties: { pts: { type: "array", items: { type: "array", items: { type: "number" } } }, round: { type: "array", items: { type: "number" } }, closed: { type: "boolean" } }, required: ["pts"] });
 const shapeCommon = {
@@ -78,11 +78,15 @@ const TOOLS = [
   },
   {
     name: "joint_add",
-    description: "Thêm (hoặc thay, cùng id) một khớp: revolute (quay, độ) hoặc prismatic (trượt, mét) quanh một điểm neo kiểu axis (kể cả ground.x/y/z); moves = bộ phận được điều khiển, bộ phận ghép vào chúng đi theo. couple: khớp chạy theo khớp khác (giá trị = ratio × khớp dẫn); bánh lăn theo khớp trượt thì bỏ ratio, công cụ tự tính từ bán kính bánh.",
+    description: "Thêm (hoặc thay, cùng id) một khớp: revolute (quay, độ) hoặc prismatic (trượt, mét) quanh một điểm neo kiểu axis (kể cả ground.x/y/z); moves = bộ phận được điều khiển, bộ phận ghép vào chúng đi theo. couple: khớp chạy theo khớp khác (giá trị = ratio × khớp dẫn, hoặc theo bảng table khi chuyển động phi tuyến/nhiều giai đoạn); bánh lăn theo khớp trượt thì bỏ ratio, công cụ tự tính từ bán kính bánh.",
     inputSchema: {
       type: "object",
       properties: { assembly: assemblyArg, id: { type: "string" }, kind: { type: "string", enum: ["revolute", "prismatic"] }, axis: { type: "string" }, moves: { type: "array", items: { type: "string" } }, limits: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 },
-        couple: { type: "object", properties: { joint: { type: "string" }, ratio: { type: "number", description: "đơn vị khớp này trên một đơn vị khớp dẫn; bỏ trống = bánh lăn không trượt" } }, required: ["joint"] },
+        couple: { type: "object", properties: {
+          joint: { type: "string" },
+          ratio: { type: "number", description: "đơn vị khớp này trên một đơn vị khớp dẫn; bỏ trống = bánh lăn không trượt" },
+          table: { type: "array", items: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 }, description: "thay ratio: [[giá trị khớp dẫn, giá trị khớp này], ...] tăng dần theo khớp dẫn; nội suy từng đoạn, ngoài bảng giữ mút. Cho chuyển động phi tuyến hoặc nhiều giai đoạn" },
+        }, required: ["joint"] },
       },
       required: ["assembly", "id", "kind", "axis", "moves"],
     },
@@ -95,7 +99,7 @@ const TOOLS = [
   { name: "joint_remove", description: "Xoá một khớp (cả động cơ của nó). Khớp khác đang couple theo nó thì báo lỗi, trừ khi cascade = true (xoá cả chuỗi).", inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, cascade: { type: "boolean" } }, required: ["assembly", "id"] } },
   {
     name: "route_add",
-    description: `Thêm (hoặc thay, cùng id) một dây nối giữa hai điểm neo (điểm hoặc mặt), tuỳ chọn bám các mặt via. Vật liệu: ${MATERIAL_NAMES.join(", ")}.`,
+    description: "Thêm (hoặc thay, cùng id) một dây nối giữa hai điểm neo (điểm hoặc mặt), tuỳ chọn bám các mặt via. material = id đã material_define.",
     inputSchema: {
       type: "object",
       properties: { assembly: assemblyArg, id: { type: "string" }, from: { type: "string" }, to: { type: "string" }, via: { type: "array", items: { type: "object", properties: { on: { type: "string" } }, required: ["on"] } }, radius: { type: "number" }, material: { type: "string" } },
@@ -121,47 +125,47 @@ const TOOLS = [
   },  // ───── hình tự dựng (cây tính năng) ─────
   {
     name: "shape_lathe",
-    description: "TIỆN: xoay biên dạng [bán kính, y] quanh trục y. Cho vật tròn xoay: cốc, chai, lốp, la-zăng, đèn tròn, núm. wall > 0 thì có thành dày thật và miệng bo (round) như thuỷ tinh thổi. Đặt vào lắp ráp bằng part_add type \"shape:<id>\".",
+    description: "TIỆN: xoay biên dạng [bán kính, y] quanh trục y. Cho vật tròn xoay quanh một trục. wall > 0 thì có thành dày thật và miệng bo (round). Đặt vào lắp ráp bằng part_add type \"shape:<id>\".",
     inputSchema: { type: "object", properties: { ...shapeCommon, profile: path2dArg("biên dạng mặt ngoài, đi từ dưới lên, x = bán kính ≥ 0"), wall: { type: "number", description: "độ dày thành (m), 0 = khối đặc/mặt đơn" }, lip: { type: "string", enum: ["round", "flat"] }, segments: { type: "integer" }, angle: { type: "number", description: "độ, < 360 để tiện một phần" } }, required: ["assembly", "id", "profile"] },
   },
   {
     name: "shape_extrude",
-    description: "ĐÙN: đường bao kín 2D kéo dày theo trục còn lại, đối xứng quanh 0, bo mọi cạnh (edgeRadius, mặc định 0,5 mm; khung bao vẫn đúng kích thước khai báo). Cho tấm, thanh định hình, ốp, tay nắm, biển số, giá đỡ, nan la-zăng.",
+    description: "ĐÙN: đường bao kín 2D kéo dày theo trục còn lại, đối xứng quanh 0, bo mọi cạnh (edgeRadius, mặc định 0,5 mm; khung bao vẫn đúng kích thước khai báo). Cho khối có mặt cắt không đổi (hoặc thon đều bằng taper) dọc một trục.",
     inputSchema: { type: "object", properties: { ...shapeCommon, outline: path2dArg("đường bao kín"), holes: { type: "array", items: path2dArg("lỗ") }, depth: { type: "number" }, edgeRadius: { type: "number" }, plane: { type: "string", enum: ["xy", "xz", "zy"], description: "mặt vẽ đường bao: xy (đùn theo z), xz (đùn theo y), zy (toạ độ [z, y], đùn theo x)" }, taper: { type: "number", description: "tỉ lệ đường bao ở đầu +trục đùn (1 = thẳng)" } }, required: ["assembly", "id", "outline", "depth"] },
   },
   {
     name: "shape_sweep",
-    description: "QUÉT: mặt cắt chạy dọc một đường 3D (khung xoay nhỏ nhất, không xoắn vô cớ). Mặt cắt [u, v]: v theo pháp tuyến (lên trên khi đường nằm ngang), u sang ngang. Cho gioăng, viền, ống cong, dây, lò xo (đường xoắn), cần gạt.",
+    description: "QUÉT: mặt cắt chạy dọc một đường 3D (khung xoay nhỏ nhất, không xoắn vô cớ). Mặt cắt [u, v]: v theo pháp tuyến (lên trên khi đường nằm ngang), u sang ngang. Cho khối có mặt cắt chạy theo một đường cong 3D (kể cả đường xoắn).",
     inputSchema: { type: "object", properties: { ...shapeCommon, section: path2dArg("mặt cắt (mặc định kín)"), path: { type: "object", properties: { pts: { type: "array", items: v3Arg }, smooth: { type: "boolean", description: "mặc định true: spline qua các điểm" }, closed: { type: "boolean" } }, required: ["pts"] }, twist: { type: "number", description: "độ xoắn tổng" }, scaleEnd: { type: "number" }, caps: { type: "boolean" }, samples: { type: "integer" } }, required: ["assembly", "id", "section", "path"] },
   },
   {
     name: "shape_mirror",
-    description: "ĐỐI XỨNG một hình có sẵn qua mặt x/y/z = 0 (mặc định z: trái-phải của xe), giữ cả bản gốc. Chỉ cần dựng một nửa.",
+    description: "ĐỐI XỨNG một hình có sẵn qua mặt x/y/z = 0 (mặc định z), giữ cả bản gốc. Chỉ cần dựng một nửa.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string" }, plane: { type: "string", enum: ["x", "y", "z"] }, keepOriginal: { type: "boolean" } }, required: ["assembly", "id", "input"] },
   },
   {
     name: "shape_pattern",
-    description: "LẶP một hình có sẵn: radial (quanh trục x/y/z qua center, count bản, mỗi bản stepAngle độ, mặc định chia đều 360°) hoặc linear (step [x, y, z]). Cho nan la-zăng, ốc bánh, gai, lỗ lưới.",
+    description: "LẶP một hình có sẵn: radial (quanh trục x/y/z qua center, count bản, mỗi bản stepAngle độ, mặc định chia đều 360°) hoặc linear (step [x, y, z]). Cho chi tiết lặp đều quanh trục hoặc theo hàng.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string" }, kind: { type: "string", enum: ["radial", "linear"] }, count: { type: "integer" }, axis: { type: "string", enum: ["x", "y", "z"] }, stepAngle: { type: "number" }, center: v3Arg, step: v3Arg }, required: ["assembly", "id", "input", "count"] },
   },
   {
     name: "shape_loft",
-    description: "LOFT — THÂN VỎ (xe, tàu, vỏ máy: mặt cong hai chiều; đừng đùn hình nhìn ngang, hông sẽ phẳng như bánh quy): nối mượt nhiều mặt cắt ngang KHÁC DÁNG tại các x tăng dần, mỗi mặt cắt là đường kín trong mặt (z, y). symmetric: true thì chỉ cho NỬA z ≥ 0, từ tâm đáy (z = 0) lên tâm nóc (z = 0), tool tự đối xứng. round bo góc từng mặt cắt; caps round | flat | open. Điểm neo s0…sN (tâm mặt cắt), nose, tail. Quy trình thân xe: 1) loft 6–10 mặt cắt theo thông số thật (gầm, capo, chân kính, nóc, cốp), thêm mặt cắt ở chỗ dáng đổi nhanh, so bảng rộng × cao trả về; 2) shape_boolean subtract hốc bánh (shape_lathe trụ, rotate trục theo z) và ô kính; 3) shape_round_edges radius 0,01–0,02 cho mép hốc, ô kính; 4) shape_groove khe cửa, capo, cốp; 5) shape_split_region kính ôm thân (lift âm vài mm); 6) part_add bánh coaxial vào điểm neo kế thừa \"than.hoc.axis\"; mirror plane z nếu chỉ dựng một bên.",
+    description: "LOFT — mặt cong theo hai chiều: nối mượt nhiều mặt cắt ngang KHÁC DÁNG tại các x tăng dần, mỗi mặt cắt là đường kín trong mặt (z, y). Đùn một biên dạng thì mặt bên luôn phẳng; khối mà mặt cắt đổi dáng dọc chiều dài thì dùng loft, và thêm mặt cắt ở chỗ dáng đổi nhanh. symmetric: true thì chỉ cho NỬA z ≥ 0, từ tâm đáy (z = 0) lên tâm nóc (z = 0), tool tự đối xứng. round bo góc từng mặt cắt; caps round | flat | open. Điểm neo s0…sN (tâm mặt cắt), nose, tail. Kết quả trả bảng rộng × cao từng mặt cắt để so với số đo thật.",
     inputSchema: { type: "object", properties: { ...shapeCommon, sections: { type: "array", items: { type: "object", properties: { x: { type: "number" }, profile: path2dArg("mặt cắt [z, y]") }, required: ["x", "profile"] } }, symmetric: { type: "boolean" }, points: { type: "integer", description: "số điểm mỗi vòng (mặc định 64)" }, samples: { type: "integer", description: "số vòng giữa hai mặt cắt (mặc định 10)" }, caps: { type: "string", enum: ["round", "flat", "open"] }, capLength: { type: "number" } }, required: ["assembly", "id", "sections"] },
   },
   {
     name: "shape_boolean",
-    description: "BOOLEAN (lõi manifold): op subtract (khoét hốc bánh, ô kính, lỗ), union (gộp), intersect (giao) giữa input và các hình tools. Mọi hình phải kín và đã nằm đúng chỗ trong cùng khung (offset / rotate của chúng). Trả về thể tích trước / sau. Kết quả GIỮ điểm neo của dao cắt, tên \"<idDao>.<diemNeo>\" (khoét hốc bằng trụ \"hoc\" thì thân có \"hoc.axis\"; bo cạnh, khắc rãnh giữ nguyên; pattern đánh số \"<input>[i].<diemNeo>\"): ghép tiếp vào đó thay vì gõ toạ độ. smooth: true cho pháp tuyến liền mạch (mặt cong lớn). Mép cắt sắc: bo tiếp bằng shape_round_edges.",
+    description: "BOOLEAN (lõi manifold): op subtract (khoét hốc, lỗ, ô), union (gộp), intersect (giao) giữa input và các hình tools. Mọi hình phải kín và đã nằm đúng chỗ trong cùng khung (offset / rotate của chúng). Trả về thể tích trước / sau. Kết quả GIỮ điểm neo của dao cắt, tên \"<idDao>.<diemNeo>\" (khoét hốc bằng trụ \"hoc\" thì thân có \"hoc.axis\"; bo cạnh, khắc rãnh giữ nguyên; pattern đánh số \"<input>[i].<diemNeo>\"): ghép tiếp vào đó thay vì gõ toạ độ. smooth: true cho pháp tuyến liền mạch (mặt cong lớn). Mép cắt sắc: bo tiếp bằng shape_round_edges.",
     inputSchema: { type: "object", properties: { ...shapeCommon, op: { type: "string", enum: ["subtract", "union", "intersect"] }, input: { type: "string" }, tools: { type: "array", items: { type: "string" } }, smooth: { type: "boolean", description: "pháp tuyến liền mạch trên cả lưới (mặc định false: gãy ở cạnh > 30°)" } }, required: ["assembly", "id", "op", "input", "tools"] },
   },
   {
     name: "shape_weld",
-    description: "MIẾT MỐI NỐI (không thêm vật liệu): gộp hai hình KÍN rồi làm mượt dải quanh chỗ chạm. Dùng khi hai mặt chạm nhau GẦN SONG SONG thành khe hẹp (vai áo, gấu áo chạm quần) — round_edges bỏ qua ca này. Cần đắp vật liệu vào góc lõm (ống nhánh vào ống chính) thì dùng shape_bevel. Hai hình phải cắm vào nhau vài mm. radius (m, mặc định 0,35 × bề dày nhỏ hơn, 4–30 mm), strength 0..1 (0,6), detail = cỡ lưới trong dải (radius/3). Kết quả: MỘT hình, MỘT vật liệu, kèm dòng \"lưới: … gấp mép …\".",
+    description: "MIẾT MỐI NỐI (không thêm vật liệu): gộp hai hình KÍN rồi làm mượt dải quanh chỗ chạm. Dùng khi hai mặt chạm nhau GẦN SONG SONG thành khe hẹp — round_edges bỏ qua ca này. Cần đắp vật liệu vào góc lõm giữa hai khối thì dùng shape_bevel. Hai hình phải cắm vào nhau vài mm. radius (m, mặc định 0,35 × bề dày nhỏ hơn, 4–30 mm), strength 0..1 (0,6), detail = cỡ lưới trong dải (radius/3). Kết quả: MỘT hình, MỘT vật liệu, kèm dòng \"lưới: … gấp mép …\".",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string", description: "hình thứ nhất (a)" }, tools: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 1, description: "[hình thứ hai (b)]" }, radius: { type: ["number", "string"], description: "bán kính cung hàn (m) hoặc \"auto\"" }, strength: { type: "number", description: "0..1, mặc định 0,6" }, detail: { type: ["number", "string"], description: "cỡ cạnh lưới trong dải (m) hoặc \"auto\"" }, maxTriangles: { type: "integer" } }, required: ["assembly", "id", "input", "tools"] },
   },
   {
     name: "shape_bevel",
-    description: "ĐẮP / GỌT ĐÚNG MỘT MỐI NỐI giữa hai hình đã cắm vào nhau vài mm. mode \"add\" (mặc định khi có hình thứ hai): đắp vật liệu vào góc lõm thành cung như đất nặn — ống nhánh vào ống chính, ống vào thân, tay vào vai. \"cut\": gọt cạnh lồi nằm trong mối nối. radius (m, mặc định 0,35 × bề dày nhỏ nhất, 3–30 mm); profile 0..1 (> 0,5 mối dày hơn); strength 0..1 = độ miết; loop chọn vòng khi mối ra nhiều vòng (0 = dài nhất); angle = ngưỡng cạnh gãy cho cut. Ống/vỏ RỖNG: đắp trên khối ĐẶC rồi mới khoét lòng, nếu không cung cắt xuyên vách. Chỉ cần bo mọi cạnh: shape_round_edges; khe hẹp gần song song: shape_weld. Còn gợn sau khi đắp: shape_sand.",
+    description: "ĐẮP / GỌT ĐÚNG MỘT MỐI NỐI giữa hai hình đã cắm vào nhau vài mm. mode \"add\" (mặc định khi có hình thứ hai): đắp vật liệu vào góc lõm nơi một khối cắm vào khối kia, thành một cung liền. \"cut\": gọt cạnh lồi nằm trong mối nối. radius (m, mặc định 0,35 × bề dày nhỏ nhất, 3–30 mm); profile 0..1 (> 0,5 mối dày hơn); strength 0..1 = độ miết; loop chọn vòng khi mối ra nhiều vòng (0 = dài nhất); angle = ngưỡng cạnh gãy cho cut. Ống/vỏ RỖNG: đắp trên khối ĐẶC rồi mới khoét lòng, nếu không cung cắt xuyên vách. Chỉ cần bo mọi cạnh: shape_round_edges; khe hẹp gần song song: shape_weld. Còn gợn sau khi đắp: shape_sand.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string", description: "hình thứ nhất" }, tools: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 1, description: "[hình thứ hai] — có nó thì chỉ bo đúng mối nối giữa hai hình" }, mode: { type: "string", enum: ["cut", "add", "auto"] }, radius: { type: ["number", "string"], description: "bán kính cung (m) hoặc \"auto\"" }, profile: { type: "number", description: "0..1, mặc định 0,5" }, strength: { type: "number", description: "0..1, mặc định 0,6" }, loop: { type: "integer", description: "chọn vòng mối nối (0 = dài nhất)" }, angle: { type: "number", description: "ngưỡng cạnh gãy cho mode cut (mặc định 40°)" }, detail: { type: ["number", "string"], description: "cỡ cạnh lưới trong dải (m) hoặc \"auto\"" }, maxTriangles: { type: "integer" } }, required: ["assembly", "id", "input"] },
   },
   {
@@ -171,33 +175,33 @@ const TOOLS = [
   },
   {
     name: "shape_round_edges",
-    description: "BO CẠNH mọi cạnh gãy hơn angle (mặc định 30°) với bán kính xấp xỉ radius (mặc định 4 mm): chia mịn lưới trong dải quanh cạnh rồi làm mượt. Dùng sau boolean / groove để mép không sắc như dao. Bán kính là xấp xỉ, không phải fillet CAD chính xác; báo số cạnh gãy còn lại. KHÔNG dùng cho mối nối hai mặt gần song song (khe ở vai, gấu áo chạm quần) — ca đó dùng shape_weld.",
+    description: "BO CẠNH mọi cạnh gãy hơn angle (mặc định 30°) với bán kính xấp xỉ radius (mặc định 4 mm): chia mịn lưới trong dải quanh cạnh rồi làm mượt. Dùng sau boolean / groove để mép không sắc như dao. Bán kính là xấp xỉ, không phải fillet CAD chính xác; báo số cạnh gãy còn lại. KHÔNG dùng cho mối nối hai mặt gần song song tạo khe hẹp — ca đó dùng shape_weld.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string" }, radius: { type: "number" }, angle: { type: "number" }, maxTriangles: { type: "integer" } }, required: ["assembly", "id", "input"] },
   },
   {
     name: "shape_groove",
-    description: "KHẮC RÃNH dọc một đường nằm trên mặt hình (khe cửa, khe capo, khe cốp, đường gân): curve {plane: {axis: x|y|z, at}} = giao của mặt với mặt phẳng (within [[min],[max]] để chỉ lấy một đoạn), hoặc {pts: [[x,y,z]…], project: [dx,dy,dz]} = chiếu polyline lên mặt. width (mặc định 3,5 mm), depth (4 mm). Hình phải kín.",
+    description: "KHẮC RÃNH dọc một đường nằm trên mặt hình (rãnh, đường gân, khe giả — hình vẫn là một khối): curve {plane: {axis: x|y|z, at}} = giao của mặt với mặt phẳng (within [[min],[max]] để chỉ lấy một đoạn), hoặc {pts: [[x,y,z]…], project: [dx,dy,dz]} = chiếu polyline lên mặt. width (mặc định 3,5 mm), depth (4 mm). Hình phải kín.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string" }, curve: { type: "object" }, within: { type: "array", items: v3Arg, minItems: 2, maxItems: 2 }, width: { type: "number" }, depth: { type: "number" } }, required: ["assembly", "id", "input", "curve"] },
   },
   {
     name: "shape_split_region",
-    description: "TÁCH VÙNG mặt thành tấm mỏng ôm đúng mặt gốc (kính xe, ốp, nhãn lớn): outline lồi vẽ trong mặt plane (xy | xz | zy = [z, y]), chiếu theo trục còn lại; range [từ, tới] dọc trục chiếu để chỉ lấy một phía (vd kính hông trái: plane xy, range [0, 1]). thickness (mặc định 4 mm, dày vào trong), lift (dời theo pháp tuyến; dương = nổi ra, âm = thụt vào). Muốn ô thủng thì shape_boolean subtract với shape_extrude cùng outline.",
+    description: "TÁCH VÙNG mặt thành tấm mỏng ôm đúng mặt gốc (lớp phủ một phần mặt, thường khác vật liệu): outline lồi vẽ trong mặt plane (xy | xz | zy = [z, y]), chiếu theo trục còn lại; range [từ, tới] dọc trục chiếu để chỉ lấy một phía (vd range [0, 1] = chỉ phía dương của trục chiếu). thickness (mặc định 4 mm, dày vào trong), lift (dời theo pháp tuyến; dương = nổi ra, âm = thụt vào). Muốn ô thủng thì shape_boolean subtract với shape_extrude cùng outline.",
     inputSchema: { type: "object", properties: { ...shapeCommon, input: { type: "string" }, outline: path2dArg("đường bao lồi"), plane: { type: "string", enum: ["xy", "xz", "zy"] }, range: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 }, thickness: { type: "number" }, lift: { type: "number" } }, required: ["assembly", "id", "input", "outline"] },
   },
   {
     name: "part_save_as_type",
-    description: "LƯU CỤM thành loại bộ phận mới để lắp ở bản khác (bánh xe, đèn, gương…): parts = các bộ phận của cụm (mặc định cả bản; phải khép kín: mỗi bộ phận đặt vào ground hoặc vào bộ phận trong cụm), root = bộ phận gốc (khung của loại mới = khung bộ phận này), expose = {tenCongKhai: \"idBoPhan.diemNeo\"} (mặc định mọi điểm neo của root). Sau đó ở bản khác: part_add {type: name} rồi ghép bằng điểm neo công khai.",
+    description: "LƯU CỤM thành loại bộ phận mới để lắp lại nhiều lần hoặc ở bản khác: parts = các bộ phận của cụm (mặc định cả bản; phải khép kín: mỗi bộ phận đặt vào ground hoặc vào bộ phận trong cụm), root = bộ phận gốc (khung của loại mới = khung bộ phận này), expose = {tenCongKhai: \"idBoPhan.diemNeo\"} (mặc định mọi điểm neo của root). Sau đó ở bản khác: part_add {type: name} rồi ghép bằng điểm neo công khai.",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, name: { type: "string" }, parts: { type: "array", items: { type: "string" } }, root: { type: "string" }, expose: { type: "object" }, description: { type: "string" } }, required: ["assembly", "name"] },
   },
   // ───── vật lý (bộ giải chung XPBD) ─────
   {
     name: "physics_setup",
-    description: "Bật mô phỏng (bộ giải chung XPBD, chạy cả trong Node lẫn trang): bộ phận gom thành vật rắn (ghép chặt thì chung vật, mỗi khớp mở vật mới, gắn ground thì đứng yên), khối lượng / trọng tâm / quán tính từ lưới × khối lượng riêng, va chạm bằng bao lồi. free = các khớp bỏ đi để vật thành tự do (xe trượt dọc ground.x → xe chạy tự do). Tiếp theo: body_set (khối lượng thật nếu vật rỗng, ma sát, phục hồi) → initial_set (vận tốc đầu; bánh lăn sẵn thì cho cả ω) → drive_add → simulate đọc bảng số → sim_export .physics.json cho trang (new World(model), world.step(dt), view.setWorld(path, chain(world.matrix(body), part.offset))). Khớp trong cụm viết \"<idBoPhan>/<khop>\".",
+    description: "Bật mô phỏng (bộ giải chung XPBD, chạy cả trong Node lẫn trang): bộ phận gom thành vật rắn (ghép chặt thì chung vật, mỗi khớp mở vật mới, gắn ground thì đứng yên), khối lượng / trọng tâm / quán tính từ lưới × khối lượng riêng, va chạm bằng bao lồi. free = các khớp bỏ đi để vật thành tự do (bỏ khớp trượt dọc ground.x thì vật trượt tự do theo vật lý). Tiếp theo: body_set (khối lượng thật nếu vật rỗng, ma sát, phục hồi) → initial_set (vận tốc đầu; bánh lăn sẵn thì cho cả ω) → drive_add → simulate đọc bảng số → sim_export .physics.json cho trang (new World(model), world.step(dt), view.setWorld(path, chain(world.matrix(body), part.offset))). Khớp trong cụm viết \"<idBoPhan>/<khop>\".",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, gravity: v3Arg, groundPlane: { type: "boolean", description: "mặt phẳng va chạm y = 0 (mặc định có)" }, substeps: { type: "integer" }, free: { type: "array", items: { type: "string" } } }, required: ["assembly"] },
   },
   {
     name: "body_set",
-    description: "Ghi đè tính chất vật lý của vật chứa bộ phận (đường dẫn, kể cả trong cụm: \"xeA/banhTruocT\"): mass (kg, vd vật thật rỗng), fixed, friction, restitution (hệ số phục hồi 0–1).",
+    description: "Ghi đè tính chất vật lý của vật chứa bộ phận (đường dẫn, kể cả trong cụm: \"cum/boPhan\"): mass (kg, vd vật thật rỗng), fixed, friction, restitution (hệ số phục hồi 0–1).",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, part: { type: "string" }, mass: { type: "number" }, fixed: { type: "boolean" }, friction: { type: "number" }, restitution: { type: "number" } }, required: ["assembly", "part"] },
   },
   {
@@ -249,11 +253,21 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { assembly: assemblyArg, shape: { type: "string" }, name: { type: "string" }, kind: { type: "string", enum: ["point", "axis", "face"] }, from: { type: "string" }, shift: v3Arg, origin: v3Arg, dir: v3Arg, up: v3Arg, radius: { type: "number" }, desc: { type: "string" } }, required: ["assembly", "shape", "name"] },
   },
   // ───── vật liệu, decal ─────
-  { name: "material_presets", description: "Danh mục vật liệu PBR có sẵn và tham số chỉnh được (màu \"#rrggbb\", độ nhám, kim loại, clearcoat, transmission…), cùng các loại texture thủ tục.", inputSchema: { type: "object", properties: {} } },
   {
     name: "material_define",
-    description: "Định nghĩa (hoặc thay) một vật liệu có tên từ một preset, ghi đè tham số và gắn texture thủ tục: textures {normal|roughness|color: {kind: noise|flakes|tread|grain|scratches, scale (số lần lặp), seed, strength}}. Vật thật không đều tăm tắp: noise cho nhựa sần, grain cho kim loại chải, tread cho gai lốp trên một dải tiện riêng, scratches cho độ nhám. Gán bằng material_assign (bộ phận, hoặc \"shape:<id>\").",
-    inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, preset: { type: "string" }, overrides: { type: "object" }, textures: { type: "object" } }, required: ["assembly", "id", "preset"] },
+    description: "Định nghĩa (hoặc thay) một vật liệu có tên bằng thông số PBR tự đặt theo vật liệu thật (không có vật liệu dựng sẵn): params (màu, độ nhám, kim loại, lớp phủ, truyền sáng…), density = khối lượng riêng thật kg/m³ (dùng cho khối lượng khi mô phỏng), friction. textures {normal|roughness|color: {kind, scale (số lần lặp trên UV), seed, strength}} cho bề mặt không đều: noise = sần ngẫu nhiên, flakes = vảy lấp lánh, grain = vệt xước song song một hướng, tread = khối lặp theo chu vi quanh trục (UV u quanh trục của hình tiện), scratches = xước ngẫu nhiên. Vật liệu phải định nghĩa trước rồi mới gán (material_assign, tham số material của part_add / shape_* / route_add).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        assembly: assemblyArg,
+        id: { type: "string" },
+        params: { type: "object", properties: Object.fromEntries(Object.entries(MATERIAL_PARAMS).map(([k, p]) => [k, p.range === "color" ? { type: "string", description: `${p.desc}, "#rrggbb"` } : { type: "number", minimum: p.range[0], maximum: p.range[1], description: p.desc }])), additionalProperties: false },
+        density: { type: "number", description: "khối lượng riêng kg/m³ của vật liệu thật" },
+        friction: { type: "number", description: "hệ số ma sát (mặc định 0,5)" },
+        textures: { type: "object" },
+      },
+      required: ["assembly", "id", "params", "density"],
+    },
   },
   {
     name: "material_assign",
@@ -262,7 +276,7 @@ const TOOLS = [
   },
   {
     name: "decal_add",
-    description: "Dán chữ hoặc SVG lên mặt một bộ phận, chiếu từ điểm neo kiểu mặt (at, kể cả mặt trụ \"id.surface@angle=…\"). content {text, color, background, font, arcRadius (m: chữ chạy theo cung, cho hông lốp) | svg}; mode print | emboss | engrave. Trùng id thì thay.",
+    description: "Dán chữ hoặc SVG lên mặt một bộ phận, chiếu từ điểm neo kiểu mặt (at, kể cả mặt trụ \"id.surface@angle=…\"). content {text, color, background, font, arcRadius (m: chữ chạy theo cung tròn) | svg}; mode print | emboss | engrave. Trùng id thì thay.",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, target: { type: "string" }, at: { type: "string" }, size: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 }, angle: { type: "number" }, depth: { type: "number" }, content: { type: "object" }, mode: { type: "string", enum: ["print", "emboss", "engrave"] } }, required: ["assembly", "id", "target", "at", "size", "content"] },
   },
   { name: "decal_remove", description: "Xoá một decal.", inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" } }, required: ["assembly", "id"] } },
@@ -275,7 +289,7 @@ const TOOLS = [
   // ───── cảnh, render ─────
   {
     name: "scene_set",
-    description: "Chọn ánh sáng và nền: environment room | studio (hộp đèn mềm, hợp sơn xe) | street | sunset | dawn (HDRI thật); stage table | studioCyc (phông cong liền sàn) | road | glossyFloor | none; exposure.",
+    description: "Chọn ánh sáng và nền: environment room | studio (hộp đèn mềm, phản chiếu mượt trên mặt bóng) | street | sunset | dawn (HDRI thật); stage table | studioCyc (phông cong liền sàn) | road | glossyFloor | none; exposure.",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, environment: { type: "string", enum: ["room", "studio", "street", "sunset", "dawn"] }, stage: { type: "string", enum: ["table", "studioCyc", "road", "glossyFloor", "none"] }, exposure: { type: "number" } }, required: ["assembly"] },
   },
   {
@@ -380,6 +394,7 @@ function upsertShape(op, args) {
   const params = Object.fromEntries(Object.entries(args).filter(([k, v]) => !SHAPE_KEYS.has(k) && v !== undefined));
   let replaced = false;
   const { doc } = editDoc(assembly, (d) => {
+    if (material) checkDefinedMaterial(d, material, `[hình ${id}].material`);
     d.shapes = d.shapes ?? [];
     const node = { id, op, params, ...(input ? { inputs: [input, ...(Array.isArray(tools) ? tools : [])] } : {}), ...(offset ? { offset } : {}), ...(rotate ? { rotate } : {}), ...(material ? { material } : {}) };
     const i = d.shapes.findIndex((s) => s.id === id);
@@ -574,6 +589,7 @@ const handlers = {
       if (doc.parts.some((p) => p.id === id)) throw new Error(`Đã có bộ phận "${id}"; dùng part_update để sửa.`);
       // loại là cụm trong thư viện: chép vào tài liệu để file tự đủ
       if (!PARTS[type] && !String(type).startsWith(SHAPE_PREFIX) && !doc.types?.[type] && lib[type]) doc.types = { ...(doc.types ?? {}), [type]: lib[type] };
+      if (material) checkDefinedMaterial(doc, material, `[${id}].material`);
       doc.parts.push({ id, type, params, place, ...(material ? { material } : {}) });
     });
     return text(partReport(reg, solved, id));
@@ -584,6 +600,7 @@ const handlers = {
       if (!p) throw new Error(`Không có bộ phận "${id}".`);
       if (params) p.params = { ...p.params, ...params };
       if (place) p.place = place;
+      if (material) checkDefinedMaterial(doc, material, `[${id}].material`);
       if (material !== undefined) material ? (p.material = material) : delete p.material;
       return children(doc, id);
     });
@@ -681,6 +698,7 @@ const handlers = {
   route_add: ({ assembly, id, from, to, via, radius, material }) => {
     if (!ID.test(id)) throw new Error(`id dây "${id}" không hợp lệ.`);
     const { doc, solved, reg } = editDoc(assembly, (d) => {
+      checkDefinedMaterial(d, material, `[dây ${id}].material`);
       d.routes = d.routes.filter((r) => r.id !== id);
       d.routes.push({ id, from, to, ...(via?.length ? { via } : {}), radius, material });
     });
@@ -699,7 +717,7 @@ const handlers = {
     const reg = registryFor(doc);
     const extra = [
       doc.shapes?.length ? `\n\n## Hình\n${doc.shapes.map((s) => `- ${s.id}: ${s.op}${s.inputs?.length ? ` ← ${s.inputs.join(", ")}` : ""}${s.material ? `, vật liệu ${s.material}` : ""}`).join("\n")}` : "",
-      Object.keys(doc.materials ?? {}).length ? `\n\n## Vật liệu\n${Object.entries(doc.materials).map(([k, m]) => `- ${k}: ${m.preset} ${JSON.stringify(m.overrides ?? {})}`).join("\n")}` : "",
+      Object.keys(doc.materials ?? {}).length ? `\n\n## Vật liệu\n${Object.entries(doc.materials).map(([k, m]) => `- ${k}: ${JSON.stringify({ ...(m.params ?? {}), ...(m.overrides ?? {}) })}${m.density ? `, ${m.density} kg/m³` : ""}`).join("\n")}` : "",
       doc.decals?.length ? `\n\n## Decal\n${doc.decals.map((d) => `- ${d.id}: ${d.content.text ?? "svg"} trên ${d.at}`).join("\n")}` : "",
       doc.scene ? `\n\n## Cảnh\n${JSON.stringify(doc.scene)}` : "",
     ].join("");
@@ -821,7 +839,7 @@ const handlers = {
     const flat = flatten(doc).parts;
     const side = (id) => {
       const list = partOrCluster(flat, id).filter((p) => p.geometry);
-      if (!list.length) throw new Error(`Không có bộ phận "${id}" (đường dẫn, vd "xeA/banhTruocT").`);
+      if (!list.length) throw new Error(`Không có bộ phận "${id}" (đường dẫn, vd "cum/boPhan").`);
       const ss = solidsOf(list);
       let u = ss[0].m;
       for (const s of ss.slice(1)) { const n = u.add(s.m); u.delete(); s.m.delete(); u = n; }
@@ -1005,21 +1023,18 @@ const handlers = {
   },
 
   // ───── vật liệu, decal ─────
-  material_presets: () => text([
-    "# Preset vật liệu (material_define {preset, overrides}) — hoặc dùng thẳng tên preset làm vật liệu",
-    ...Object.entries(PRESETS).map(([k, p]) => `- ${k}: ${p.desc}. Tham số: ${Object.entries(p.defaults).map(([n, v]) => `${n}=${v}`).join(", ")}`),
-    `\n# Texture thủ tục (textures.normal | roughness | color): ${TEXTURE_KINDS.join(", ")}; {kind, scale (số lần lặp trên UV), seed, strength}. tread = gai lốp chạy theo chu vi (dùng cho lathe: UV u quanh trục).`,
-    `\n# Tên cũ vẫn dùng được: ${MATERIAL_NAMES.join(", ")}`,
-  ].join("\n")),
-  material_define: ({ assembly, id, preset, overrides, textures }) => {
+  material_define: ({ assembly, id, params, density, friction, textures }) => {
     if (!ID.test(id ?? "")) throw new Error(`id vật liệu "${id}" không hợp lệ.`);
+    if (!params || typeof params !== "object") throw new Error("params phải là object tham số PBR.");
+    if (density === undefined) throw new Error("Thiếu density (khối lượng riêng kg/m³ của vật liệu thật).");
     editDoc(assembly, (d) => {
-      d.materials = { ...(d.materials ?? {}), [id]: { preset, ...(overrides ? { overrides } : {}), ...(textures ? { textures } : {}) } };
+      d.materials = { ...(d.materials ?? {}), [id]: { params, density, ...(friction !== undefined ? { friction } : {}), ...(textures ? { textures } : {}) } };
     });
-    return text(`Vật liệu ${id} = ${preset}${overrides ? ` ${JSON.stringify(overrides)}` : ""}${textures ? `, texture ${Object.entries(textures).map(([s, t]) => `${s}:${t.kind}`).join(", ")}` : ""}. Gán bằng material_assign hoặc tham số material của part_add / shape_*.`);
+    return text(`Vật liệu ${id}: ${JSON.stringify(params)}, ${density} kg/m³${friction !== undefined ? `, ma sát ${friction}` : ""}${textures ? `, texture ${Object.entries(textures).map(([s, t]) => `${s}:${t.kind}`).join(", ")}` : ""}. Gán bằng material_assign hoặc tham số material của part_add / shape_* / route_add.`);
   },
   material_assign: ({ assembly, target, material }) => {
     editDoc(assembly, (d) => {
+      if (material) checkDefinedMaterial(d, material, "material");
       const setOn = (o) => (material ? (o.material = material) : delete o.material);
       if (target.startsWith(SHAPE_PREFIX)) {
         const node = d.shapes?.find((s) => s.id === target.slice(SHAPE_PREFIX.length));
@@ -1180,6 +1195,7 @@ async function selftest() {
     add("crank", "shape:crankS", { kind: "coaxial", a: "crank.axisX", b: "shaft.axis", offset: -0.18 });
     add("postR", "shape:postS", { kind: "onto", a: "postR.bottom", b: "base.top", at: [0.165, 0.105] });
     G("joint_add", { id: "rotor", kind: "revolute", axis: "brgL.boreS.axis", moves: ["shaft"] });
+    G("material_define", { id: "wireRed", params: { color: "#b3201f", roughness: 0.5 }, density: 3000 });
     G("route_add", { id: "w1", from: "brush1.bottom", to: "postR.top", via: [{ on: "base.top" }], radius: 0.0016, material: "wireRed" });
 
     const s = solved("gen");
@@ -1219,6 +1235,7 @@ async function selftest() {
     console.log("\n--- xe lăn ---");
     call("assembly_create", { id: "car", title: "Xe" });
     const C = (tool, args) => call(tool, { assembly: "car", ...args });
+    C("material_define", { id: "rubber", params: { color: "#222222", roughness: 0.9 }, density: 1100, friction: 0.9 });
     const R = 0.32;
     boxShape(C, "bodyS", [4.3, 0.62, 1.72], 0.08);
     C("shape_lathe", { id: "wheelS", profile: { pts: [[0, -0.11], [R, -0.11], [R, 0.11], [0, 0.11]] }, segments: 96, rotate: [90, 0, 0] });
@@ -1286,7 +1303,7 @@ async function selftest() {
     near("cốc đặt lên đất", worldBounds(registryFor(findAssembly(readState(), "shp").doc), solve(findAssembly(readState(), "shp").doc, registryFor(findAssembly(readState(), "shp").doc)).parts.get("cup1")).min[1], 0);
     S("anchor_define", { shape: "cup", name: "handle", kind: "point", from: "right", shift: [0, 0.01, 0] });
     if (!built().get("cup").anchors.handle) fails.push("anchor_define không lưu");
-    S("material_define", { id: "glassBlue", preset: "glassTinted", overrides: { attenuationColor: "#3aa0ff" } });
+    S("material_define", { id: "glassBlue", params: { color: "#ffffff", roughness: 0.02, transmission: 1, ior: 1.52, thickness: 0.004, attenuationColor: "#3aa0ff", attenuationDistance: 0.5 }, density: 2500, friction: 0.3 });
     S("material_assign", { target: "cup1", material: "glassBlue" });
     S("decal_add", { id: "label", target: "cup1", at: "cup1.surface@angle=0", size: [0.03, 0.01], content: { text: "250 ml" } });
     console.log(S("measure", { kind: "bounds", target: "cup1", spec: { height: 0.095 } }));
@@ -1295,7 +1312,10 @@ async function selftest() {
     for (const [label, tool, args] of [
       ["đường tự cắt", "shape_extrude", { id: "bad1", outline: { pts: [[0, 0], [1, 1], [1, 0], [0, 1]], closed: true }, depth: 0.1 }],
       ["hình không có", "part_add", { id: "x9", type: "shape:nope", place: { kind: "onto", a: "x9.bottom", b: "ground.top" } }],
-      ["preset sai", "material_define", { id: "m2", preset: "gold" }],
+      ["vật liệu thiếu density", "material_define", { id: "m2", params: { color: "#ffcc00", metalness: 1 } }],
+      ["tham số vật liệu sai", "material_define", { id: "m3", params: { roughness: 2 }, density: 1000 }],
+      ["vật liệu chưa định nghĩa", "material_assign", { target: "cup1", material: "chrome" }],
+      ["preset không còn nhận", "part_update", { id: "cup1", material: "glassTinted" }],
       ["xoá hình đang dùng", "shape_remove", { id: "cup" }],
       ["mirror thiếu input", "shape_mirror", { id: "bad2", input: "zzz" }],
       ["decal lên trục", "decal_add", { id: "d2", target: "cup1", at: "cup1.axis", size: [0.01, 0.01], content: { text: "x" } }],
@@ -1366,6 +1386,8 @@ async function selftest() {
     console.log("\n--- cụm ---");
     call("assembly_create", { id: "src", title: "Nguồn" });
     const Src = (tool, args) => call(tool, { assembly: "src", ...args });
+    Src("material_define", { id: "glassTinted", params: { color: "#ffffff", roughness: 0.02, transmission: 1, ior: 1.52 }, density: 2500, friction: 0.3 });
+    Src("material_define", { id: "chrome", params: { color: "#f4f6f8", roughness: 0.05, metalness: 1 }, density: 7850, friction: 0.4 });
     Src("shape_lathe", { id: "cupS", profile: { pts: [[0, 0], [0.035, 0], [0.0375, 0.05], [0.04, 0.095]] }, wall: 0.002 });
     Src("shape_lathe", { id: "ringS", profile: { pts: [[0.039, 0.03], [0.045, 0.03], [0.045, 0.04], [0.039, 0.04]], closed: true } });
     Src("part_add", { id: "cup1", type: "shape:cupS", place: { kind: "onto", a: "cup1.bottom", b: "ground.top", at: [0.3, 0.1] }, material: "glassTinted" });
@@ -1426,7 +1448,10 @@ async function selftest() {
 
     // vật lý: rơi tự do, va chạm, con lắc, đĩa lăn, bánh răng (đáp số tính tay)
     console.log("\n--- vật lý ---");
-    const P = (id, title) => { call("assembly_create", { id, title }); const Q = (tool, args) => call(tool, { assembly: id, ...args }); Q.boxes = new Map(); return Q; };
+    const P = (id, title) => { call("assembly_create", { id, title }); const Q = (tool, args) => call(tool, { assembly: id, ...args }); Q.boxes = new Map();
+      Q("material_define", { id: "steel", params: { color: "#dcdfe3", metalness: 1, roughness: 0.18 }, density: 7850, friction: 0.4 });
+      Q("material_define", { id: "rubber", params: { color: "#222222", roughness: 0.9 }, density: 1100, friction: 0.9 });
+      return Q; };
     // hộp thép: mỗi cỡ một hình đùn trong bản lắp ráp
     const box = (Q, id, size, place, extra = {}) => {
       const key = size.join("x");

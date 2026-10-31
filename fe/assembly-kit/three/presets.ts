@@ -10,7 +10,8 @@ import type { MaterialKit } from "./materials";
 import { grayTexture, normalTexture } from "./procedural";
 
 function make(def: MaterialDef): THREE.MeshPhysicalMaterial {
-  const p = { ...PRESETS[def.preset].defaults, ...(def.overrides ?? {}) } as Record<string, number | string>;
+  const base = def.preset ? PRESETS[def.preset]?.defaults : undefined;
+  const p = { ...(base ?? {}), ...(def.params ?? {}), ...(def.overrides ?? {}) } as Record<string, number | string>;
   const num = (k: string) => p[k] as number | undefined;
   const col = (k: string) => (p[k] !== undefined ? new THREE.Color(p[k] as string) : undefined);
   const m = new THREE.MeshPhysicalMaterial({ color: col("color") });
@@ -45,7 +46,7 @@ function make(def: MaterialDef): THREE.MeshPhysicalMaterial {
     m.clearcoat = 0;
     m.emissiveIntensity = 0;
   }
-  m.name = def.preset;
+  m.name = def.preset ?? "material";
   return m;
 }
 
@@ -56,7 +57,7 @@ export function docMaterials(doc: AssemblyDoc, kit: MaterialKit) {
     let m = cache.get(ref);
     if (m) return m;
     const def = doc.materials?.[ref];
-    if (def && PRESETS[def.preset]) m = make(def);
+    if (def && (def.preset === undefined || PRESETS[def.preset])) m = make(def);
     else if (PRESETS[ref]) m = make({ preset: ref });
     else m = kit.byName[ref as keyof MaterialKit["byName"]] ?? kit.byName.steel;
     cache.set(ref, m);

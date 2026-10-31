@@ -76,7 +76,7 @@ export function describeTree(doc: AssemblyDoc, solved: Solved, registry: Registr
   walk("ground", 1);
   if (doc.joints.length) {
     lines.push("", "## Khớp");
-    for (const j of doc.joints) lines.push(`- ${j.id}: ${j.kind} quanh ${j.axis}, giá trị ${j.value ?? 0}${j.kind === "revolute" ? "°" : " m"}${j.couple ? `, ghép theo ${j.couple.joint}${j.couple.ratio !== undefined ? ` × ${j.couple.ratio}` : " (lăn)"}` : ""}${j.limits ? `, giới hạn ${JSON.stringify(j.limits)}` : ""}; kéo theo: ${(solved.clusters.get(j.id) ?? []).join(", ")}`);
+    for (const j of doc.joints) lines.push(`- ${j.id}: ${j.kind} quanh ${j.axis}, giá trị ${j.value ?? 0}${j.kind === "revolute" ? "°" : " m"}${j.couple ? `, ghép theo ${j.couple.joint}${j.couple.table ? ` theo bảng ${JSON.stringify(j.couple.table)}` : j.couple.ratio !== undefined ? ` × ${j.couple.ratio}` : " (lăn)"}` : ""}${j.limits ? `, giới hạn ${JSON.stringify(j.limits)}` : ""}; kéo theo: ${(solved.clusters.get(j.id) ?? []).join(", ")}`);
   }
   if (doc.routes.length) {
     lines.push("", "## Dây");

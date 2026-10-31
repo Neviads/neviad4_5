@@ -41,11 +41,11 @@ const LEGACY_FRICTION: Record<string, number> = { rubber: 0.9, wood: 0.5, felt: 
 
 export function materialProps(doc: AssemblyDoc, ref: string | null): { density: number; friction: number } {
   if (!ref) return { density: 1000, friction: 0.5 };
-  const preset = doc.materials?.[ref]?.preset ?? (PRESETS[ref] ? ref : null);
-  if (preset) {
-    const p = PRESETS[preset];
-    return { density: p.density ?? 1000, friction: p.friction ?? 0.5 };
-  }
+  const def = doc.materials?.[ref];
+  const preset = def ? def.preset : PRESETS[ref] ? ref : undefined;
+  const p = preset ? PRESETS[preset] : undefined;
+  if (def?.density !== undefined || p) return { density: def?.density ?? p?.density ?? 1000, friction: def?.friction ?? p?.friction ?? 0.5 };
+  if (def) return { density: 1000, friction: def.friction ?? 0.5 };
   return { density: LEGACY_DENSITY[ref] ?? 1000, friction: LEGACY_FRICTION[ref] ?? 0.5 };
 }
 

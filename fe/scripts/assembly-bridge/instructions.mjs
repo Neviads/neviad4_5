@@ -20,6 +20,6 @@ GHÉP VÀO HÌNH bằng điểm neo của nó: điểm neo riêng (anchor_define
 
 Mối nối hai chi tiết: shape_bevel (đắp cung vào góc lõm), shape_weld (miết khe hẹp), shape_sand (mài gợn còn lại). Kết quả mỗi phép báo "lưới: N tam giác, X chỗ gấp mép, Y tam giác dẹt" — có cảnh báo thì sửa tham số trước khi dùng tiếp.
 
-Kiểm tra: check_interference, check_clearance, check_floating, check_physics, measure. Mô phỏng: physics_setup → body_set → initial_set → drive_add → simulate. Vật liệu: material_presets → material_define → material_assign; decal_add, scene_set, render_view. Dùng lại cụm: part_save_as_type (part_types_list liệt kê cụm đã lưu).
+Kiểm tra: check_interference, check_clearance, check_floating, check_physics, measure. Mô phỏng: physics_setup → body_set → initial_set → drive_add → simulate. Vật liệu: material_define (tự đặt màu, độ nhám, kim loại… và khối lượng riêng theo vật liệu thật) → material_assign; decal_add, scene_set, render_view. Dùng lại cụm: part_save_as_type (part_types_list liệt kê cụm đã lưu).
 
 Đưa vào code: assembly_export {path: "fe/app/<route>/<ten>.assembly.json"}; trong trang buildAssembly(doc, createMaterialKit()) (@/assembly-kit/three/build-scene, /materials), thêm view.root vào scene, gọi view.setPose({khopDan: giaTri}) mỗi khung hình.`;

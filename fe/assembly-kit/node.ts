@@ -8,8 +8,7 @@ export { AssemblyError, anchorFrame, parseRef, solve, transformAnchorSpec, trans
 export { chain, invertRigid } from "./core/math";
 export { solveRoute } from "./core/route";
 export { describeTree, partReport, typeInfo, typeList } from "./core/report";
-export { MATERIAL_NAMES } from "./core/types";
-export { PRESETS, TEXTURE_KINDS, checkMaterialRef } from "./core/materials";
+export { MATERIAL_PARAMS, TEXTURE_KINDS, checkDefinedMaterial } from "./core/materials";
 export { buildShapes, shapeKeys, usedShapeIds } from "./shapes/build";
 export { sand } from "./shapes/sand";
 export { geometryStats } from "./shapes/quality";

@@ -6,7 +6,7 @@
 
 import { type V3, add, dot, length, scale, sub, transformDir, transformPoint } from "./math";
 import { AssemblyError, type Registry, type Solved, anchorFrame } from "./solve";
-import { MATERIAL_NAMES, type Route } from "./types";
+import type { Route } from "./types";
 
 export interface SolvedRoute {
   id: string;
@@ -18,7 +18,6 @@ export interface SolvedRoute {
 
 export function solveRoute(route: Route, solved: Solved, registry: Registry): SolvedRoute {
   if (!(route.radius > 0 && route.radius < 0.05)) throw new AssemblyError(`[dây ${route.id}] radius phải trong (0, 0,05) m.`);
-  if (!MATERIAL_NAMES.includes(route.material as (typeof MATERIAL_NAMES)[number])) throw new AssemblyError(`[dây ${route.id}] vật liệu "${route.material}" không có; chọn: ${MATERIAL_NAMES.join(", ")}.`);
   const end = (ref: string) => {
     const { frame, world } = anchorFrame(registry, solved.parts, ref, "world");
     if (frame.kind === "axis") throw new AssemblyError(`[dây ${route.id}] ${ref} là trục; dây cần một điểm hoặc một mặt.`);
