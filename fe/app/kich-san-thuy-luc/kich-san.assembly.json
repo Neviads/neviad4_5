@@ -1,0 +1,3725 @@
+{
+ "id": "kich-san-thuy-luc",
+ "title": "Kích sàn thuỷ lực 2,5 tấn — nâng ô tô bằng một tay",
+ "parts": [
+  {
+   "id": "khung",
+   "type": "shape:tamKhung",
+   "params": {},
+   "place": {
+    "kind": "onto",
+    "a": "khung.bottom",
+    "b": "ground.top"
+   },
+   "material": "sonDo"
+  },
+  {
+   "id": "giangTruoc",
+   "type": "shape:giangTruoc",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "giangTruoc.truc",
+    "b": "khung.oGiangTruoc"
+   },
+   "material": "sonDo"
+  },
+  {
+   "id": "giangSau",
+   "type": "shape:giangSau",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "giangSau.truc",
+    "b": "khung.oGiangSau"
+   },
+   "material": "sonDo"
+  },
+  {
+   "id": "trucTruoc",
+   "type": "shape:trucTruoc",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "trucTruoc.truc",
+    "b": "khung.oBanhTruoc"
+   },
+   "material": "thepDam"
+  },
+  {
+   "id": "banhTruoc",
+   "type": "shape:banhTruoc2",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhTruoc.truc",
+    "b": "khung.oBanhTruoc"
+   },
+   "material": "caoSu"
+  },
+  {
+   "id": "trucSau",
+   "type": "shape:trucSau2",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "trucSau.truc",
+    "b": "khung.oBanhSau"
+   },
+   "material": "thepDam"
+  },
+  {
+   "id": "banhSau",
+   "type": "shape:banhSau2",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "banhSau.truc",
+    "b": "khung.oBanhSau"
+   },
+   "material": "caoSu"
+  },
+  {
+   "id": "cumBom",
+   "type": "shape:cumBom",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "cumBom.chotSau",
+    "b": "khung.oThuyLuc"
+   },
+   "material": "sonDo"
+  },
+  {
+   "id": "pistonBom",
+   "type": "shape:pistonBom",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "pistonBom.truc",
+    "b": "cumBom.oPiston"
+   },
+   "material": "thepMa"
+  },
+  {
+   "id": "tayBom",
+   "type": "shape:tayBom",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "tayBom.choXoay",
+    "b": "cumBom.oTay"
+   },
+   "material": "thepDam"
+  },
+  {
+   "id": "tayNam",
+   "type": "shape:tayNam",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "tayNam.truc",
+    "b": "tayBom.truc"
+   },
+   "material": "nhua"
+  },
+  {
+   "id": "vanXa",
+   "type": "shape:vanXa",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "vanXa.truc",
+    "b": "cumBom.oVan"
+   },
+   "material": "thepMa"
+  },
+  {
+   "id": "canNang",
+   "type": "shape:canNang",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "canNang.choSau",
+    "b": "khung.oTayNang"
+   },
+   "material": "sonDo"
+  },
+  {
+   "id": "truDia",
+   "type": "shape:choTruoc",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "truDia.truc",
+    "b": "canNang.choTruoc"
+   },
+   "material": "sonDo"
+  },
+  {
+   "id": "diaNang",
+   "type": "shape:diaNang",
+   "params": {},
+   "place": {
+    "kind": "onto",
+    "a": "diaNang.bottom",
+    "b": "canNang.matDinh",
+    "angle": 90
+   },
+   "material": "thepDam"
+  },
+  {
+   "id": "demCaoSu",
+   "type": "shape:demCaoSu",
+   "params": {},
+   "place": {
+    "kind": "onto",
+    "a": "demCaoSu.bottom",
+    "b": "diaNang.top"
+   },
+   "material": "caoSu"
+  },
+  {
+   "id": "thanhTruyen",
+   "type": "shape:thanhTruyen",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "thanhTruyen.huong",
+    "b": "tayBom.huongTruyen"
+   },
+   "material": "thepMa"
+  },
+  {
+   "id": "trucQuay",
+   "type": "shape:trucQuay",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "trucQuay.truc",
+    "b": "khung.oQuay"
+   },
+   "material": "thepDam"
+  },
+  {
+   "id": "chotTreo",
+   "type": "shape:chotTreo",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "chotTreo.truc",
+    "b": "canNang.trucBac"
+   },
+   "material": "thepDam"
+  },
+  {
+   "id": "taiBom",
+   "type": "shape:taiBom",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "taiBom.truc",
+    "b": "cumBom.oTay"
+   }
+  },
+  {
+   "id": "chotBom",
+   "type": "shape:chotBom",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "chotBom.axis",
+    "b": "taiBom.truc"
+   }
+  },
+  {
+   "id": "chotThuyLuc",
+   "type": "shape:chotThuyLuc",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "chotThuyLuc.axis",
+    "b": "khung.oThuyLuc"
+   }
+  },
+  {
+   "id": "ongXiLanh",
+   "type": "shape:ongXiLanh",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "ongXiLanh.axis",
+    "b": "cumBom.oRam"
+   }
+  },
+  {
+   "id": "canDay",
+   "type": "shape:canDay",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "canDay.axis",
+    "b": "ongXiLanh.truot"
+   }
+  },
+  {
+   "id": "giaDia",
+   "type": "shape:giaDia",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "giaDia.chot",
+    "b": "diaNang.chot"
+   }
+  },
+  {
+   "id": "chotGiang",
+   "type": "shape:chotGiang",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "chotGiang.axis",
+    "b": "khung.oGiang"
+   }
+  },
+  {
+   "id": "thanhGiang",
+   "type": "shape:thanhGiang",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "thanhGiang.dauSau",
+    "b": "khung.oGiang"
+   }
+  },
+  {
+   "id": "chotS",
+   "type": "shape:chotS",
+   "params": {},
+   "place": {
+    "kind": "coaxial",
+    "a": "chotS.axis",
+    "b": "giaDia.trucS"
+   }
+  }
+ ],
+ "joints": [
+  {
+   "id": "bom",
+   "kind": "revolute",
+   "axis": "tayBom.choXoay",
+   "moves": [
+    "tayBom"
+   ],
+   "limits": [
+    -12,
+    12
+   ]
+  },
+  {
+   "id": "truotBom",
+   "kind": "prismatic",
+   "axis": "cumBom.oPiston",
+   "moves": [
+    "pistonBom"
+   ],
+   "limits": [
+    -0.012,
+    0.012
+   ]
+  },
+  {
+   "id": "khopTruyen",
+   "kind": "revolute",
+   "axis": "thanhTruyen.choDuoi",
+   "moves": [
+    "thanhTruyen"
+   ]
+  },
+  {
+   "id": "khopXiLanh",
+   "kind": "revolute",
+   "axis": "cumBom.chotSau",
+   "moves": [
+    "cumBom"
+   ]
+  },
+  {
+   "id": "truotCan",
+   "kind": "prismatic",
+   "axis": "ongXiLanh.truot",
+   "moves": [
+    "canDay"
+   ],
+   "limits": [
+    -0.002,
+    0.085
+   ]
+  },
+  {
+   "id": "nang",
+   "kind": "revolute",
+   "axis": "canNang.trucNang",
+   "moves": [
+    "canNang"
+   ],
+   "limits": [
+    0,
+    58
+   ]
+  },
+  {
+   "id": "giang",
+   "kind": "revolute",
+   "axis": "thanhGiang.dauSau",
+   "moves": [
+    "thanhGiang"
+   ]
+  },
+  {
+   "id": "dia",
+   "kind": "revolute",
+   "axis": "truDia.truc",
+   "moves": [
+    "diaNang"
+   ]
+  },
+  {
+   "id": "vanXa",
+   "kind": "revolute",
+   "axis": "vanXa.truc",
+   "moves": [
+    "vanXa"
+   ],
+   "limits": [
+    0,
+    90
+   ]
+  }
+ ],
+ "routes": [],
+ "shapes": [
+  {
+   "id": "tamHong",
+   "op": "extrude",
+   "params": {
+    "plane": "zy",
+    "outline": {
+     "pts": [
+      [
+       -0.335,
+       0
+      ],
+      [
+       -0.335,
+       0.115
+      ],
+      [
+       -0.326,
+       0.148
+      ],
+      [
+       -0.306,
+       0.156
+      ],
+      [
+       -0.288,
+       0.15
+      ],
+      [
+       -0.274,
+       0.12
+      ],
+      [
+       -0.185,
+       0.117
+      ],
+      [
+       -0.175,
+       0.165
+      ],
+      [
+       -0.16,
+       0.197
+      ],
+      [
+       -0.13,
+       0.205
+      ],
+      [
+       -0.09,
+       0.193
+      ],
+      [
+       -0.06,
+       0.168
+      ],
+      [
+       -0.05,
+       0.14
+      ],
+      [
+       -0.045,
+       0.112
+      ],
+      [
+       0.1,
+       0.107
+      ],
+      [
+       0.23,
+       0.109
+      ],
+      [
+       0.29,
+       0.098
+      ],
+      [
+       0.315,
+       0.072
+      ],
+      [
+       0.315,
+       0
+      ],
+      [
+       0.262,
+       0
+      ],
+      [
+       0.262,
+       0.058
+      ],
+      [
+       -0.302,
+       0.058
+      ],
+      [
+       -0.302,
+       0
+      ]
+     ],
+     "round": [
+      0.006,
+      0.006,
+      0.008,
+      0.008,
+      0.008,
+      0.01,
+      0.012,
+      0.012,
+      0.015,
+      0.015,
+      0.015,
+      0.012,
+      0.012,
+      0.012,
+      0,
+      0,
+      0.008,
+      0.006,
+      0.006,
+      0.006,
+      0.004,
+      0.004,
+      0.006
+     ],
+     "closed": true
+    },
+    "holes": [
+     {
+      "pts": [
+       [
+        -0.138,
+        0.088
+       ],
+       [
+        -0.13869,
+        0.09279
+       ],
+       [
+        -0.1407,
+        0.09719
+       ],
+       [
+        -0.14387,
+        0.10085
+       ],
+       [
+        -0.14794,
+        0.10346
+       ],
+       [
+        -0.15258,
+        0.10483
+       ],
+       [
+        -0.15742,
+        0.10483
+       ],
+       [
+        -0.16206,
+        0.10346
+       ],
+       [
+        -0.16613,
+        0.10085
+       ],
+       [
+        -0.1693,
+        0.09719
+       ],
+       [
+        -0.17131,
+        0.09279
+       ],
+       [
+        -0.172,
+        0.088
+       ],
+       [
+        -0.17131,
+        0.08321
+       ],
+       [
+        -0.1693,
+        0.07881
+       ],
+       [
+        -0.16613,
+        0.07515
+       ],
+       [
+        -0.16206,
+        0.07254
+       ],
+       [
+        -0.15742,
+        0.07117
+       ],
+       [
+        -0.15258,
+        0.07117
+       ],
+       [
+        -0.14794,
+        0.07254
+       ],
+       [
+        -0.14387,
+        0.07515
+       ],
+       [
+        -0.1407,
+        0.07881
+       ],
+       [
+        -0.13869,
+        0.08321
+       ]
+      ],
+      "closed": true
+     },
+     {
+      "pts": [
+       [
+        0.071,
+        0.084
+       ],
+       [
+        0.07035,
+        0.08851
+       ],
+       [
+        0.06846,
+        0.09265
+       ],
+       [
+        0.06548,
+        0.09609
+       ],
+       [
+        0.06165,
+        0.09855
+       ],
+       [
+        0.05728,
+        0.09984
+       ],
+       [
+        0.05272,
+        0.09984
+       ],
+       [
+        0.04835,
+        0.09855
+       ],
+       [
+        0.04452,
+        0.09609
+       ],
+       [
+        0.04154,
+        0.09265
+       ],
+       [
+        0.03965,
+        0.08851
+       ],
+       [
+        0.039,
+        0.084
+       ],
+       [
+        0.03965,
+        0.07949
+       ],
+       [
+        0.04154,
+        0.07535
+       ],
+       [
+        0.04452,
+        0.07191
+       ],
+       [
+        0.04835,
+        0.06945
+       ],
+       [
+        0.05272,
+        0.06816
+       ],
+       [
+        0.05728,
+        0.06816
+       ],
+       [
+        0.06165,
+        0.06945
+       ],
+       [
+        0.06548,
+        0.07191
+       ],
+       [
+        0.06846,
+        0.07535
+       ],
+       [
+        0.07035,
+        0.07949
+       ]
+      ],
+      "closed": true
+     },
+     {
+      "pts": [
+       [
+        0.299,
+        0.0375
+       ],
+       [
+        0.29864,
+        0.04004
+       ],
+       [
+        0.29757,
+        0.04237
+       ],
+       [
+        0.29589,
+        0.0443
+       ],
+       [
+        0.29374,
+        0.04569
+       ],
+       [
+        0.29128,
+        0.04641
+       ],
+       [
+        0.28872,
+        0.04641
+       ],
+       [
+        0.28626,
+        0.04569
+       ],
+       [
+        0.28411,
+        0.0443
+       ],
+       [
+        0.28243,
+        0.04237
+       ],
+       [
+        0.28136,
+        0.04004
+       ],
+       [
+        0.281,
+        0.0375
+       ],
+       [
+        0.28136,
+        0.03496
+       ],
+       [
+        0.28243,
+        0.03263
+       ],
+       [
+        0.28411,
+        0.0307
+       ],
+       [
+        0.28626,
+        0.02931
+       ],
+       [
+        0.28872,
+        0.02859
+       ],
+       [
+        0.29128,
+        0.02859
+       ],
+       [
+        0.29374,
+        0.02931
+       ],
+       [
+        0.29589,
+        0.0307
+       ],
+       [
+        0.29757,
+        0.03263
+       ],
+       [
+        0.29864,
+        0.03496
+       ]
+      ],
+      "closed": true
+     },
+     {
+      "pts": [
+       [
+        -0.3095,
+        0.04
+       ],
+       [
+        -0.30984,
+        0.04239
+       ],
+       [
+        -0.31085,
+        0.0446
+       ],
+       [
+        -0.31243,
+        0.04642
+       ],
+       [
+        -0.31447,
+        0.04773
+       ],
+       [
+        -0.31679,
+        0.04841
+       ],
+       [
+        -0.31921,
+        0.04841
+       ],
+       [
+        -0.32153,
+        0.04773
+       ],
+       [
+        -0.32357,
+        0.04642
+       ],
+       [
+        -0.32515,
+        0.0446
+       ],
+       [
+        -0.32616,
+        0.04239
+       ],
+       [
+        -0.3265,
+        0.04
+       ],
+       [
+        -0.32616,
+        0.03761
+       ],
+       [
+        -0.32515,
+        0.0354
+       ],
+       [
+        -0.32357,
+        0.03358
+       ],
+       [
+        -0.32153,
+        0.03227
+       ],
+       [
+        -0.31921,
+        0.03159
+       ],
+       [
+        -0.31679,
+        0.03159
+       ],
+       [
+        -0.31447,
+        0.03227
+       ],
+       [
+        -0.31243,
+        0.03358
+       ],
+       [
+        -0.31085,
+        0.0354
+       ],
+       [
+        -0.30984,
+        0.03761
+       ]
+      ],
+      "closed": true
+     }
+    ],
+    "depth": 0.006,
+    "edgeRadius": 0.0012
+   },
+   "offset": [
+    -0.145,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "tamKhung",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     0.29,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "tamHong"
+   ],
+   "anchors": {
+    "oGiangTruoc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.068,
+      0.235
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "giằng trước, sau bánh trước, dưới xi lanh"
+    },
+    "oGiangSau": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.122,
+      -0.322
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "giằng sau, sau đơn vị thuỷ lực"
+    },
+    "oBanhTruoc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.0375,
+      0.29
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "radius": 0.009,
+     "desc": "lỗ trục bánh trước trên hai má khung"
+    },
+    "oBanhSau": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.04,
+      -0.318
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "radius": 0.0085,
+     "desc": "lỗ trục bánh sau trên hai má khung"
+    },
+    "oXiLanh": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.11,
+      0.255
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt đuôi xi lanh"
+    },
+    "oTayNang": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.15,
+      -0.095
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "trục quay cần nâng, trên tai má khung"
+    },
+    "oBom": {
+     "kind": "face",
+     "origin": [
+      0,
+      0.095,
+      -0.255
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "desc": "bệ cụm bơm"
+    },
+    "oBinhDau": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.074,
+      -0.295
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "gối bình dầu"
+    },
+    "oQuay": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.15,
+      -0.095
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "trục quay cần nâng (bộ phận trục)"
+    },
+    "oThuyLuc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.065,
+      -0.285
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "chốt sau đơn vị thuỷ lực"
+    },
+    "oGiang": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.18,
+      -0.147
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "chốt khung của thanh giằng đĩa (Q = P + d, d = 60 mm ở 150°)"
+    }
+   }
+  },
+  {
+   "id": "giangTruoc",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.15
+      ],
+      [
+       0.013,
+       -0.15
+      ],
+      [
+       0.013,
+       0.15
+      ],
+      [
+       0,
+       0.15
+      ]
+     ],
+     "round": [
+      0,
+      0.004,
+      0.004,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 40
+   },
+   "offset": [
+    0,
+    0.075,
+    0.283
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.075,
+      0.283
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "trục ống giằng trước"
+    }
+   }
+  },
+  {
+   "id": "giangSau",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.15
+      ],
+      [
+       0.012,
+       -0.15
+      ],
+      [
+       0.012,
+       0.15
+      ],
+      [
+       0,
+       0.15
+      ]
+     ],
+     "round": [
+      0,
+      0.004,
+      0.004,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 40
+   },
+   "offset": [
+    0,
+    0.06,
+    -0.15
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.06,
+      -0.15
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "ống giằng sau"
+    }
+   }
+  },
+  {
+   "id": "banhTruoc",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.02
+      ],
+      [
+       0.023,
+       -0.02
+      ],
+      [
+       0.028,
+       -0.017
+      ],
+      [
+       0.03,
+       -0.01
+      ],
+      [
+       0.028,
+       -0.004
+      ],
+      [
+       0.028,
+       0.004
+      ],
+      [
+       0.03,
+       0.01
+      ],
+      [
+       0.028,
+       0.017
+      ],
+      [
+       0.023,
+       0.02
+      ],
+      [
+       0,
+       0.02
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.004,
+      0.006,
+      0.004,
+      0.004,
+      0.006,
+      0.004,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 48
+   },
+   "rotate": [
+    0,
+    0,
+    90
+   ]
+  },
+  {
+   "id": "banhSau",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.016
+      ],
+      [
+       0.029,
+       -0.016
+      ],
+      [
+       0.035,
+       -0.013
+      ],
+      [
+       0.0375,
+       -0.007
+      ],
+      [
+       0.0355,
+       -0.002
+      ],
+      [
+       0.0355,
+       0.002
+      ],
+      [
+       0.0375,
+       0.007
+      ],
+      [
+       0.035,
+       0.013
+      ],
+      [
+       0.029,
+       0.016
+      ],
+      [
+       0,
+       0.016
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.004,
+      0.007,
+      0.004,
+      0.004,
+      0.007,
+      0.004,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 48
+   },
+   "rotate": [
+    0,
+    0,
+    90
+   ]
+  },
+  {
+   "id": "trucTruoc",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.152
+      ],
+      [
+       0.009,
+       -0.152
+      ],
+      [
+       0.009,
+       0.152
+      ],
+      [
+       0,
+       0.152
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.002,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 40
+   },
+   "offset": [
+    0,
+    0.0375,
+    0.29
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.0375,
+      0.29
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "trục bánh trước"
+    }
+   }
+  },
+  {
+   "id": "trucSau",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0.135
+      ],
+      [
+       0.0075,
+       0.135
+      ],
+      [
+       0.0075,
+       0.2
+      ],
+      [
+       0,
+       0.2
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.002,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 40
+   },
+   "offset": [
+    0,
+    0.0375,
+    -0.315
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ]
+  },
+  {
+   "id": "banhTruocBase",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0.009,
+       -0.02
+      ],
+      [
+       0.029,
+       -0.02
+      ],
+      [
+       0.035,
+       -0.017
+      ],
+      [
+       0.0375,
+       -0.01
+      ],
+      [
+       0.035,
+       -0.004
+      ],
+      [
+       0.035,
+       0.004
+      ],
+      [
+       0.0375,
+       0.01
+      ],
+      [
+       0.035,
+       0.017
+      ],
+      [
+       0.029,
+       0.02
+      ],
+      [
+       0.009,
+       0.02
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.004,
+      0.006,
+      0.004,
+      0.004,
+      0.006,
+      0.004,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 48
+   },
+   "offset": [
+    0.105,
+    0.0375,
+    0.29
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ]
+  },
+  {
+   "id": "banhTruoc2",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     -0.21,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "banhTruocBase"
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.0375,
+      0.29
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "trục bánh trước"
+    }
+   }
+  },
+  {
+   "id": "tamTayBase",
+   "op": "extrude",
+   "params": {
+    "plane": "zy",
+    "outline": {
+     "pts": [
+      [
+       -0.113,
+       0.045
+      ],
+      [
+       -0.077,
+       0.045
+      ],
+      [
+       -0.077,
+       0.115
+      ],
+      [
+       0,
+       0.135
+      ],
+      [
+       0.15,
+       0.146
+      ],
+      [
+       0.245,
+       0.146
+      ],
+      [
+       0.293,
+       0.156
+      ],
+      [
+       0.293,
+       0.19
+      ],
+      [
+       0.25,
+       0.205
+      ],
+      [
+       0.1,
+       0.205
+      ],
+      [
+       -0.06,
+       0.19
+      ],
+      [
+       -0.09,
+       0.181
+      ],
+      [
+       -0.123,
+       0.166
+      ],
+      [
+       -0.12,
+       0.12
+      ],
+      [
+       -0.113,
+       0.09
+      ]
+     ],
+     "round": [
+      0.016,
+      0.016,
+      0.02,
+      0,
+      0,
+      0.01,
+      0.02,
+      0.02,
+      0.01,
+      0,
+      0.01,
+      0.02,
+      0.02,
+      0.01,
+      0
+     ],
+     "closed": true
+    },
+    "depth": 0.008,
+    "edgeRadius": 0.0012
+   },
+   "offset": [
+    -0.072,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "canNang",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     0.144,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "tamTayBase"
+   ],
+   "anchors": {
+    "choSau": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.15,
+      -0.095
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "ụ trục quay cần nâng"
+    },
+    "choTruoc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.172,
+      0.265
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt trước cần nâng"
+    },
+    "taiXiLanh": {
+     "kind": "point",
+     "origin": [
+      0,
+      0.065,
+      -0.095
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "tâm chốt đầu cán (điểm vòng kín)"
+    },
+    "matDinh": {
+     "kind": "face",
+     "origin": [
+      0,
+      0.19,
+      0.265
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "desc": "mặt đặt đĩa nâng"
+    },
+    "trucNang": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.15,
+      -0.095
+     ],
+     "dir": [
+      -1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "trục quay cần nâng (dương = nâng lên)"
+    },
+    "trucBac": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.065,
+      -0.095
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ chốt đầu cán ở chân tay quay"
+    }
+   }
+  },
+  {
+   "id": "banhSauBase",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.016
+      ],
+      [
+       0.031,
+       -0.016
+      ],
+      [
+       0.037,
+       -0.013
+      ],
+      [
+       0.04,
+       -0.007
+      ],
+      [
+       0.038,
+       -0.002
+      ],
+      [
+       0.038,
+       0.002
+      ],
+      [
+       0.04,
+       0.007
+      ],
+      [
+       0.037,
+       0.013
+      ],
+      [
+       0.031,
+       0.016
+      ],
+      [
+       0,
+       0.016
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.004,
+      0.007,
+      0.004,
+      0.004,
+      0.007,
+      0.004,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 48
+   },
+   "offset": [
+    0.1675,
+    0.04,
+    -0.315
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ]
+  },
+  {
+   "id": "banhSau2",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     -0.335,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "banhSauBase"
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.04,
+      -0.315
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "trục bánh"
+    }
+   }
+  },
+  {
+   "id": "trucSauBase",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.024
+      ],
+      [
+       0.0075,
+       -0.024
+      ],
+      [
+       0.0075,
+       0.024
+      ],
+      [
+       0,
+       0.024
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.002,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 32
+   },
+   "offset": [
+    0.154,
+    0.04,
+    -0.315
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ]
+  },
+  {
+   "id": "trucSau2",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     -0.308,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "trucSauBase"
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.04,
+      -0.315
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "trục bánh"
+    }
+   }
+  },
+  {
+   "id": "thungDau",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.075
+      ],
+      [
+       0.038,
+       -0.075
+      ],
+      [
+       0.045,
+       -0.067
+      ],
+      [
+       0.045,
+       0.065
+      ],
+      [
+       0.043,
+       0.075
+      ],
+      [
+       0,
+       0.075
+      ]
+     ],
+     "round": [
+      0,
+      0.004,
+      0.006,
+      0.004,
+      0.006,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.095,
+    -0.27
+   ],
+   "rotate": [
+    90,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "thapBom",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.024,
+       0
+      ],
+      [
+       0.024,
+       0.104
+      ],
+      [
+       0,
+       0.104
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.1,
+    -0.3
+   ]
+  },
+  {
+   "id": "pistonBom",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.009,
+       0
+      ],
+      [
+       0.009,
+       0.062
+      ],
+      [
+       0,
+       0.062
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.002,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.19,
+    -0.3
+   ],
+   "anchors": {
+    "dinh": {
+     "kind": "face",
+     "origin": [
+      0,
+      0.252,
+      -0.3
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "desc": "đầu piston"
+    },
+    "chot": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.252,
+      -0.3
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt đầu piston"
+    },
+    "huong": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.252,
+      -0.3
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "hướng thanh truyền"
+    },
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.2,
+      -0.3
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "trục piston"
+    }
+   }
+  },
+  {
+   "id": "tayBom",
+   "op": "sweep",
+   "params": {
+    "section": {
+     "pts": [
+      [
+       0.0115,
+       0
+      ],
+      [
+       0.00996,
+       0.00575
+      ],
+      [
+       0.00575,
+       0.00996
+      ],
+      [
+       0,
+       0.0115
+      ],
+      [
+       -0.00575,
+       0.00996
+      ],
+      [
+       -0.00996,
+       0.00575
+      ],
+      [
+       -0.0115,
+       0
+      ],
+      [
+       -0.00996,
+       -0.00575
+      ],
+      [
+       -0.00575,
+       -0.00996
+      ],
+      [
+       0,
+       -0.0115
+      ],
+      [
+       0.00575,
+       -0.00996
+      ],
+      [
+       0.00996,
+       -0.00575
+      ]
+     ],
+     "closed": true
+    },
+    "path": {
+     "pts": [
+      [
+       0,
+       0.175,
+       -0.306
+      ],
+      [
+       0,
+       0.20517,
+       -0.34461
+      ],
+      [
+       0,
+       0.29814,
+       -0.4636
+      ],
+      [
+       0,
+       0.45206,
+       -0.6606
+      ],
+      [
+       0,
+       0.60599,
+       -0.8576
+      ],
+      [
+       0,
+       0.7593,
+       -1.05381
+      ]
+     ],
+     "smooth": false
+    },
+    "caps": true
+   },
+   "anchors": {
+    "choXoay": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.205,
+      -0.345
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt quay tay bơm"
+    },
+    "choTay": {
+     "kind": "point",
+     "origin": [
+      0,
+      0.2574,
+      -0.412
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "chốt thanh truyền"
+    },
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.205,
+      -0.345
+     ],
+     "dir": [
+      0,
+      0.6157,
+      -0.788
+     ],
+     "desc": "trục tay bơm"
+    },
+    "huongTruyen": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.175,
+      -0.306
+     ],
+     "dir": [
+      0,
+      0.99698,
+      0.07769
+     ],
+     "desc": "hướng thanh truyền"
+    }
+   }
+  },
+  {
+   "id": "tayNam",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.017,
+       0
+      ],
+      [
+       0.019,
+       0.012
+      ],
+      [
+       0.019,
+       0.208
+      ],
+      [
+       0.017,
+       0.22
+      ],
+      [
+       0,
+       0.22
+      ]
+     ],
+     "round": [
+      0,
+      0.004,
+      0.006,
+      0.006,
+      0.004,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.205,
+    -0.345
+   ],
+   "rotate": [
+    -52,
+    0,
+    0
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.205,
+      -0.345
+     ],
+     "dir": [
+      0,
+      0.6157,
+      -0.788
+     ],
+     "desc": "trục tay nắm"
+    }
+   }
+  },
+  {
+   "id": "vanXa",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.016,
+       0
+      ],
+      [
+       0.016,
+       0.012
+      ],
+      [
+       0.01,
+       0.02
+      ],
+      [
+       0,
+       0.02
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.003,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.128,
+    -0.325
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.128,
+      -0.325
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "trục van xả"
+    }
+   }
+  },
+  {
+   "id": "choTruoc",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.09
+      ],
+      [
+       0.018,
+       -0.09
+      ],
+      [
+       0.018,
+       0.09
+      ],
+      [
+       0,
+       0.09
+      ]
+     ],
+     "round": [
+      0,
+      0.004,
+      0.004,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.172,
+    0.265
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.172,
+      0.265
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "trục ống đỡ đĩa"
+    }
+   }
+  },
+  {
+   "id": "diaNang",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.048,
+       0
+      ],
+      [
+       0.048,
+       0.007
+      ],
+      [
+       0.045,
+       0.011
+      ],
+      [
+       0.038,
+       0.013
+      ],
+      [
+       0.032,
+       0.015
+      ],
+      [
+       0,
+       0.015
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.004,
+      0.003,
+      0.003,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.19,
+    0.265
+   ],
+   "anchors": {
+    "chot": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.172,
+      0.265
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "tâm chốt đầu cần (gốc giá đĩa)"
+    }
+   }
+  },
+  {
+   "id": "demCaoSu",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.04,
+       0
+      ],
+      [
+       0.04,
+       0.006
+      ],
+      [
+       0,
+       0.006
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.205,
+    0.265
+   ]
+  },
+  {
+   "id": "thanhTruyen",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       0
+      ],
+      [
+       0.009,
+       0
+      ],
+      [
+       0.0092,
+       0.07723341245859854
+      ],
+      [
+       0,
+       0.07723341245859854
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 24
+   },
+   "offset": [
+    0,
+    0.175,
+    -0.306
+   ],
+   "rotate": [
+    4.455602833326319,
+    0,
+    0
+   ],
+   "anchors": {
+    "dauDuoi": {
+     "kind": "point",
+     "origin": [
+      0,
+      0.252,
+      -0.3
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "chốt dưới"
+    },
+    "dauTren": {
+     "kind": "point",
+     "origin": [
+      0,
+      0.252,
+      -0.3
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "chốt trên"
+    },
+    "choDuoi": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.175,
+      -0.306
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt dưới"
+    },
+    "chotDuoi": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.252,
+      -0.3
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt dưới"
+    },
+    "huong": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.175,
+      -0.306
+     ],
+     "dir": [
+      0,
+      0.99698,
+      0.07769
+     ],
+     "desc": "trục thanh truyền"
+    },
+    "huongTren": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.2574,
+      -0.412
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "trục thanh truyền tại chốt trên"
+    },
+    "chotTren": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.2574,
+      -0.412
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt trên"
+    }
+   }
+  },
+  {
+   "id": "cumBom",
+   "op": "boolean",
+   "params": {
+    "op": "union"
+   },
+   "inputs": [
+    "thungDau",
+    "thapBom"
+   ],
+   "anchors": {
+    "oBom": {
+     "kind": "point",
+     "origin": [
+      0,
+      0.095,
+      -0.255
+     ],
+     "dir": [
+      0,
+      -1,
+      0
+     ],
+     "desc": "đáy thùng dầu"
+    },
+    "oPiston": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.2,
+      -0.3
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ dẫn hướng piston bơm"
+    },
+    "oTay": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.205,
+      -0.345
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt tay bơm"
+    },
+    "oVan": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.14,
+      -0.325
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ van xả"
+    },
+    "huongTruyen": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.252,
+      -0.3
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "hướng thanh truyền bơm"
+    },
+    "chotSau": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.095,
+      -0.33
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ chốt sau của đơn vị thuỷ lực"
+    },
+    "oRam": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.095,
+      -0.2625
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lòng xi lanh chính, đồng trục bình dầu"
+    }
+   }
+  },
+  {
+   "id": "trucQuay",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.155
+      ],
+      [
+       0.015,
+       -0.155
+      ],
+      [
+       0.015,
+       0.155
+      ],
+      [
+       0,
+       0.155
+      ]
+     ],
+     "round": [
+      0,
+      0.004,
+      0.004,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 32
+   },
+   "offset": [
+    0,
+    0.145,
+    -0.3
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.145,
+      -0.3
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "trục quay cần nâng"
+    }
+   }
+  },
+  {
+   "id": "chotTreo",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.075
+      ],
+      [
+       0.015,
+       -0.075
+      ],
+      [
+       0.015,
+       0.075
+      ],
+      [
+       0,
+       0.075
+      ]
+     ],
+     "round": [
+      0,
+      0.003,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "wall": 0,
+    "segments": 32
+   },
+   "offset": [
+    0,
+    0.11,
+    0.065
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.11,
+      0.065
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "desc": "chốt treo đầu cần xi lanh"
+    }
+   }
+  },
+  {
+   "id": "maTaiBomBase",
+   "op": "extrude",
+   "params": {
+    "plane": "zy",
+    "outline": {
+     "pts": [
+      [
+       -0.012,
+       -0.014
+      ],
+      [
+       0.045,
+       -0.014
+      ],
+      [
+       0.045,
+       0.014
+      ],
+      [
+       -0.012,
+       0.014
+      ]
+     ],
+     "round": [
+      0.01,
+      0,
+      0,
+      0.01
+     ],
+     "closed": true
+    },
+    "depth": 0.006,
+    "edgeRadius": 0.001
+   },
+   "material": "sonDo"
+  },
+  {
+   "id": "taiBom",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     0.048,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "maTaiBomBase"
+   ],
+   "offset": [
+    -0.024,
+    0,
+    0
+   ],
+   "material": "sonDo",
+   "anchors": {
+    "truc": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0,
+      0
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ chốt tay bơm qua hai má tai"
+    }
+   }
+  },
+  {
+   "id": "chotBom",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.03
+      ],
+      [
+       0.006,
+       -0.03
+      ],
+      [
+       0.006,
+       0.03
+      ],
+      [
+       0,
+       0.03
+      ]
+     ],
+     "round": [
+      0,
+      0.0015,
+      0.0015,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 24
+   },
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "material": "thepMa"
+  },
+  {
+   "id": "chotThuyLuc",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.152
+      ],
+      [
+       0.008,
+       -0.152
+      ],
+      [
+       0.008,
+       0.152
+      ],
+      [
+       0,
+       0.152
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.002,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 32
+   },
+   "offset": [
+    0,
+    0.065,
+    -0.285
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "material": "thepDam"
+  },
+  {
+   "id": "ongXiLanh",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.0675
+      ],
+      [
+       0.0325,
+       -0.0675
+      ],
+      [
+       0.0325,
+       0.0675
+      ],
+      [
+       0,
+       0.0675
+      ]
+     ],
+     "round": [
+      0,
+      0.005,
+      0.005,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 44
+   },
+   "offset": [
+    0,
+    0.095,
+    -0.2625
+   ],
+   "rotate": [
+    90,
+    0,
+    0
+   ],
+   "material": "thepDam",
+   "anchors": {
+    "truot": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.095,
+      -0.225
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "trục trượt cán (dương = duỗi ra trước)"
+    }
+   }
+  },
+  {
+   "id": "canDay",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.085
+      ],
+      [
+       0.012,
+       -0.085
+      ],
+      [
+       0.012,
+       0.085
+      ],
+      [
+       0,
+       0.085
+      ]
+     ],
+     "round": [
+      0,
+      0.002,
+      0.003,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 40
+   },
+   "offset": [
+    0,
+    0.095,
+    -0.225
+   ],
+   "rotate": [
+    90,
+    0,
+    0
+   ],
+   "material": "thepMa",
+   "anchors": {
+    "dau": {
+     "kind": "point",
+     "origin": [
+      0,
+      0.095,
+      -0.14
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "tâm mắt đầu cán"
+    }
+   }
+  },
+  {
+   "id": "giaDia",
+   "op": "extrude",
+   "params": {
+    "plane": "zy",
+    "outline": {
+     "pts": [
+      [
+       0.281,
+       0.19
+      ],
+      [
+       0.281,
+       0.162
+      ],
+      [
+       0.262,
+       0.152
+      ],
+      [
+       0.2,
+       0.192
+      ],
+      [
+       0.2,
+       0.212
+      ],
+      [
+       0.222,
+       0.214
+      ],
+      [
+       0.24,
+       0.19
+      ]
+     ],
+     "round": [
+      0,
+      0.012,
+      0.01,
+      0.008,
+      0.008,
+      0.006,
+      0
+     ],
+     "closed": true
+    },
+    "depth": 0.024,
+    "edgeRadius": 0.001
+   },
+   "material": "sonDo",
+   "anchors": {
+    "chot": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.172,
+      0.265
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ ôm chốt đầu cần"
+    },
+    "trucS": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.202,
+      0.213
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ chốt thanh giằng trên giá đĩa (S = F + d)"
+    },
+    "diemS": {
+     "kind": "point",
+     "origin": [
+      0,
+      0.137,
+      0.23
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "desc": "tâm chốt S (điểm vòng kín)"
+    }
+   }
+  },
+  {
+   "id": "chotS",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.058
+      ],
+      [
+       0.007,
+       -0.058
+      ],
+      [
+       0.007,
+       0.058
+      ],
+      [
+       0,
+       0.058
+      ]
+     ],
+     "round": [
+      0,
+      0.0015,
+      0.0015,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 24
+   },
+   "offset": [
+    0,
+    0.137,
+    0.23
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "material": "thepMa",
+   "anchors": {
+    "diemPhai": {
+     "kind": "point",
+     "origin": [
+      -0.05,
+      0.137,
+      0.23
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "điểm chốt S tại thanh giằng phải (chốt đặt lật đầu)"
+    }
+   }
+  },
+  {
+   "id": "chotGiang",
+   "op": "lathe",
+   "params": {
+    "profile": {
+     "pts": [
+      [
+       0,
+       -0.152
+      ],
+      [
+       0.007,
+       -0.152
+      ],
+      [
+       0.007,
+       0.152
+      ],
+      [
+       0,
+       0.152
+      ]
+     ],
+     "round": [
+      0,
+      0.0015,
+      0.0015,
+      0
+     ],
+     "closed": true
+    },
+    "segments": 24
+   },
+   "offset": [
+    0,
+    0.115,
+    -0.13
+   ],
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "material": "thepDam"
+  },
+  {
+   "id": "thanhGiangBase",
+   "op": "extrude",
+   "params": {
+    "plane": "zy",
+    "outline": {
+     "pts": [
+      [
+       -0.1578,
+       0.1678
+      ],
+      [
+       0.2252,
+       0.1912
+      ],
+      [
+       0.2238,
+       0.2142
+      ],
+      [
+       -0.1592,
+       0.1908
+      ]
+     ],
+     "round": [
+      0.0115,
+      0.0115,
+      0.0115,
+      0.0115
+     ],
+     "closed": true
+    },
+    "depth": 0.006,
+    "edgeRadius": 0.001
+   },
+   "offset": [
+    -0.05,
+    0,
+    0
+   ],
+   "material": "sonDo"
+  },
+  {
+   "id": "thanhGiang",
+   "op": "pattern",
+   "params": {
+    "kind": "linear",
+    "count": 2,
+    "step": [
+     0.1,
+     0,
+     0
+    ]
+   },
+   "inputs": [
+    "thanhGiangBase"
+   ],
+   "material": "sonDo",
+   "anchors": {
+    "dauSau": {
+     "kind": "axis",
+     "origin": [
+      0,
+      0.18,
+      -0.147
+     ],
+     "dir": [
+      1,
+      0,
+      0
+     ],
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "desc": "lỗ chốt khung Q"
+    },
+    "dauTruoc": {
+     "kind": "point",
+     "origin": [
+      0.05,
+      0.202,
+      0.213
+     ],
+     "dir": [
+      0,
+      0,
+      1
+     ],
+     "desc": "tâm lỗ chốt S ở đầu thanh giằng phải"
+    }
+   }
+  }
+ ],
+ "loops": [
+  {
+   "id": "vongBom",
+   "a": "thanhTruyen.dauTren",
+   "b": "pistonBom.dinh",
+   "solves": [
+    "khopTruyen",
+    "truotBom"
+   ]
+  },
+  {
+   "id": "vongNang",
+   "a": "canDay.dau",
+   "b": "canNang.taiXiLanh",
+   "solves": [
+    "khopXiLanh",
+    "truotCan"
+   ]
+  },
+  {
+   "id": "vongDia",
+   "a": "thanhGiang.dauTruoc",
+   "b": "chotS.diemPhai",
+   "solves": [
+    "giang",
+    "dia"
+   ]
+  }
+ ],
+ "materials": {
+  "sonDo": {
+   "params": {
+    "color": "#b0231d",
+    "roughness": 0.34,
+    "metalness": 0.14,
+    "clearcoat": 0.45,
+    "clearcoatRoughness": 0.28
+   },
+   "density": 1300,
+   "friction": 0.45,
+   "textures": {
+    "normal": {
+     "kind": "noise",
+     "scale": 90,
+     "seed": 3,
+     "strength": 0.13
+    }
+   }
+  },
+  "thepMa": {
+   "params": {
+    "color": "#e8eaee",
+    "roughness": 0.085,
+    "metalness": 1
+   },
+   "density": 7850,
+   "friction": 0.3
+  },
+  "thepDam": {
+   "params": {
+    "color": "#767b82",
+    "roughness": 0.42,
+    "metalness": 0.88
+   },
+   "density": 7850,
+   "friction": 0.4
+  },
+  "caoSu": {
+   "params": {
+    "color": "#1a1b1d",
+    "roughness": 0.93,
+    "metalness": 0,
+    "sheen": 0.35,
+    "sheenColor": "#3a3c40"
+   },
+   "density": 1150,
+   "friction": 0.95,
+   "textures": {
+    "normal": {
+     "kind": "noise",
+     "scale": 160,
+     "seed": 9,
+     "strength": 0.3
+    }
+   }
+  },
+  "nhua": {
+   "params": {
+    "color": "#202226",
+    "roughness": 0.58,
+    "metalness": 0.05
+   },
+   "density": 1200,
+   "friction": 0.7,
+   "textures": {
+    "normal": {
+     "kind": "noise",
+     "scale": 220,
+     "seed": 5,
+     "strength": 0.18
+    }
+   }
+  }
+ },
+ "scene": {
+  "environment": "studio",
+  "stage": "glossyFloor",
+  "exposure": 1
+ }
+}
