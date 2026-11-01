@@ -4,8 +4,8 @@
  */
 
 export { PARTS } from "./parts";
-export { AssemblyError, anchorFrame, parseRef, solve, transformAnchorSpec, transformBounds, worldBounds, worldOrigin } from "./core/solve";
-export { chain, invertRigid } from "./core/math";
+export { AssemblyError, LOOP_TOL, anchorFrame, parseRef, solve, transformAnchorSpec, transformBounds, worldBounds, worldOrigin } from "./core/solve";
+export { chain, invertRigid, transformPoint } from "./core/math";
 export { solveRoute } from "./core/route";
 export { describeTree, partReport, typeInfo, typeList } from "./core/report";
 export { MATERIAL_PARAMS, TEXTURE_KINDS, checkDefinedMaterial } from "./core/materials";
@@ -17,6 +17,6 @@ export { initKernel } from "./shapes/kernel";
 export { SHAPE_PREFIX, checkDocExtras, checkTypeName, registryFor } from "./shapes/registry";
 export { buildPhysicsModel, bodyOfPart } from "./physics/build-model";
 export { World } from "./physics/solver";
-export { descendants, flatten, partOrCluster, worldGeometry } from "./physics/geometry";
+export { descendants, flatten, meshAxisDistance, meshPointDistance, partOrCluster, worldGeometry } from "./physics/geometry";
 export { kernel, toManifold } from "./shapes/kernel";
 export { physicsKey } from "./physics/key";

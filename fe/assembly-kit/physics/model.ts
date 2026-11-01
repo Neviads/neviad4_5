@@ -24,7 +24,8 @@ export interface BodyModel {
 
 export interface JointModel {
   id: string;
-  kind: "revolute" | "prismatic" | "fixed";
+  /** point: hai vật ghim nhau tại một điểm (vòng kín), chỉ ràng buộc vị trí; trục bỏ qua. */
+  kind: "revolute" | "prismatic" | "fixed" | "point";
   /** Vật a (bị dẫn) và vật b (cha); b = null là thế giới. */
   a: string;
   b: string | null;
@@ -45,14 +46,30 @@ export interface GearModel {
   ratio: number;
 }
 
+/**
+ * Khớp `follow` chạy theo khớp `lead` (couple của bản lắp ráp): giá trị follow = ratio × lead, hoặc nội suy `table`
+ * [[lead, follow], ...]. Đơn vị SI: radian cho khớp quay, mét cho khớp trượt (bảng đã đổi đơn vị). Ràng buộc mức vận
+ * tốc kèm hiệu chỉnh vị trí, hai chiều: đẩy khớp nào thì khớp kia cũng chạy.
+ */
+export interface CoupleModel {
+  id: string;
+  lead: string;
+  follow: string;
+  ratio?: number;
+  table?: [number, number][];
+}
+
 export interface PhysicsModel {
-  version: 1;
+  /** 2: thêm khớp "point" và `couples`; trang vẫn đọc được bản 1. */
+  version: 1 | 2;
   gravity: V3;
   groundPlane: boolean;
   substeps: number;
   bodies: BodyModel[];
   joints: JointModel[];
+  /** bản cũ (version 1); bản 2 đưa bánh răng vào `couples` */
   gears: GearModel[];
+  couples?: CoupleModel[];
   initial: Record<string, { v?: V3; w?: V3 }>;
   notes: string[];
 }

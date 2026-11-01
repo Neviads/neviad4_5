@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { serveMcp, text } from "../lib/mcp-stdio.mjs";
+import { checkArgs, serveMcp, text } from "../lib/mcp-stdio.mjs";
 import { crop } from "../code-bridge/view.mjs";
 import { CLAUDE_INSTRUCTIONS } from "./instructions.mjs";
 import { FE_ROOT, findAssembly, meshFile, physicsFile, readSnapshotMeta, readState, snapshotFile, snapshotGlbFile, updateState } from "./store.mjs";
@@ -24,7 +24,7 @@ mkdirSync(cache, { recursive: true });
 const kitFile = join(cache, "kit.mjs");
 await build({ entryPoints: [join(FE_ROOT, "assembly-kit/node.ts")], bundle: true, platform: "node", format: "esm", outfile: kitFile, external: ["three", "manifold-3d"], logLevel: "error" });
 const kit = await import(`${pathToFileURL(kitFile).href}?t=${Date.now()}`);
-const { PARTS, solve, partReport, describeTree, typeInfo, solveRoute, registryFor, checkDocExtras, buildShapes, MATERIAL_PARAMS, TEXTURE_KINDS, checkDefinedMaterial, anchorFrame, worldBounds, SHAPE_PREFIX, initKernel, physicsKey, encodeShape, keyHash, usedShapeIds, shapeKeys, buildPhysicsModel, bodyOfPart, World, flatten, worldGeometry, descendants, partOrCluster, toManifold, kernel: kernelOf, transformAnchorSpec, transformBounds, checkTypeName, chain, invertRigid } = kit;
+const { PARTS, solve, partReport, describeTree, typeInfo, solveRoute, registryFor, checkDocExtras, buildShapes, MATERIAL_PARAMS, TEXTURE_KINDS, checkDefinedMaterial, anchorFrame, worldBounds, SHAPE_PREFIX, initKernel, physicsKey, encodeShape, keyHash, usedShapeIds, shapeKeys, buildPhysicsModel, bodyOfPart, World, flatten, worldGeometry, descendants, partOrCluster, toManifold, meshPointDistance, meshAxisDistance, kernel: kernelOf, transformAnchorSpec, transformBounds, checkTypeName, chain, invertRigid, transformPoint, LOOP_TOL } = kit;
 // lõi hình khối kín (boolean, khắc rãnh): nạp WASM một lần trước khi phục vụ
 await initKernel(() => import("manifold-3d"));
 
@@ -78,7 +78,7 @@ const TOOLS = [
   },
   {
     name: "joint_add",
-    description: "Thêm (hoặc thay, cùng id) một khớp: revolute (quay, độ) hoặc prismatic (trượt, mét) quanh một điểm neo kiểu axis (kể cả ground.x/y/z); moves = bộ phận được điều khiển, bộ phận ghép vào chúng đi theo. couple: khớp chạy theo khớp khác (giá trị = ratio × khớp dẫn, hoặc theo bảng table khi chuyển động phi tuyến/nhiều giai đoạn); bánh lăn theo khớp trượt thì bỏ ratio, công cụ tự tính từ bán kính bánh.",
+    description: "Thêm (hoặc thay, cùng id) một khớp: revolute (quay, độ) hoặc prismatic (trượt, mét) quanh một điểm neo kiểu axis (kể cả ground.x/y/z); moves = bộ phận được điều khiển, bộ phận ghép vào chúng đi theo. couple: khớp chạy theo khớp khác (giá trị = ratio × khớp dẫn, hoặc theo bảng table khi chuyển động phi tuyến/nhiều giai đoạn); bánh lăn theo khớp trượt thì bỏ ratio, công cụ tự tính từ bán kính bánh. Ghép chạy hai chiều (pose đặt khớp ghép thì khớp dẫn được suy ngược; vật lý ràng buộc cả hai). Khâu nối vào hai nhánh (xi lanh, thanh truyền): dùng loop_add thay cho couple tỉ số. Trục khớp phải chạm VẬT LIỆU (lưới) của cụm dẫn và cụm cha — cụm = bộ phận cùng mọi bộ phận ghép cứng vào nó; trục qua lỗ thì khai radius ở anchor_define — không thì báo lỗi và không ghi.",
     inputSchema: {
       type: "object",
       properties: { assembly: assemblyArg, id: { type: "string" }, kind: { type: "string", enum: ["revolute", "prismatic"] }, axis: { type: "string" }, moves: { type: "array", items: { type: "string" } }, limits: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 },
@@ -87,6 +87,8 @@ const TOOLS = [
           ratio: { type: "number", description: "đơn vị khớp này trên một đơn vị khớp dẫn; bỏ trống = bánh lăn không trượt" },
           table: { type: "array", items: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 }, description: "thay ratio: [[giá trị khớp dẫn, giá trị khớp này], ...] tăng dần theo khớp dẫn; nội suy từng đoạn, ngoài bảng giữ mút. Cho chuyển động phi tuyến hoặc nhiều giai đoạn" },
         }, required: ["joint"] },
+        allowAir: { type: "string", description: "lý do trục được phép nằm xa vật liệu (chỉ khi cố ý); bỏ trống thì trục phải chạm vật liệu cả cụm dẫn lẫn cụm cha" },
+        tolerance: { type: "number", description: "m, mặc định 0,002; trục qua lỗ cộng thêm radius của điểm neo" },
       },
       required: ["assembly", "id", "kind", "axis", "moves"],
     },
@@ -96,7 +98,13 @@ const TOOLS = [
     description: `Ghi bản lắp ráp ra một file trong repo (đường dẫn tính từ gốc repo). .json: tài liệu để trang/route dựng lại (buildAssembly(doc, kit) rồi setPose({khop: giaTri})). .glb: lưới + vật liệu glTF để dùng ngoài (trang ${PAGE} phải đang mở; pose tuỳ chọn).`,
     inputSchema: { type: "object", properties: { assembly: assemblyArg, path: { type: "string", description: "vd fe/app/ten-route/vat.assembly.json hoặc .glb" }, pose: { type: "object" }, wait_ms: { type: "integer", minimum: 0, maximum: 60000 } }, required: ["assembly", "path"] },
   },
-  { name: "joint_remove", description: "Xoá một khớp (cả động cơ của nó). Khớp khác đang couple theo nó thì báo lỗi, trừ khi cascade = true (xoá cả chuỗi).", inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, cascade: { type: "boolean" } }, required: ["assembly", "id"] } },
+  { name: "joint_remove", description: "Xoá một khớp (cả động cơ của nó). Khớp khác đang couple theo nó thì báo lỗi, trừ khi cascade = true (xoá cả chuỗi); vòng kín đang tính nó cũng vậy.", inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, cascade: { type: "boolean" } }, required: ["assembly", "id"] } },
+  {
+    name: "loop_add",
+    description: "KHÉP VÒNG cơ cấu nhiều khâu, khi một bộ phận nối vào HAI nhánh của cây lắp ráp: xi lanh/piston đẩy một bộ phận quay, tay quay–thanh truyền–con trượt, bốn khâu, cần gạt. Cây lắp ráp vẫn dựng như thường (mỗi khâu ghép vào một cha), rồi loop_add nói điểm neo a (đầu khâu ở nhánh này) phải trùng điểm neo b (lỗ/chốt ở nhánh kia, hoặc ground) ở MỌI tư thế. solves = 1–3 khớp do vòng tính ra (thường là khớp quay ở chân xi lanh + khớp trượt của cán, hoặc khớp ở hai đầu thanh truyền); mỗi khớp phải nằm trên nhánh từ gốc tới đúng một đầu. Khớp còn lại của nhóm là khớp dẫn. Đừng ghép tay bằng couple tỉ số cho các khâu này: quan hệ thật là phi tuyến. Điều kiện: lắp sao cho a trùng b khi mọi khớp = 0 (tool báo độ lệch nếu chưa), và mỗi đầu nằm trên VẬT LIỆU của cụm chứa nó (lưới bộ phận cùng mọi bộ phận ghép cứng vào nó, dung sai tolerance) — hai điểm trùng mà một đầu ở khoảng không (giữa hai tấm, trong lỗ khoét) thì báo lỗi; thêm chốt/tai ghép cứng ở đó, hoặc allowAir nếu cố ý. Kết quả: bảng quét khớp dẫn trong limits (giá trị các khớp do vòng tính, chỗ không khép hoặc vượt giới hạn). Sau đó pose/thanh trượt đặt khớp dẫn hoặc bất kỳ khớp nào trong nhóm; vật lý ghim hai điểm.",
+    inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" }, a: { type: "string", description: "điểm neo đầu khâu, vd 'can.dau'" }, b: { type: "string", description: "điểm neo phải trùng a, vd 'thung.tai' hoặc 'ground…'" }, solves: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 }, allowAir: { type: "string", description: "lý do một đầu vòng được phép nằm xa vật liệu (chỉ khi cố ý)" }, tolerance: { type: "number", description: "m, mặc định 0,002" } }, required: ["assembly", "id", "a", "b", "solves"] },
+  },
+  { name: "loop_remove", description: "Bỏ một vòng kín; các khớp nó tính trở lại thành khớp dẫn tự do.", inputSchema: { type: "object", properties: { assembly: assemblyArg, id: { type: "string" } }, required: ["assembly", "id"] } },
   {
     name: "route_add",
     description: "Thêm (hoặc thay, cùng id) một dây nối giữa hai điểm neo (điểm hoặc mặt), tuỳ chọn bám các mặt via. material = id đã material_define.",
@@ -227,18 +235,23 @@ const TOOLS = [
   // ───── kiểm tra theo lưới thật ─────
   {
     name: "check_interference",
-    description: "KIỂM TRA XUYÊN NHAU theo lưới thật (giao khối manifold): báo cặp bộ phận chồng lấn, thể tích và tâm vùng giao. Bỏ qua cặp nằm cùng một cụm (cụm đã kiểm lúc dựng) trừ khi inside: true.",
-    inputSchema: { type: "object", properties: { assembly: assemblyArg, parts: { type: "array", items: { type: "string" } }, tolerance: { type: "number", description: "m³, mặc định 1e-7" }, inside: { type: "boolean" } }, required: ["assembly"] },
+    description: "KIỂM TRA XUYÊN NHAU theo lưới thật (giao khối manifold): báo cặp bộ phận chồng lấn, thể tích và tâm vùng giao. Bỏ qua cặp nằm cùng một cụm (cụm đã kiểm lúc dựng) trừ khi inside: true. pose: kiểm ở tư thế khớp đó (mặc định tư thế nghỉ). Lưới không kín thì tính theo bao lồi (ghi rõ trong kết quả).",
+    inputSchema: { type: "object", properties: { assembly: assemblyArg, parts: { type: "array", items: { type: "string" } }, tolerance: { type: "number", description: "m³, mặc định 1e-7" }, inside: { type: "boolean" }, pose: { type: "object", description: "{tenKhop: giaTri}, khớp cấp ngoài" } }, required: ["assembly"] },
   },
   {
     name: "check_clearance",
-    description: "KHE HỞ nhỏ nhất theo lưới thật giữa hai bộ phận hoặc hai cụm (a, b là đường dẫn). min: báo lỗi nếu khe nhỏ hơn.",
-    inputSchema: { type: "object", properties: { assembly: assemblyArg, a: { type: "string" }, b: { type: "string" }, min: { type: "number" } }, required: ["assembly", "a", "b"] },
+    description: "KHE HỞ nhỏ nhất theo lưới thật giữa hai bộ phận hoặc hai cụm (a, b là đường dẫn). min: báo lỗi nếu khe nhỏ hơn. pose: đo ở tư thế khớp đó (mặc định tư thế nghỉ).",
+    inputSchema: { type: "object", properties: { assembly: assemblyArg, a: { type: "string" }, b: { type: "string" }, min: { type: "number" }, pose: { type: "object", description: "{tenKhop: giaTri}, khớp cấp ngoài" } }, required: ["assembly", "a", "b"] },
   },
   {
     name: "check_floating",
-    description: "LƠ LỬNG: bộ phận không chạm bộ phận nào khác và không chạm mặt đất (theo lưới, dung sai tolerance mặc định 2 mm).",
-    inputSchema: { type: "object", properties: { assembly: assemblyArg, tolerance: { type: "number" } }, required: ["assembly"] },
+    description: "LƠ LỬNG: bộ phận không chạm bộ phận nào khác và không chạm mặt đất (theo lưới, dung sai tolerance mặc định 2 mm). Chỉ hỏi 'có chạm gì không', không hỏi chạm đúng chỗ nối: dùng check_connections cho việc đó. pose: kiểm ở tư thế khớp đó.",
+    inputSchema: { type: "object", properties: { assembly: assemblyArg, tolerance: { type: "number" }, pose: { type: "object", description: "{tenKhop: giaTri}, khớp cấp ngoài" } }, required: ["assembly"] },
+  },
+  {
+    name: "check_connections",
+    description: "CHỖ NỐI CÓ THẬT KHÔNG: điểm neo trùng nhau chưa chắc khối chạm nhau. Kiểm (1) mỗi cách ghép: bộ phận chạm cụm cha theo lưới; (2) mỗi khớp: trục chạm vật liệu của cụm dẫn và cụm cha (trục qua lỗ: cộng radius của neo); (3) mỗi vòng: hai đầu nằm trên vật liệu của cụm chứa chúng; (4) quét từng khớp dẫn có limits (steps tư thế): vòng còn khép, cụm dẫn của mỗi khớp còn chạm cụm cha (bắt cán trượt khỏi xi lanh, cần rời trục). Cụm = bộ phận + mọi bộ phận ghép cứng vào nó. Gọi trước khi báo xong.",
+    inputSchema: { type: "object", properties: { assembly: assemblyArg, tolerance: { type: "number", description: "m, mặc định 0,002" }, steps: { type: "integer", minimum: 2, maximum: 25, description: "số tư thế quét mỗi khớp dẫn, mặc định 9" } }, required: ["assembly"] },
   },
   {
     name: "check_physics",
@@ -283,7 +296,7 @@ const TOOLS = [
   // ───── đo ─────
   {
     name: "measure",
-    description: "ĐO bằng số (theo tư thế pose nếu có): bounds (khung bao một bộ phận hoặc cả vật), distance (giữa hai điểm neo a, b), gap (khe giữa khung bao hai bộ phận a, b; âm = chồng lấn), clearance (đáy thấp nhất so với y = 0). spec {length, width, height} so với khung bao cả vật.",
+    description: "ĐO bằng số (theo tư thế pose nếu có): bounds (khung bao một bộ phận hoặc cả vật), distance (giữa hai điểm neo a, b), gap (khe giữa KHUNG BAO hai bộ phận a, b, không phải lưới; âm = chồng lấn; khe lưới thật: check_clearance), clearance (đáy thấp nhất so với y = 0). spec {length, width, height} so với khung bao cả vật.",
     inputSchema: { type: "object", properties: { assembly: assemblyArg, kind: { type: "string", enum: ["bounds", "distance", "gap", "clearance"] }, target: { type: "string" }, a: { type: "string" }, b: { type: "string" }, pose: { type: "object" }, spec: { type: "object" } }, required: ["assembly", "kind"] },
   },
   // ───── cảnh, render ─────
@@ -308,6 +321,15 @@ function check(doc) {
   buildShapes(doc); // dựng (và kiểm tra) mọi hình, kể cả hình chưa có bộ phận nào dùng
   const reg = registryFor(doc);
   const solved = solve(doc, reg);
+  // vòng kín: ở tư thế nghỉ (mọi khớp = 0) hai đầu phải trùng; sửa cách ghép làm lệch thì báo, không để bộ giải lặng lẽ bù
+  for (const l of doc.loops ?? []) {
+    const at = (ref) => {
+      const { frame, part } = anchorFrame(reg, solved.parts, ref, "rest");
+      return part ? transformPoint(part.rest, frame.origin) : frame.origin;
+    };
+    const pa = at(l.a), pb = at(l.b), gap = Math.hypot(pa[0] - pb[0], pa[1] - pb[1], pa[2] - pb[2]);
+    if (gap > 1e-4) throw new Error(`[vòng ${l.id}] ở tư thế nghỉ (mọi khớp = 0) ${l.a} ở ${fmtV(pa)} còn ${l.b} ở ${fmtV(pb)}, lệch ${(gap * 1000).toFixed(2)} mm. Lắp sao cho hai điểm trùng nhau khi mọi khớp = 0 (sửa cách ghép hoặc điểm neo), hoặc bỏ vòng (loop_remove).`);
+  }
   for (const r of doc.routes) solveRoute(r, solved, reg);
   checkDocExtras(doc);
   for (const d of doc.decals ?? []) {
@@ -415,7 +437,7 @@ function upsertShape(op, args) {
  */
 async function requestBrowser(assembly, spec, wait_ms) {
   const a = findAssembly(readState(), assembly);
-  checkPose(a.doc, spec.pose);
+  const posed = checkPose(a.doc, spec.pose);
   if (spec.focus && !a.doc.parts.some((p) => p.id === spec.focus)) throw new Error(`focus: không có bộ phận "${spec.focus}".`);
   const detail = /^detail:(.+)$/.exec(spec.camera ?? "");
   if (detail && !a.doc.parts.some((p) => p.id === detail[1])) throw new Error(`camera: không có bộ phận "${detail[1]}".`);
@@ -430,7 +452,7 @@ async function requestBrowser(assembly, spec, wait_ms) {
   // xong (hoặc hết giờ) thì gỡ yêu cầu, để trang mở sau không làm lại một yêu cầu cũ
   updateState((s) => { if (s.view?.key === key) s.view = null; });
   if (meta?.key !== key) throw new Error(`Chưa có kết quả: trang ${PAGE} có đang mở trong trình duyệt không? (server dev: npm --prefix fe run dev)`);
-  return { a, meta };
+  return { a, meta, posed };
 }
 
 /** Khớp theo tên, kể cả khớp trong cụm ("<idBoPhan>/<khop>"). */
@@ -456,6 +478,21 @@ function checkPose(doc, pose = {}, topOnly = false) {
     if (typeof v !== "number") throw new Error(`pose.${k} phải là số.`);
     if (j.limits && (v < j.limits[0] || v > j.limits[1])) throw new Error(`pose.${k} = ${v} ngoài giới hạn ${JSON.stringify(j.limits)}.`);
   }
+  // giải thử cấp ngoài: khớp phụ thuộc suy ngược ra khớp dẫn, vòng phải khép, khớp do vòng tính phải trong giới hạn
+  const own = Object.fromEntries(Object.entries(pose).filter(([k]) => !k.includes("/")));
+  if (!Object.keys(own).length) return null;
+  const solved = solve(doc, registryFor(doc), { pose: own });
+  if (solved.warnings.length) throw new Error(`pose ${JSON.stringify(own)}: ${solved.warnings.join(" ")}`);
+  return solved;
+}
+
+/** Giá trị các khớp cùng nhóm liên động với khớp trong pose (đã suy ngược / lan truyền), để agent thấy cả nhóm đi theo. */
+function poseReport(solved, pose = {}) {
+  if (!solved) return "";
+  const groups = new Set(Object.keys(pose).filter((k) => solved.groups.has(k)).map((k) => solved.groups.get(k)));
+  const rows = [...solved.values].filter(([id]) => groups.has(solved.groups.get(id)) && !(id in pose));
+  return rows.length ? `
+Khớp đi theo: ${rows.map(([id, v]) => `${id} = ${+v.toFixed(4)}`).join(", ")}.` : "";
 }
 
 /**
@@ -472,7 +509,24 @@ function dropJoints(doc, ids, cascade) {
   }
   doc.joints = doc.joints.filter((j) => !gone.has(j.id));
   if (doc.physics?.drives) doc.physics.drives = Object.fromEntries(Object.entries(doc.physics.drives).filter(([k]) => !gone.has(k)));
+  dropLoops(doc, (l) => l.solves.some((s) => gone.has(s)), cascade, "tính khớp sắp xoá");
   return [...gone];
+}
+
+/** Vòng kín nằm trọn trong một tập bộ phận (hai đầu trong tập hoặc trên ground, mọi khớp nó tính đi theo cụm). */
+function loopsIn(doc, set) {
+  const kept = new Set(doc.joints.filter((j) => set.has(j.axis.split(".")[0]) && j.moves.every((m) => set.has(m))).map((j) => j.id));
+  return (doc.loops ?? []).filter((l) => [l.a, l.b].every((ref) => { const id = ref.split(".")[0]; return id === "ground" || set.has(id); }) && l.solves.every((x) => kept.has(x)));
+}
+
+/** Bỏ các vòng kín thoả `hit`; không có `cascade` thì báo lỗi. Trả về id các vòng đã bỏ. */
+function dropLoops(doc, hit, cascade, why) {
+  const hits = (doc.loops ?? []).filter(hit);
+  if (!hits.length) return [];
+  if (!cascade) throw new Error(`Vòng ${hits.map((l) => l.id).join(", ")} đang ${why}. Xoá vòng trước (loop_remove), hoặc dùng cascade: true.`);
+  doc.loops = doc.loops.filter((l) => !hits.includes(l));
+  if (!doc.loops.length) delete doc.loops;
+  return hits.map((l) => l.id);
 }
 
 // ───── vật lý: mô hình có cache, báo cáo, khối đặc để kiểm tra ─────
@@ -480,7 +534,7 @@ function dropJoints(doc, ids, cascade) {
 const modelCache = new Map();
 /** Mô hình vật lý của tài liệu; tính lại khi bộ phận, hình, cụm hoặc cấu hình vật lý đổi. */
 function physicsModel(doc) {
-  const key = JSON.stringify([doc.parts, doc.joints, doc.shapes, doc.types, doc.materials, doc.physics]);
+  const key = JSON.stringify([doc.parts, doc.joints, doc.shapes, doc.types, doc.materials, doc.physics, ...(doc.loops ? [doc.loops] : [])]);
   let m = modelCache.get(key);
   if (!m) {
     m = buildPhysicsModel(doc);
@@ -499,10 +553,11 @@ function physicsModel(doc) {
 function modelReport(model) {
   const r3 = (a) => fmtV(a.map((x) => +x.toFixed(4)));
   return [
-    `Mô hình vật lý: ${model.bodies.length} vật, ${model.joints.length} khớp${model.gears.length ? `, ${model.gears.length} bánh răng` : ""}; trọng lực ${r3(model.gravity)}, ${model.substeps} substep, mặt đất ${model.groundPlane ? "có" : "không"}.`,
+    `Mô hình vật lý: ${model.bodies.length} vật, ${model.joints.length} khớp${model.couples?.length ? `, ${model.couples.length} khớp ghép` : ""}; trọng lực ${r3(model.gravity)}, ${model.substeps} substep, mặt đất ${model.groundPlane ? "có" : "không"}.`,
     "Vật:",
     ...model.bodies.map((b) => `- ${b.id}${b.fixed ? " (đứng yên)" : ` ${+b.mass.toFixed(3)} kg, trọng tâm ${r3(b.x0)}`}; ${b.parts.length} bộ phận${b.parts.length <= 4 ? ` (${b.parts.map((p) => p.path).join(", ")})` : ""}; bao lồi ${b.hull.verts.length} đỉnh; ma sát ${b.friction}, phục hồi ${b.restitution}`),
-    ...(model.joints.length ? ["Khớp:", ...model.joints.map((j) => `- ${j.id}: ${j.kind} ${j.a} ↔ ${j.b ?? "thế giới"}, trục ${r3(j.axisA)}${j.motor ? `, động cơ ${j.motor.kind} ${+j.motor.value.toFixed(4)}` : ""}`)] : []),
+    ...(model.joints.length ? ["Khớp:", ...model.joints.map((j) => `- ${j.id}: ${j.kind} ${j.a} ↔ ${j.b ?? "thế giới"}, ${j.kind === "point" ? `ghim tại ${r3(j.pivotA)} (khung vật)` : `trục ${r3(j.axisA)}`}${j.motor ? `, động cơ ${j.motor.kind} ${+j.motor.value.toFixed(4)}` : ""}`)] : []),
+    ...(model.couples?.length ? ["Khớp ghép (hai chiều):", ...model.couples.map((c) => `- ${c.follow} theo ${c.lead}${c.table ? ` theo bảng ${c.table.length} điểm` : ` × ${+c.ratio.toFixed(5)} (SI)`}`)] : []),
     ...(Object.keys(model.initial).length ? [`Vận tốc đầu: ${Object.entries(model.initial).map(([k, x]) => `${k}${x.v ? ` v${r3(x.v)}` : ""}`).join("; ")}`] : []),
     ...model.notes.map((n) => `⚠ ${n}`),
   ].join("\n");
@@ -513,7 +568,43 @@ function requirePart(doc, path) {
   if (!parts.some((p) => p.path === path)) throw new Error(`Không có bộ phận "${path}". Có: ${parts.map((p) => p.path).slice(0, 40).join(", ")}.`);
 }
 
-/** Khối đặc manifold ở thế giới cho các bộ phận phẳng; lưới hở thì lấy bao lồi (đánh dấu xấp xỉ). */
+/**
+ * Lưới hở: tách thành các mảnh liền (hàn đỉnh trùng), lấy bao lồi TỪNG mảnh rồi gộp. Bao lồi cả lưới lấp kín khe giữa
+ * các mảnh rời (hai tấm song song thành một khối đặc), sinh chồng lấn giả với mọi thứ nằm giữa.
+ */
+function pieceHulls(g, Manifold) {
+  const src = g.index ? g.toNonIndexed() : g, a = src.attributes.position.array;
+  const ids = new Map(), par = [];
+  const find = (x) => { while (par[x] !== x) x = par[x] = par[par[x]]; return x; };
+  const vid = (i) => {
+    const k = `${Math.round(a[i] * 1e5)},${Math.round(a[i + 1] * 1e5)},${Math.round(a[i + 2] * 1e5)}`;
+    if (!ids.has(k)) { ids.set(k, par.length); par.push(par.length); }
+    return ids.get(k);
+  };
+  const tri = [];
+  for (let i = 0; i + 8 < a.length; i += 9) {
+    const t = [vid(i), vid(i + 3), vid(i + 6)];
+    tri.push(t);
+    par[find(t[1])] = find(t[0]);
+    par[find(t[2])] = find(t[0]);
+  }
+  const pieces = new Map();
+  tri.forEach((t, n) => {
+    const r = find(t[0]);
+    if (!pieces.has(r)) pieces.set(r, []);
+    for (let k = 0; k < 3; k++) pieces.get(r).push([a[n * 9 + k * 3], a[n * 9 + k * 3 + 1], a[n * 9 + k * 3 + 2]]);
+  });
+  let m = null;
+  for (const pts of pieces.values()) {
+    if (pts.length < 12) continue;
+    const step = Math.max(1, Math.ceil(pts.length / 20000));
+    const h = Manifold.hull(step > 1 ? pts.filter((_, i) => i % step === 0) : pts);
+    if (m) { const u = m.add(h); m.delete(); h.delete(); m = u; } else m = h;
+  }
+  return m ?? Manifold.hull([...ids.keys()].map((k) => k.split(",").map((v) => v / 1e5)));
+}
+
+/** Khối đặc manifold ở thế giới cho các bộ phận phẳng; lưới hở thì lấy bao lồi từng mảnh liền (đánh dấu xấp xỉ). */
 function solidsOf(list) {
   const { Manifold } = kernelOf();
   return list.map((p) => {
@@ -523,15 +614,162 @@ function solidsOf(list) {
     try {
       return { path: p.path, m: toManifold(g, p.path), bb, approx: false };
     } catch {
-      const arr = g.attributes.position.array, pts = [];
-      const step = Math.max(1, Math.ceil(arr.length / 3 / 20000));
-      for (let i = 0; i < arr.length / 3; i += step) pts.push([arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]]);
-      return { path: p.path, m: Manifold.hull(pts), bb, approx: true };
+      return { path: p.path, m: pieceHulls(g, Manifold), bb, approx: true };
     }
   });
 }
 
 const boxesOverlap = (a, b, tol = 0) => [0, 1, 2].every((k) => a.min[k] <= b.max[k] + tol && b.min[k] <= a.max[k] + tol);
+
+/** Bộ phận phẳng ở tư thế `pose` (khớp cấp ngoài, đã kiểm) hoặc tư thế nghỉ; `head` mở đầu kết quả nói tư thế đã kiểm. */
+function posedFlat(doc, pose) {
+  const has = pose && Object.keys(pose).length > 0;
+  if (has) checkPose(doc, pose, true);
+  return { flat: flatten(doc, has ? { pose } : {}).parts, head: has ? `Tư thế ${JSON.stringify(pose)}: ` : "Tư thế nghỉ (mọi khớp = 0): " };
+}
+
+// ───────── điểm neo chạm vật liệu ─────────
+// Điểm neo là toạ độ trong khung bộ phận, không buộc nằm trên vật liệu: hai neo trùng nhau (vòng khép 0 mm) mà khối vẫn
+// hở. Các trợ giúp dưới đây đo khoảng cách từ neo tới lưới của CỤM CỨNG chứa nó (bộ phận + mọi bộ phận cùng chủ khớp,
+// tức ghép cứng không qua khớp), ở tư thế nghỉ: quan hệ neo ↔ khối của nó không đổi theo khớp.
+
+/** Dung sai mặc định (m) cho neo chạm vật liệu. */
+const CONTACT_TOL = 0.002;
+const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+const mmStr = (x) => (Number.isFinite(x) ? `${(x * 1000).toFixed(1)} mm` : "không có vật liệu");
+
+/** Ngữ cảnh đo ở tư thế nghỉ: lời giải, lưới thế giới của mọi bộ phận phẳng, chủ khớp của từng bộ phận lớp ngoài. */
+function contactCtx(doc, tol = CONTACT_TOL) {
+  const reg = registryFor(doc);
+  const solved = solve(doc, reg);
+  const flat = flatten(doc).parts.filter((p) => p.geometry);
+  const owner = new Map();
+  for (const [j, ids] of solved.clusters) for (const id of ids) owner.set(id, j);
+  const ownerOf = (id) => owner.get(id) ?? "ground";
+  const box = new Map();
+  for (const p of flat) {
+    const g = p.geometry;
+    if (!g.boundingBox) g.computeBoundingBox();
+    const { min, max } = g.boundingBox;
+    const pts = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => transformPoint(p.world, [i & 1 ? max.x : min.x, i & 2 ? max.y : min.y, i & 4 ? max.z : min.z]));
+    box.set(p.path, { min: [0, 1, 2].map((k) => Math.min(...pts.map((q) => q[k]))), max: [0, 1, 2].map((k) => Math.max(...pts.map((q) => q[k]))), corners: pts });
+  }
+  return { doc, reg, solved, flat, ownerOf, box, tol };
+}
+
+/** Bộ phận lớp ngoài là con cháu của `id` (kể cả chính nó). */
+function subtreeOf(solved, id) {
+  const out = new Set([id]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [pid, p] of solved.parts) if (!out.has(pid) && out.has(p.parent)) { out.add(pid); grew = true; }
+  }
+  return out;
+}
+
+/**
+ * Bộ phận của cụm cứng `own` thật sự BÁM vào gốc cụm: đi từ gốc (bộ phận đặt trên ground, hoặc bộ phận khớp kéo trực
+ * tiếp) theo chuỗi tiếp xúc lưới (khe ≤ tol). Không có bước này thì các bộ phận đứng yên "bảo lãnh" lẫn nhau: trục chạm
+ * bánh, bánh chạm trục, cả cụm lơ lửng cạnh khung mà vẫn được tính là vật liệu của khung.
+ */
+function anchoredPaths(ctx, own) {
+  ctx.anchored ??= new Map();
+  if (ctx.anchored.has(own)) return ctx.anchored.get(own);
+  const top = (p) => p.path.split("/")[0];
+  const members = ctx.flat.filter((p) => ctx.ownerOf(top(p)) === own);
+  const roots = own === "ground"
+    ? new Set(ctx.doc.parts.filter((p) => (p.place?.b ?? "").startsWith("ground")).map((p) => p.id))
+    : new Set(ctx.doc.joints.find((j) => j.id === own)?.moves ?? []);
+  const solids = solidsOf(members);
+  const reached = new Set(), queue = solids.filter((s) => roots.has(s.path.split("/")[0]));
+  queue.forEach((s) => reached.add(s.path));
+  while (queue.length) {
+    const A = queue.shift();
+    for (const B of solids) {
+      if (reached.has(B.path) || !boxesOverlap(A.bb, B.bb, ctx.tol)) continue;
+      if (A.m.minGap(B.m, ctx.tol * 2) <= ctx.tol) { reached.add(B.path); queue.push(B); }
+    }
+  }
+  solids.forEach((s) => s.m.delete());
+  ctx.anchored.set(own, reached);
+  return reached;
+}
+
+/** Lưới của cụm cứng chứa bộ phận `id` ("ground" = cụm đứng yên) đã bám vào gốc cụm, trừ các bộ phận trong `exclude`. */
+function groupMeshes(ctx, id, exclude = new Set()) {
+  const own = id === "ground" ? "ground" : ctx.ownerOf(id);
+  const anchored = anchoredPaths(ctx, own);
+  return ctx.flat.filter((p) => { const top = p.path.split("/")[0]; return !exclude.has(top) && ctx.ownerOf(top) === own && anchored.has(p.path); });
+}
+
+/** Neo ở thế giới (tư thế nghỉ): điểm, hướng, loại, bán kính. */
+function anchorWorld(ctx, ref) {
+  const { frame, world, part } = anchorFrame(ctx.reg, ctx.solved.parts, ref, "rest");
+  const M = part ? world : IDENTITY;
+  const o = transformPoint(M, frame.origin);
+  const tip = transformPoint(M, frame.origin.map((v, i) => v + frame.dir[i]));
+  return { origin: o, dir: tip.map((v, i) => v - o[i]), kind: frame.kind, radius: frame.radius, part: part?.id ?? "ground" };
+}
+
+/** Khoảng cách nhỏ nhất từ điểm tới các lưới; trả {dist, nearest}. */
+function pointToMeshes(meshes, point) {
+  let dist = Infinity, nearest = null;
+  for (const p of meshes) {
+    const d = meshPointDistance(p.geometry, p.world, point, dist);
+    if (d < dist) { dist = d; nearest = p.path; }
+  }
+  return { dist, nearest };
+}
+
+/** Khoảng cách nhỏ nhất từ trục (đoạn nằm trong khung bao từng bộ phận, nới 5 mm) tới các lưới. */
+function axisToMeshes(ctx, meshes, origin, dir) {
+  const len = Math.hypot(...dir), d = dir.map((v) => v / len);
+  let dist = Infinity, nearest = null;
+  for (const p of meshes) {
+    const ts = ctx.box.get(p.path).corners.map((c) => c.reduce((s, v, i) => s + (v - origin[i]) * d[i], 0));
+    const x = meshAxisDistance(p.geometry, p.world, origin, d, Math.min(...ts) - 0.005, Math.max(...ts) + 0.005, 0.002, dist);
+    if (x < dist) { dist = x; nearest = p.path; }
+  }
+  return { dist, nearest };
+}
+
+/** Một dòng kết quả: ✓ khi dist ≤ limit; `note` (allowAir) biến ✗ thành ✓ có ghi chú. */
+function contactRow(label, { dist, nearest }, limit, note) {
+  const ok = dist <= limit;
+  const tail = `${mmStr(dist)}${nearest ? ` (gần nhất: ${nearest})` : ""}, ngưỡng ${mmStr(limit)}`;
+  if (ok) return { ok: true, text: `✓ ${label}: ${tail}` };
+  if (note) return { ok: true, text: `✓ ${label}: ${tail} — cho phép: ${note}` };
+  return { ok: false, text: `✗ ${label}: ${tail}` };
+}
+
+/** Kiểm trục khớp chạm vật liệu ở cụm dẫn và cụm cha. Trả các dòng. */
+function jointContact(ctx, j, tol) {
+  // khớp trượt: chỉ hướng trục có nghĩa, vị trí đường trục thì không; chỗ tựa trượt do check_connections quét (cụm dẫn chạm cụm cha)
+  if (j.kind === "prismatic") return [{ ok: true, text: `· khớp ${j.id}: trượt, không kiểm vị trí trục (xem phần quét)` }];
+  const w = anchorWorld(ctx, j.axis);
+  const limit = (w.radius ?? 0) + tol;
+  const mover = j.moves[0];
+  const parent = ctx.solved.parts.get(mover)?.parent ?? "ground";
+  const rows = [contactRow(`khớp ${j.id}: trục ${j.axis} ↔ cụm dẫn (${mover})`, axisToMeshes(ctx, groupMeshes(ctx, mover), w.origin, w.dir), limit, j.allowAir)];
+  // cha trực tiếp là ground (mặt đất ảo, chốt cố định trong không gian): không có khối nào để đo
+  if (parent === "ground") return [...rows, { ok: true, text: `· khớp ${j.id}: cha là ground, không kiểm phía cố định` }];
+  const fixedSide = groupMeshes(ctx, parent, subtreeOf(ctx.solved, mover));
+  if (fixedSide.length) rows.push(contactRow(`khớp ${j.id}: trục ${j.axis} ↔ cụm cha (${parent})`, axisToMeshes(ctx, fixedSide, w.origin, w.dir), limit, j.allowAir));
+  return rows;
+}
+
+/** Kiểm hai đầu vòng chạm vật liệu của cụm chứa chúng (đo theo điểm: vòng khép điểm). */
+function loopContact(ctx, l, tol) {
+  const rows = [];
+  for (const ref of [l.a, l.b]) {
+    const w = anchorWorld(ctx, ref);
+    if (w.part === "ground") continue;
+    rows.push(contactRow(`vòng ${l.id}: ${ref} ↔ cụm ${w.part}`, pointToMeshes(groupMeshes(ctx, w.part), w.origin), tol, l.allowAir));
+  }
+  return rows;
+}
+
+const contactHint = "Sửa: dời điểm neo vào chỗ có vật liệu (anchor_define), thêm chốt/bạc/tai ghép cứng vào bộ phận tại đó, khai radius cho trục đi qua lỗ, hoặc truyền allowAir: \"lý do\" nếu chỗ trống là cố ý.";
 
 /** Loại dùng được: hình tự dựng (không có thư viện bộ phận viết sẵn). */
 const typList = () => `## shape
@@ -618,6 +856,7 @@ const handlers = {
       if (gone.size > 1 && !cascade) throw new Error(`Có bộ phận ghép vào ${id}: ${[...gone].filter((x) => x !== id).join(", ")}. Đặt lại chúng trước, hoặc dùng cascade: true.`);
       doc.parts = doc.parts.filter((p) => !gone.has(p.id));
       doc.joints = doc.joints.map((j) => ({ ...j, moves: j.moves.filter((m) => !gone.has(m)) }));
+      dropLoops(doc, (l) => [l.a, l.b].some((ref) => gone.has(ref.split(".")[0])), cascade, "nối vào bộ phận sắp xoá");
       const jointsGone = dropJoints(doc, doc.joints.filter((j) => !j.moves.length || gone.has(j.axis.split(".")[0])).map((j) => j.id), cascade);
       doc.routes = doc.routes.filter((r) => ![r.from, r.to, ...(r.via ?? []).map((v) => v.on)].some((ref) => gone.has(ref.split(".")[0])));
       if (doc.decals) doc.decals = doc.decals.filter((d) => !gone.has(d.target));
@@ -630,25 +869,35 @@ const handlers = {
     return text(`Đã xoá: ${info.parts.join(", ")}.${info.joints.length ? ` Khớp bỏ theo: ${info.joints.join(", ")}.` : ""}`);
   },
 
-  joint_add: ({ assembly, id, kind, axis, moves, limits, couple }) => {
+  joint_add: ({ assembly, id, kind, axis, moves, limits, couple, allowAir, tolerance = CONTACT_TOL }) => {
     if (!ID.test(id)) throw new Error(`id khớp "${id}" không hợp lệ.`);
     if (limits && !(limits[0] < limits[1])) throw new Error(`limits phải là [nhỏ, lớn], đang là ${JSON.stringify(limits)}.`);
+    if (allowAir !== undefined && !(typeof allowAir === "string" && allowAir.trim())) throw new Error("allowAir phải là một câu lý do (chuỗi không rỗng).");
+    let contact = [];
     const { doc, solved } = editDoc(assembly, (d) => {
       d.joints = d.joints.filter((j) => j.id !== id);
-      d.joints.push({ id, kind, axis, moves, ...(limits ? { limits } : {}), ...(couple ? { couple } : {}) });
+      const joint = { id, kind, axis, moves, ...(limits ? { limits } : {}), ...(couple ? { couple } : {}), ...(allowAir ? { allowAir: allowAir.trim() } : {}) };
+      d.joints.push(joint);
+      // trục khớp phải chạm vật liệu cả cụm dẫn lẫn cụm cha; không thì không ghi gì
+      contact = jointContact(contactCtx(d, tolerance), joint, tolerance);
+      const bad = contact.filter((r) => !r.ok);
+      if (bad.length) throw new Error(`[khớp ${id}] trục ${axis} không chạm vật liệu:\n${bad.map((r) => r.text).join("\n")}\n${contactHint}`);
     });
     let coupled = "";
     if (couple) {
       // đo tỉ số thật: cho khớp dẫn 1 đơn vị, các khớp khác 0
-      const probe = clone(doc);
-      for (const j of probe.joints) j.value = j.id === couple.joint ? 1 : 0;
-      const v = solve(probe, registryFor(probe)).values.get(id);
-      const lead = findJoint(probe, couple.joint);
+      let v;
+      try {
+        v = solve(doc, registryFor(doc), { pose: { [couple.joint]: 1 } }).values.get(id);
+      } catch {
+        v = undefined;
+      }
+      const lead = findJoint(doc, couple.joint);
       coupled = typeof v === "number" && lead
         ? ` Ghép theo ${couple.joint}: ${+v.toFixed(4)} ${kind === "revolute" ? "°" : "m"} cho mỗi 1 ${lead.kind === "revolute" ? "°" : "m"} của khớp dẫn.`
         : ` Ghép theo ${couple.joint} (không đo được tỉ số).`;
     }
-    return text(`Khớp ${id} (${kind} quanh ${axis}) kéo theo: ${solved.clusters.get(id).join(", ")}.${coupled}`);
+    return text(`Khớp ${id} (${kind} quanh ${axis}) kéo theo: ${solved.clusters.get(id).join(", ")}.${coupled}${couple ? ` Ghép chạy hai chiều: pose đặt ${id} thì ${couple.joint} được suy ngược.` : ""}\nChạm vật liệu:\n${contact.map((r) => r.text).join("\n")}`);
   },
   assembly_export: async ({ assembly, path, pose = {}, wait_ms = 30000 }) => {
     const root = resolve(FE_ROOT, "..");
@@ -686,7 +935,70 @@ const handlers = {
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, `${JSON.stringify(doc, null, 1)}
 `);
-    return text(`Đã ghi ${relative(root, file).replaceAll("\\", "/")} (${doc.parts.length} bộ phận, khớp: ${doc.joints.map((j) => j.id).join(", ") || "không"}). ${copied ? ` Chép ${copied} lưới nướng sẵn vào fe/public/assembly-meshes: trang gọi preloadMeshes(doc, (h) => \`/assembly-meshes/\${h}.bin\`) trước khi dựng.` : ""} Trong trang: buildAssembly(doc, createMaterialKit()) từ @/assembly-kit/three/build-scene, rồi view.setPose({...}) mỗi khung hình; khớp ghép tự đi theo khớp dẫn.`);
+    return text(`Đã ghi ${relative(root, file).replaceAll("\\", "/")} (${doc.parts.length} bộ phận, khớp: ${doc.joints.map((j) => j.id).join(", ") || "không"}). ${copied ? ` Chép ${copied} lưới nướng sẵn vào fe/public/assembly-meshes: trang gọi preloadMeshes(doc, (h) => \`/assembly-meshes/\${h}.bin\`) trước khi dựng.` : ""} Trong trang: buildAssembly(doc, createMaterialKit()) từ @/assembly-kit/three/build-scene, rồi view.setPose({...}) mỗi khung hình: đặt khớp dẫn hoặc một khớp bất kỳ của nhóm liên động (couple, vòng kín), cả nhóm tự đi theo.`);
+  },
+  loop_add: ({ assembly, id, a, b, solves, allowAir, tolerance = CONTACT_TOL }) => {
+    if (allowAir !== undefined && !(typeof allowAir === "string" && allowAir.trim())) throw new Error("allowAir phải là một câu lý do (chuỗi không rỗng).");
+    if (!ID.test(id)) throw new Error(`id vòng "${id}" không hợp lệ.`);
+    if (!Array.isArray(solves) || !solves.length || solves.length > 3) throw new Error("solves cần 1–3 khớp do vòng tính ra.");
+    // ở tư thế nghỉ (mọi khớp = 0) hai đầu phải trùng: vòng chỉ giữ quan hệ, không sửa lắp sai
+    const before = clone(findAssembly(readState(), assembly).doc);
+    before.loops = (before.loops ?? []).filter((l) => l.id !== id);
+    if (!before.loops.length) delete before.loops;
+    const reg0 = registryFor(before), rest = solve(before, reg0, { pose: {} });
+    const at = (ref) => {
+      const { frame, world } = anchorFrame(reg0, rest.parts, ref, "world");
+      return transformPoint(world, frame.origin);
+    };
+    const pa = at(a), pb = at(b), d = pa.map((x, i) => x - pb[i]), gap = Math.hypot(...d);
+    if (gap > 1e-4) throw new Error(`[vòng ${id}] ở tư thế nghỉ (mọi khớp = 0) hai đầu chưa trùng: ${a} ở ${fmtV(pa)}, ${b} ở ${fmtV(pb)}, lệch ${(gap * 1000).toFixed(2)} mm theo ${fmtV(d)}. Sửa cách ghép (part_update) hoặc điểm neo để hai điểm trùng nhau khi mọi khớp = 0, rồi khép vòng.`);
+    let contact = [];
+    const { doc, solved, reg } = editDoc(assembly, (dd) => {
+      dd.loops = (dd.loops ?? []).filter((l) => l.id !== id);
+      const loop = { id, a, b, solves, ...(allowAir ? { allowAir: allowAir.trim() } : {}) };
+      dd.loops.push(loop);
+      // mỗi đầu phải nằm trên vật liệu của cụm chứa nó: hai điểm trùng chưa đủ
+      contact = loopContact(contactCtx(dd, tolerance), loop, tolerance);
+      const bad = contact.filter((r) => !r.ok);
+      if (bad.length) throw new Error(`[vòng ${id}] hai đầu trùng nhau nhưng không chạm vật liệu:\n${bad.map((r) => r.text).join("\n")}\n${contactHint}`);
+    });
+    const g = solved.groups.get(solves[0]);
+    const drv = solved.groupDrivers.get(g) ?? [];
+    const others = [...solved.groups].filter(([j, gg]) => gg === g && !drv.includes(j)).map(([j]) => j);
+    const lines = [`Vòng ${id}: ${a} ↔ ${b}, hở ${(gap * 1000).toFixed(3)} mm ở tư thế nghỉ. Khớp do vòng tính: ${solves.join(", ")}. Nhóm liên động: khớp dẫn ${drv.join(", ") || "(không có: cơ cấu bị khoá cứng)"}; khớp đi theo ${others.join(", ")}.`, "Chạm vật liệu:", ...contact.map((r) => r.text)];
+    const jd = drv.length === 1 ? doc.joints.find((j) => j.id === drv[0]) : null;
+    if (drv.length > 1) lines.push(`Nhóm có ${drv.length} khớp dẫn: tư thế cần đặt đủ ${drv.join(", ")}; kéo khớp phụ thuộc thì không suy ngược được.`);
+    else if (jd && !jd.limits) lines.push(`Đặt limits cho khớp dẫn ${jd.id} (joint_add) để xem bảng quét và để thanh trượt chỉ chạy trong miền khép được.`);
+    else if (jd) {
+      const [lo, hi] = jd.limits, u = jd.kind === "revolute" ? "°" : " m";
+      const xs = Array.from({ length: 9 }, (_, i) => lo + ((hi - lo) * i) / 8);
+      const rows = new Map();
+      // quét từ giá trị gần 0 ra hai phía, lời giải trước làm điểm xuất phát: đi liền một nhánh như cơ cấu thật
+      const i0 = xs.reduce((best, x, i) => (Math.abs(x) < Math.abs(xs[best]) ? i : best), 0);
+      for (const dir of [1, -1]) {
+        let warm = rest.values;
+        for (let i = dir > 0 ? i0 : i0 - 1; i >= 0 && i < xs.length; i += dir) {
+          try {
+            const s = solve(doc, reg, { pose: { [jd.id]: xs[i] }, warm });
+            warm = s.values;
+            rows.set(i, `${jd.id} = ${+xs[i].toFixed(4)}${u}: ${[...solves, ...others.filter((o) => !solves.includes(o))].map((j) => `${j} = ${+s.values.get(j).toFixed(4)}`).join(", ")}${s.warnings.length ? `  ⚠ ${s.warnings.join(" ")}` : ""}`);
+          } catch (e) {
+            rows.set(i, `${jd.id} = ${+xs[i].toFixed(4)}${u}: ✗ ${e.message}`);
+          }
+        }
+      }
+      lines.push(`Quét ${jd.id} trong [${lo}, ${hi}]${u}:`, ...xs.map((_, i) => `- ${rows.get(i)}`));
+      if ([...rows.values()].some((r) => r.includes("✗") || r.includes("⚠"))) lines.push(`Có tư thế không khép hoặc vượt giới hạn: thu hẹp limits của ${jd.id}, hoặc sửa kích thước khâu.`);
+    }
+    return text(lines.join("\n"));
+  },
+  loop_remove: ({ assembly, id }) => {
+    editDoc(assembly, (doc) => {
+      if (!(doc.loops ?? []).some((l) => l.id === id)) throw new Error(`Không có vòng "${id}". Có: ${(doc.loops ?? []).map((l) => l.id).join(", ") || "(chưa có)"}.`);
+      doc.loops = doc.loops.filter((l) => l.id !== id);
+      if (!doc.loops.length) delete doc.loops;
+    });
+    return text(`Đã bỏ vòng ${id}.`);
   },
   joint_remove: ({ assembly, id, cascade = false }) => {
     const { info } = editDoc(assembly, (doc) => {
@@ -806,9 +1118,9 @@ const handlers = {
   },
 
   // ───── kiểm tra theo lưới thật ─────
-  check_interference: ({ assembly, parts, tolerance = 1e-7, inside = false }) => {
+  check_interference: ({ assembly, parts, tolerance = 1e-7, inside = false, pose }) => {
     const doc = findAssembly(readState(), assembly).doc;
-    const flat = flatten(doc).parts;
+    const { flat, head } = posedFlat(doc, pose);
     let list = flat.filter((p) => p.geometry);
     if (parts?.length) {
       const keep = new Set(parts.flatMap((id) => partOrCluster(flat, id).map((p) => p.path)));
@@ -830,17 +1142,19 @@ const handlers = {
       inter.delete();
     }
     solids.forEach((s) => s.m.delete());
-    if (!hits.length) return text(`Không có cặp nào xuyên nhau (${solids.length} bộ phận, dung sai ${tolerance} m³).`);
+    if (!hits.length) return text(`${head}không có cặp nào xuyên nhau (${solids.length} bộ phận, dung sai ${tolerance} m³).`);
     hits.sort((x, y) => y.vol - x.vol);
-    return text([`${hits.length} cặp xuyên nhau:`, ...hits.slice(0, 30).map((h) => `- ${h.a} ↔ ${h.b}: ${(h.vol * 1e6).toFixed(2)} cm³ quanh ${fmtV(h.c)}${h.approx ? " (lưới hở: tính theo bao lồi)" : ""}`)].join("\n"));
+    return text([`${head}${hits.length} cặp xuyên nhau:`, ...hits.slice(0, 30).map((h) => `- ${h.a} ↔ ${h.b}: ${(h.vol * 1e6).toFixed(2)} cm³ quanh ${fmtV(h.c)}${h.approx ? " (lưới hở: tính theo bao lồi)" : ""}`)].join("\n"));
   },
-  check_clearance: ({ assembly, a, b, min }) => {
+  check_clearance: ({ assembly, a, b, min, pose }) => {
     const doc = findAssembly(readState(), assembly).doc;
-    const flat = flatten(doc).parts;
+    const { flat, head } = posedFlat(doc, pose);
+    let approx = false;
     const side = (id) => {
       const list = partOrCluster(flat, id).filter((p) => p.geometry);
       if (!list.length) throw new Error(`Không có bộ phận "${id}" (đường dẫn, vd "cum/boPhan").`);
       const ss = solidsOf(list);
+      if (ss.some((x) => x.approx)) approx = true;
       let u = ss[0].m;
       for (const s of ss.slice(1)) { const n = u.add(s.m); u.delete(); s.m.delete(); u = n; }
       return u;
@@ -849,13 +1163,14 @@ const handlers = {
     const gap = ma.minGap(mb, Math.max(1, (min ?? 0) * 4));
     const overlap = ma.intersect(mb).volume();
     ma.delete(); mb.delete();
-    const msg = overlap > 1e-9 ? `${a} và ${b} CHỒNG LẤN ${(overlap * 1e6).toFixed(2)} cm³.` : `Khe nhỏ nhất ${a} ↔ ${b}: ${(gap * 1000).toFixed(2)} mm${gap >= Math.max(1, (min ?? 0) * 4) - 1e-9 ? " trở lên" : ""}.`;
+    const msg = head + (approx ? "(lưới hở: tính theo bao lồi, có thể báo chồng lấn ở chỗ thực ra hở) " : "") + (overlap > 1e-9 ? `${a} và ${b} CHỒNG LẤN ${(overlap * 1e6).toFixed(2)} cm³.` : `Khe nhỏ nhất ${a} ↔ ${b}: ${(gap * 1000).toFixed(2)} mm${gap >= Math.max(1, (min ?? 0) * 4) - 1e-9 ? " trở lên" : ""}.`);
     const bad = overlap > 1e-9 || (min !== undefined && gap < min);
     return bad ? { ...text(`${msg}${min !== undefined ? ` Yêu cầu ≥ ${min * 1000} mm.` : ""}`), isError: min !== undefined } : text(msg);
   },
-  check_floating: ({ assembly, tolerance = 0.002 }) => {
+  check_floating: ({ assembly, tolerance = 0.002, pose }) => {
     const doc = findAssembly(readState(), assembly).doc;
-    const flat = flatten(doc).parts.filter((p) => p.geometry);
+    const { flat: all, head } = posedFlat(doc, pose);
+    const flat = all.filter((p) => p.geometry);
     const solids = solidsOf(flat);
     const out = [];
     for (const A of solids) {
@@ -868,7 +1183,121 @@ const handlers = {
       if (!touching) out.push(`- ${A.path}: không chạm gì (đáy ở y = ${A.bb.min[1].toFixed(4)} m)`);
     }
     solids.forEach((s) => s.m.delete());
-    return text(out.length ? [`${out.length} bộ phận lơ lửng (dung sai ${tolerance * 1000} mm):`, ...out].join("\n") : `Không có bộ phận lơ lửng (${solids.length} bộ phận, dung sai ${tolerance * 1000} mm).`);
+    return text(out.length ? [`${head}${out.length} bộ phận lơ lửng (dung sai ${tolerance * 1000} mm):`, ...out].join("\n") : `${head}không có bộ phận lơ lửng (${solids.length} bộ phận, dung sai ${tolerance * 1000} mm). Chạm đúng chỗ nối hay không: check_connections.`);
+  },
+  check_connections: ({ assembly, tolerance = CONTACT_TOL, steps = 9 }) => {
+    const doc = clone(findAssembly(readState(), assembly).doc);
+    for (const j of doc.joints) delete j.value;
+    const ctx = contactCtx(doc, tolerance);
+    const rows = [];
+    const add = (r) => rows.push(r);
+
+    // 0. bộ phận không bám vào gốc cụm của nó (chỉ chạm các bộ phận cũng lơ lửng, hoặc chỉ chạm đất)
+    for (const own of new Set(ctx.flat.map((p) => ctx.ownerOf(p.path.split("/")[0])))) {
+      const anchored = anchoredPaths(ctx, own);
+      const loose = ctx.flat.filter((p) => ctx.ownerOf(p.path.split("/")[0]) === own && !anchored.has(p.path)).map((p) => p.path);
+      if (loose.length) add({ ok: false, text: `✗ không bám vào gốc ${own === "ground" ? "cụm đứng yên" : `cụm của khớp ${own}`}: ${loose.join(", ")} — không có chuỗi tiếp xúc nào nối về ${own === "ground" ? "bộ phận đặt trên ground" : "bộ phận khớp kéo"}` });
+    }
+
+    // 1. cách ghép: bộ phận chạm cụm cha (trừ chính nó và nhánh con của nó) theo lưới
+    const restSolids = new Map(solidsOf(ctx.flat).map((s) => [s.path, s]));
+    const touch = (aPaths, bPaths, tol) => {
+      let best = Infinity, approx = false;
+      for (const pa of aPaths) for (const pb of bPaths) {
+        const A = restSolids.get(pa), B = restSolids.get(pb);
+        if (!A || !B || !boxesOverlap(A.bb, B.bb, 0.05)) continue;
+        approx ||= A.approx || B.approx;
+        best = Math.min(best, A.m.minGap(B.m, 0.05));
+        if (best <= tol) return { gap: best, approx };
+      }
+      return { gap: best, approx };
+    };
+    const pathsOf = (ids) => ctx.flat.filter((p) => ids.has(p.path.split("/")[0])).map((p) => p.path);
+    for (const p of doc.parts) {
+      const parent = ctx.solved.parts.get(p.id)?.parent ?? "ground";
+      if (parent === "ground") continue;
+      const sub = subtreeOf(ctx.solved, p.id);
+      // so với cả cụm cứng của cha (trừ nhánh của p): p có thể tựa vào chốt/trục ghép cứng cạnh cha
+      const others = groupMeshes(ctx, parent, sub).map((m) => m.path);
+      const { gap, approx } = touch(pathsOf(new Set([p.id])), others, tolerance);
+      const label = `ghép ${p.id} (${p.place.kind}) ↔ cụm của ${parent}`;
+      const fixedNote = p.place.kind === "fixed" ? " (ghép fixed: chỉ cảnh báo)" : "";
+      const ok = gap <= tolerance;
+      add({ ok: ok || !!fixedNote, text: `${ok ? "✓" : fixedNote ? "⚠" : "✗"} ${label}: ${gap === Infinity ? "cách hơn 50 mm" : `khe ${mmStr(Math.max(0, gap))}`}${approx ? " (bao lồi)" : ""}${ok ? "" : fixedNote}` });
+    }
+    // 2. khớp, 3. vòng
+    for (const j of doc.joints) jointContact(ctx, j, tolerance).forEach(add);
+    for (const l of doc.loops ?? []) loopContact(ctx, l, tolerance).forEach(add);
+    restSolids.forEach((s) => s.m.delete());
+
+    // 4. quét khớp dẫn: vòng còn khép, cụm dẫn của mỗi khớp trong nhóm còn chạm cụm cha
+    const sweepRows = [];
+    const reg = ctx.reg;
+    const groupOf = (id) => ctx.solved.groups.get(id) ?? `#${id}`;
+    const drivers = doc.joints.filter((j) => {
+      if (!j.limits) return false;
+      const g = ctx.solved.groups.get(j.id);
+      return g === undefined || (ctx.solved.groupDrivers.get(g) ?? [j.id]).includes(j.id);
+    });
+    const sideTouch = (flat, solids, mover, parent) => {
+      const own = ctx.ownerOf(mover);
+      const moving = new Set(flat.filter((p) => ctx.ownerOf(p.path.split("/")[0]) === own).map((p) => p.path));
+      const parentOwn = parent === "ground" ? "ground" : ctx.ownerOf(parent);
+      const fixed = new Set(flat.filter((p) => ctx.ownerOf(p.path.split("/")[0]) === parentOwn && !moving.has(p.path)).map((p) => p.path));
+      let best = Infinity;
+      for (const a of moving) for (const b of fixed) {
+        const A = solids.get(a), B = solids.get(b);
+        if (!boxesOverlap(A.bb, B.bb, 0.05)) continue;
+        best = Math.min(best, A.m.minGap(B.m, 0.05));
+        if (best <= tolerance) return best;
+      }
+      return best;
+    };
+    for (const jd of drivers) {
+      const [lo, hi] = jd.limits, u = jd.kind === "revolute" ? "°" : " m";
+      const group = groupOf(jd.id);
+      const members = doc.joints.filter((j) => groupOf(j.id) === group);
+      const xs = Array.from({ length: steps }, (_, i) => lo + ((hi - lo) * i) / (steps - 1));
+      const i0 = xs.reduce((best, x, i) => (Math.abs(x) < Math.abs(xs[best]) ? i : best), 0);
+      const fail = new Map();
+      for (const dir of [1, -1]) {
+        let warm = ctx.solved.values;
+        for (let i = dir > 0 ? i0 : i0 - 1; i >= 0 && i < xs.length; i += dir) {
+          const at = `${jd.id} = ${+xs[i].toFixed(4)}${u}`;
+          let s;
+          try {
+            s = solve(doc, reg, { pose: { [jd.id]: xs[i] }, warm });
+            warm = s.values;
+          } catch (e) {
+            fail.set(`✗ ${at}: không giải được (${e.message.slice(0, 120)})`, true);
+            continue;
+          }
+          for (const [lid, g] of s.loopGap ?? []) if (g > 1e-4) fail.set(`✗ ${at}: vòng ${lid} hở ${mmStr(g)}`, true);
+          for (const w of s.warnings) fail.set(`⚠ ${at}: ${w}`, true);
+          const flat = flatten(doc, { pose: { [jd.id]: xs[i] } }).parts.filter((p) => p.geometry);
+          const solids = new Map(solidsOf(flat).map((x) => [x.path, x]));
+          for (const j of members) {
+            const mover = j.moves[0], parent = ctx.solved.parts.get(mover)?.parent ?? "ground";
+            if (parent === "ground") continue;
+            const gap = sideTouch(flat, solids, mover, parent);
+            if (gap > tolerance) fail.set(`✗ ${at}: khớp ${j.id}, cụm dẫn (${mover}) rời cụm cha (${parent}) — khe ${gap === Infinity ? "hơn 50 mm" : mmStr(gap)}`, true);
+          }
+          solids.forEach((x) => x.m.delete());
+        }
+      }
+      sweepRows.push(`Quét ${jd.id} trong [${lo}, ${hi}]${u}, ${steps} tư thế, khớp trong nhóm: ${members.map((j) => j.id).join(", ")}:`);
+      sweepRows.push(...(fail.size ? [...fail.keys()].map((k) => `  ${k}`) : ["  ✓ mọi tư thế: vòng khép, cụm dẫn luôn chạm cụm cha"]));
+    }
+    // các khớp có ✗ ở tư thế nghỉ thì quét cũng ✗: không lặp lại ở đây
+    const bad = rows.filter((r) => !r.ok).length + sweepRows.filter((r) => r.trimStart().startsWith("✗")).length;
+    const noLimit = doc.joints.filter((j) => !j.limits && !j.couple && !(doc.loops ?? []).some((l) => l.solves.includes(j.id))).map((j) => j.id);
+    return text([
+      `${bad ? `${bad} chỗ nối hở` : "Mọi chỗ nối chạm vật liệu"} (dung sai ${mmStr(tolerance)}; cụm = bộ phận + bộ phận ghép cứng vào nó).`,
+      "## Tư thế nghỉ", ...rows.map((r) => r.text),
+      ...(sweepRows.length ? ["## Quét theo hành trình", ...sweepRows] : []),
+      ...(noLimit.length ? [`(Không quét ${noLimit.join(", ")}: chưa có limits.)`] : []),
+      ...(bad ? [contactHint] : []),
+    ].join("\n"));
   },
   check_physics: ({ assembly, duration = 1 }) => {
     const doc = findAssembly(readState(), assembly).doc;
@@ -947,6 +1376,7 @@ const handlers = {
       // khớp nằm trọn trong cụm (trục và mọi bộ phận được dẫn) đi theo cụm: "<idBoPhan>/<khop>" ở bản dùng nó
       id: `${name}`, title: description ?? name, parts: subParts, routes: [],
       joints: src.joints.filter((j) => set.has(j.axis.split(".")[0]) && j.moves.every((m) => set.has(m))).map(({ value, ...j }) => j),
+      ...(loopsIn(src, set).length ? { loops: loopsIn(src, set) } : {}),
       ...(needShapes.size ? { shapes: src.shapes.filter((sh) => needShapes.has(sh.id)) } : {}),
       ...(src.materials ? { materials: src.materials } : {}),
       ...(src.decals?.some((d) => set.has(d.target)) ? { decals: src.decals.filter((d) => set.has(d.target)) } : {}),
@@ -1019,7 +1449,22 @@ const handlers = {
       const text0 = desc ?? `điểm neo ${name} (agent đặt)`;
       node.anchors = { ...(node.anchors ?? {}), [name]: k === "face" ? { kind: "face", origin: spec.origin, normal: spec.dir, ...(spec.up ? { up: spec.up } : {}), desc: text0 } : { kind: k, origin: spec.origin, dir: spec.dir, ...(spec.up ? { up: spec.up } : {}), ...(k === "axis" && radius ? { radius } : {}), desc: text0 } };
     });
-    return text(`Đã đặt ${shape}.${name}.\n${shapeReport(doc, shape)}`);
+    // chỉ báo (không chặn): neo có thể đặt trước khi dựng đủ khối; joint_add / loop_add mới kiểm
+    let air = "";
+    try {
+      const built = buildShapes(doc).get(shape), a = built.anchors[name], g = built.geometry;
+      const dir = a.dir ?? a.normal;
+      let dist;
+      if (a.kind === "axis") {
+        if (!g.boundingBox) g.computeBoundingBox();
+        const { min, max } = g.boundingBox, len = Math.hypot(...dir), u = dir.map((v) => v / len);
+        const ts = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [i & 1 ? max.x : min.x, i & 2 ? max.y : min.y, i & 4 ? max.z : min.z].reduce((s, v, k) => s + (v - a.origin[k]) * u[k], 0));
+        dist = meshAxisDistance(g, IDENTITY, a.origin, u, Math.min(...ts), Math.max(...ts));
+      } else dist = meshPointDistance(g, IDENTITY, a.origin);
+      const limit = (a.kind === "axis" ? a.radius ?? 0 : 0) + CONTACT_TOL;
+      air = `\n${a.kind === "axis" ? "Trục" : "Điểm"} ${name} cách vật liệu của ${shape}: ${mmStr(dist)}${dist > limit ? ` ⚠ — dùng làm khớp/vòng thì vật liệu phải có ở đó (có thể từ bộ phận ghép cứng vào), không thì joint_add / loop_add báo lỗi.${a.kind === "axis" && !a.radius ? " Trục qua lỗ: khai radius." : ""}` : "."}`;
+    } catch { /* hình chưa dựng được: shapeReport đã nói */ }
+    return text(`Đã đặt ${shape}.${name}.${air}\n${shapeReport(doc, shape)}`);
   },
 
   // ───── vật liệu, decal ─────
@@ -1068,9 +1513,8 @@ const handlers = {
   measure: ({ assembly, kind, target, a, b, pose = {}, spec }) => {
     const doc = clone(findAssembly(readState(), assembly).doc);
     checkPose(doc, pose, true);
-    for (const j of doc.joints) j.value = pose[j.id] ?? 0;
     const reg = registryFor(doc);
-    const solved = solve(doc, reg);
+    const solved = solve(doc, reg, { pose });
     const boxOf = (id) => {
       const part = solved.parts.get(id);
       if (!part) throw new Error(`Không có bộ phận "${id}".`);
@@ -1138,10 +1582,10 @@ const handlers = {
     return { content: [{ type: "text", text: `${a.title} rev ${a.rev}, camera ${camera}, ${size[0]}×${size[1]}, ${quality}, cảnh ${JSON.stringify(a.doc.scene ?? {})}.` }, { type: "image", data: png.toString("base64"), mimeType: "image/png" }] };
   },
   assembly_view: async ({ assembly, pose = {}, focus, wait_ms = 12000, region }) => {
-    const { a, meta } = await requestBrowser(assembly, { mode: "four", pose, focus: focus ?? null }, wait_ms);
+    const { a, meta, posed } = await requestBrowser(assembly, { mode: "four", pose, focus: focus ?? null }, wait_ms);
     if (meta.error) return { ...text(`Trang chụp lỗi: ${meta.error}`), isError: true };
     const png = await crop(readFileSync(snapshotFile(assembly)), region);
-    const label = `${a.title} rev ${a.rev}${Object.keys(pose).length ? `, pose ${JSON.stringify(pose)}` : ""}${focus ? `, focus ${focus}` : ""}. Ô: trái-trên phối cảnh, phải-trên trước (+z), trái-dưới cạnh (+x), phải-dưới trên (+y).`;
+    const label = `${a.title} rev ${a.rev}${Object.keys(pose).length ? `, pose ${JSON.stringify(pose)}` : ""}${focus ? `, focus ${focus}` : ""}${poseReport(posed, pose)}. Ô: trái-trên phối cảnh, phải-trên trước (+z), trái-dưới cạnh (+x), phải-dưới trên (+y).`;
     return { content: [{ type: "text", text: label }, { type: "image", data: png.toString("base64"), mimeType: "image/png" }] };
   },
 };
@@ -1151,8 +1595,10 @@ const handlers = {
 async function selftest() {
   const dir = mkdtempSync(join(tmpdir(), "assembly-selftest-"));
   process.env.NEVIAD_ASSEMBLY_DIR = dir;
-  const call = (name, args) => handlers[name](args).content[0].text;
-  const callAsync = async (name, args) => (await handlers[name](args)).content[0].text;
+  // kiểm tham số như server thật (strictArgs): test gõ sai tên tham số thì lộ ngay
+  const toolOf = (name) => TOOLS.find((t) => t.name === name);
+  const call = (name, args) => { checkArgs(toolOf(name), args); return handlers[name](args).content[0].text; };
+  const callAsync = async (name, args) => { checkArgs(toolOf(name), args); return (await handlers[name](args)).content[0].text; };
   const fails = [];
   const near = (label, got, want, tol = 1e-4) => { if (Math.abs(got - want) > tol) fails.push(`${label}: ${got} ≠ ${want}`); };
   const solved = (aid) => { const d = findAssembly(readState(), aid).doc; return solve(d, registryFor(d)); };
@@ -1528,6 +1974,177 @@ async function selftest() {
       near("bánh răng ωb = −½ωa", (w.byId.get("gb").w[1] / w.byId.get("ga").w[1]), -0.5, 0.01);
     }
 
+    // khớp ghép hai chiều, vòng kín (động học) và ràng buộc tương ứng trong vật lý
+    console.log("\n--- liên động: couple hai chiều, vòng kín ---");
+    {
+      const DEGR = Math.PI / 180;
+      const mustThrow = (label, fn, re) => {
+        try {
+          fn();
+          fails.push(`${label}: không báo lỗi`);
+        } catch (e) {
+          if (re && !re.test(e.message)) fails.push(`${label}: lỗi khác mong đợi: ${e.message}`);
+          else console.log(`- ${label}: ${e.message.slice(0, 160)}`);
+        }
+      };
+      // thanh phẳng trong mặt xy (trục quay z), khung bộ phận trùng thế giới khi ghép fixed vào ground.top / goc của thanh khác
+      const bar = (Q, sid, x0, x1, y0, y1, anchors) => {
+        Q("shape_extrude", { id: sid, outline: { pts: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], closed: true }, depth: 0.02 });
+        Q("anchor_define", { shape: sid, name: "goc", kind: "point", origin: [0, 0, 0], dir: [0, 1, 0], up: [0, 0, -1] });
+        for (const [name, a] of Object.entries(anchors)) Q("anchor_define", { shape: sid, name, ...a });
+      };
+      const Z = { kind: "axis", origin: [0, 0, 0], dir: [0, 0, 1], up: [0, 1, 0] };
+      const at = (x, y) => ({ kind: "fixed", b: "ground.top", shift: [x, 0, y] });
+      const docOf = (aid) => findAssembly(readState(), aid).doc;
+      const posed = (aid, pose, warm) => { const d = docOf(aid); return solve(d, registryFor(d), { pose, warm }); };
+
+      // 1. bánh răng: couple ratio −0,5 chạy hai chiều
+      {
+        const Q = P("lk1", "Bánh răng hai chiều");
+        bar(Q, "gA", -0.05, 0.05, -0.05, 0.05, { axis: Z });
+        Q("part_add", { id: "ga", type: "shape:gA", place: { ...at(0, 0.3), a: "ga.goc" } });
+        Q("part_add", { id: "gb", type: "shape:gA", place: { ...at(0.3, 0.3), a: "gb.goc" } });
+        Q("part_add", { id: "gc", type: "shape:gA", place: { ...at(0.6, 0.3), a: "gc.goc" } });
+        Q("part_add", { id: "gd", type: "shape:gA", place: { ...at(0.9, 0.3), a: "gd.goc" } });
+        Q("joint_add", { id: "ja", kind: "revolute", axis: "ga.axis", moves: ["ga"] });
+        Q("joint_add", { id: "jb", kind: "revolute", axis: "gb.axis", moves: ["gb"], couple: { joint: "ja", ratio: -0.5 } });
+        Q("joint_add", { id: "jc", kind: "revolute", axis: "gc.axis", moves: ["gc"] });
+        Q("joint_add", { id: "jt", kind: "revolute", axis: "gd.axis", moves: ["gd"], couple: { joint: "jc", table: [[0, 0], [90, 45], [180, 180]] } });
+        const s = posed("lk1", { jb: 30 });
+        near("couple ngược: jb = 30 → ja", s.values.get("ja"), -60, 1e-6);
+        near("couple ngược: jb giữ 30", s.values.get("jb"), 30, 1e-6);
+        const want = solve(docOf("lk1"), registryFor(docOf("lk1")), { pose: { ja: -60 } }).parts.get("ga").world;
+        near("couple ngược: ma trận ga", Math.max(...s.parts.get("ga").world.map((x, i) => Math.abs(x - want[i]))), 0, 1e-9);
+        near("bảng ngược: jt = 112,5 → jc", posed("lk1", { jt: 112.5 }).values.get("jc"), 135, 1e-6);
+        mustThrow("pose cả khớp dẫn lẫn khớp ghép", () => Q("measure", { kind: "bounds", pose: { ja: 10, jb: 10 } }), /cùng một nhóm/);
+        Q("measure", { kind: "bounds", pose: { jb: 30 } });
+      }
+
+      // 2. tay quay – thanh truyền – con trượt: r = 0,1; L = 0,3; con trượt dọc x
+      const r = 0.1, L = 0.3;
+      const xSlide = (deg) => r * Math.cos(deg * DEGR) + Math.sqrt(L * L - (r * Math.sin(deg * DEGR)) ** 2) - (r + L);
+      const crank = (aid, slideX = r + L) => {
+        const Q = P(aid, "Tay quay con trượt");
+        bar(Q, "crankS", 0, r, -0.01, 0.01, { pivot: Z, tip: { kind: "point", origin: [r, 0, 0], dir: [1, 0, 0] } });
+        bar(Q, "rodS", 0, L, -0.008, 0.008, { pivot: Z, end: { kind: "point", origin: [L, 0, 0], dir: [1, 0, 0] } });
+        bar(Q, "slideS", -0.03, 0.03, -0.015, 0.015, { rail: { kind: "axis", origin: [0, 0, 0], dir: [1, 0, 0], up: [0, 1, 0] }, pin: { kind: "point", origin: [0, 0, 0], dir: [0, 1, 0] } });
+        Q("part_add", { id: "crank", type: "shape:crankS", material: "steel", place: { ...at(0, 0.5), a: "crank.goc" } });
+        Q("part_add", { id: "rod", type: "shape:rodS", material: "steel", place: { kind: "fixed", a: "rod.goc", b: "crank.goc", shift: [r, 0, 0] } });
+        Q("part_add", { id: "slider", type: "shape:slideS", material: "steel", place: { ...at(slideX, 0.5), a: "slider.goc" } });
+        Q("joint_add", { id: "jCrank", kind: "revolute", axis: "crank.pivot", moves: ["crank"], limits: [0, 180] });
+        Q("joint_add", { id: "jRod", kind: "revolute", axis: "rod.pivot", moves: ["rod"] });
+        Q("joint_add", { id: "jSlide", kind: "prismatic", axis: "slider.rail", moves: ["slider"], limits: [-0.25, 0.05] });
+        return Q;
+      };
+      {
+        const Q = crank("lk2");
+        const out = Q("loop_add", { id: "L", a: "rod.end", b: "slider.pin", solves: ["jRod", "jSlide"] });
+        if (!/Quét jCrank/.test(out) || /✗/.test(out)) fails.push(`loop_add tay quay: bảng quét sai:\n${out}`);
+        console.log(out.split("\n").slice(0, 3).join("\n"));
+        let warm;
+        for (const th of [0, 45, 90, 135, 180]) {
+          const s = posed("lk2", { jCrank: th }, warm);
+          warm = s.values;
+          near(`con trượt x(${th}°)`, s.values.get("jSlide"), xSlide(th), 1e-5);
+          near(`vòng khép ở ${th}°`, s.loopGap.get("L"), 0, 1e-6);
+        }
+        near("con trượt → tay quay (60°)", posed("lk2", { jSlide: xSlide(60) }).values.get("jCrank"), 60, 1e-4);
+        mustThrow("con trượt ngoài tầm với", () => posed("lk2", { jSlide: 0.04 }), /không tới được/);
+        if (!/Vòng kín[\s\S]*L: rod\.end ↔ slider\.pin/.test(Q("assembly_describe", {}))) fails.push("assembly_describe thiếu vòng kín");
+        mustThrow("couple cho khớp do vòng tính", () => Q("joint_add", { id: "jRod", kind: "revolute", axis: "rod.pivot", moves: ["rod"], couple: { joint: "jCrank", ratio: 1 } }), /couple/);
+        mustThrow("xoá khớp vòng đang tính", () => Q("joint_remove", { id: "jSlide" }), /loop_remove|cascade/);
+        mustThrow("lắp lệch làm hở vòng", () => Q("part_update", { id: "slider", place: { ...at(r + L + 0.005, 0.5), a: "slider.goc" } }), /lệch/);
+
+        // vật lý: động cơ ở tay quay, không trọng lực; con trượt theo đáp số, vòng giữ khép
+        Q("physics_setup", { gravity: [0, 0, 0], groundPlane: false });
+        Q("drive_add", { joint: "jCrank", kind: "speed", value: 90 });
+        const model = physicsModel(docOf("lk2"));
+        if (!model.joints.some((j) => j.kind === "point")) fails.push("mô hình vật lý thiếu khớp ghim của vòng");
+        const w = new World(model);
+        let worst = 0;
+        for (let i = 0; i < 240; i++) {
+          w.step(1 / 120);
+          if (i % 12 !== 11) continue;
+          const th = w.jointValueOf("jCrank") / DEGR;
+          if (th > 175) break;
+          worst = Math.max(worst, Math.abs(w.jointValueOf("jSlide") - xSlide(th)));
+        }
+        near("vật lý: con trượt theo tay quay", worst, 0, 0.002);
+      }
+      // lắp lệch 5 mm thì loop_add báo độ hở
+      {
+        const Q = crank("lk3", r + L + 0.005);
+        mustThrow("loop_add khi lắp lệch", () => Q("loop_add", { id: "L", a: "rod.end", b: "slider.pin", solves: ["jRod", "jSlide"] }), /lệch 5\.00 mm/);
+      }
+
+      // 3. xi lanh nâng thùng: bản lề H, tai thùng T0, chân xi lanh P; khớp dẫn là góc thùng
+      const H = [0, 0.5], T0 = [-0.6, 0.5], Pv = [-0.9, 0.2];
+      const ux = T0[0] - Pv[0], uy = T0[1] - Pv[1], L0 = Math.hypot(ux, uy);
+      const lug = (deg) => [H[0] + (T0[0] - H[0]) * Math.cos(deg * DEGR), H[1] - (T0[0] - H[0]) * Math.sin(deg * DEGR)];
+      const stroke = (deg) => Math.hypot(lug(deg)[0] - Pv[0], lug(deg)[1] - Pv[1]) - L0;
+      {
+        const Q = P("lk4", "Xi lanh nâng");
+        bar(Q, "trayS", -0.7, 0.05, 0, 0.05, { hinge: { ...Z, dir: [0, 0, -1] }, lug: { kind: "point", origin: [T0[0] - H[0], 0, 0], dir: [0, -1, 0] } });
+        bar(Q, "cylS", -0.04, 0.04, -0.04, 0.04, { pivot: Z, slide: { kind: "axis", origin: [0, 0, 0], dir: [ux / L0, uy / L0, 0], up: [0, 0, 1] } });
+        bar(Q, "rodS2", ux - 0.03, ux + 0.03, uy - 0.025, uy, { end: { kind: "point", origin: [ux, uy, 0], dir: [0, 1, 0] } });
+        Q("part_add", { id: "tray", type: "shape:trayS", material: "steel", place: { ...at(H[0], H[1]), a: "tray.goc" } });
+        Q("part_add", { id: "cyl", type: "shape:cylS", material: "steel", place: { ...at(Pv[0], Pv[1]), a: "cyl.goc" } });
+        Q("part_add", { id: "rod", type: "shape:rodS2", material: "steel", place: { kind: "fixed", a: "rod.goc", b: "cyl.goc" } });
+        Q("joint_add", { id: "nang", kind: "revolute", axis: "tray.hinge", moves: ["tray"], limits: [0, 50] });
+        Q("joint_add", { id: "xoay", kind: "revolute", axis: "cyl.pivot", moves: ["cyl"], limits: [-30, 60] });
+        Q("joint_add", { id: "day", kind: "prismatic", axis: "cyl.slide", moves: ["rod"], limits: [0, 0.6] });
+        const out = Q("loop_add", { id: "nangThung", a: "rod.end", b: "tray.lug", solves: ["xoay", "day"] });
+        if (!/Quét nang/.test(out) || /✗|⚠/.test(out)) fails.push(`loop_add xi lanh: bảng quét sai:\n${out}`);
+        let warm;
+        for (const th of [0, 10, 25, 40, 50]) {
+          const s = posed("lk4", { nang: th }, warm);
+          warm = s.values;
+          near(`hành trình piston ở ${th}°`, s.values.get("day"), stroke(th), 1e-5);
+        }
+        near("piston → góc thùng", posed("lk4", { day: stroke(33) }).values.get("nang"), 33, 0.01);
+
+        // vật lý: động cơ đẩy piston, có trọng lực; góc thùng theo quan hệ động học
+        Q("physics_setup", { gravity: [0, -9.81, 0], groundPlane: false });
+        Q("drive_add", { joint: "day", kind: "speed", value: 0.05, maxForce: 1e6 });
+        const w = new World(physicsModel(docOf("lk4")));
+        for (let i = 0; i < 240; i++) w.step(1 / 120);
+        const s = w.jointValueOf("day");
+        if (!(s > 0.05)) fails.push(`vật lý xi lanh: piston không đẩy (${s})`);
+        near("vật lý: góc thùng theo piston", w.jointValueOf("nang") / DEGR, posed("lk4", { day: s }).values.get("nang"), 0.5);
+
+        // cụm lưu lại giữ vòng; khớp do vòng tính trong cụm vẫn giải được
+        Q("part_save_as_type", { name: "xiLanhNang", expose: { day: "tray.goc" } });
+        const lib = readState().library.xiLanhNang;
+        if (!lib.doc.loops?.some((l) => l.id === "nangThung")) fails.push("part_save_as_type bỏ mất vòng");
+        else near("vòng trong cụm", solve(lib.doc, registryFor(lib.doc), { pose: { day: stroke(20) } }).values.get("nang"), 20, 0.01);
+      }
+
+      // 4. vật lý của couple (không qua physics.gears): bánh răng, thanh răng, bảng
+      {
+        const Q = P("lk5", "Couple vật lý");
+        bar(Q, "gS", -0.05, 0.05, -0.05, 0.05, { axis: Z, rail: { kind: "axis", origin: [0, 0, 0], dir: [1, 0, 0], up: [0, 1, 0] } });
+        for (const [id, x] of [["ga", 0], ["gb", 0.3], ["pin", 0.6], ["rack", 0.9], ["ta", 1.2], ["tb", 1.5]]) Q("part_add", { id, type: "shape:gS", material: "steel", place: { ...at(x, 0.5), a: `${id}.goc` } });
+        Q("joint_add", { id: "ja", kind: "revolute", axis: "ga.axis", moves: ["ga"] });
+        Q("joint_add", { id: "jb", kind: "revolute", axis: "gb.axis", moves: ["gb"], couple: { joint: "ja", ratio: -0.5 } });
+        const R = 0.04;
+        Q("joint_add", { id: "jp", kind: "revolute", axis: "pin.axis", moves: ["pin"] });
+        Q("joint_add", { id: "jr", kind: "prismatic", axis: "rack.rail", moves: ["rack"], couple: { joint: "jp", ratio: R * DEGR } });
+        Q("joint_add", { id: "jta", kind: "revolute", axis: "ta.axis", moves: ["ta"] });
+        Q("joint_add", { id: "jtb", kind: "revolute", axis: "tb.axis", moves: ["tb"], couple: { joint: "jta", table: [[0, 0], [90, 45], [180, 180]] } });
+        Q("physics_setup", { gravity: [0, 0, 0], groundPlane: false });
+        Q("drive_add", { joint: "ja", kind: "speed", value: 60 });
+        Q("drive_add", { joint: "jp", kind: "speed", value: 60 });
+        Q("drive_add", { joint: "jta", kind: "speed", value: 90 });
+        const w = new World(physicsModel(docOf("lk5")));
+        for (let i = 0; i < 180; i++) w.step(1 / 120);
+        near("vật lý couple: ωb/ωa = −0,5", w.byId.get("gb").w[2] / w.byId.get("ga").w[2], -0.5, 0.005);
+        near("vật lý couple: thanh răng v = ω·R", w.byId.get("rack").v[0] / (w.byId.get("pin").w[2] * R), 1, 0.01);
+        const ta = w.jointValueOf("jta") / DEGR, tb = w.jointValueOf("jtb") / DEGR;
+        const want = ta <= 90 ? ta / 2 : 45 + 1.5 * (ta - 90);
+        near(`vật lý couple: bảng (khớp dẫn ${ta.toFixed(1)}°)`, tb, want, Math.max(0.5, 0.01 * want));
+      }
+    }
+
     // kiểm tra theo lưới thật
     console.log("\n--- kiểm tra ---");
     {
@@ -1553,6 +2170,71 @@ async function selftest() {
       const phy = Q("check_physics", { duration: 0.5 });
       console.log(phy.split("\n").slice(0, 2).join("\n"));
       if (!/bay|kéo rời|năng lượng tăng/.test(phy)) fails.push(`check_physics không bắt hai hộp đặt xuyên nhau: ${phy}`);
+    }
+
+    // neo phải chạm vật liệu: hai tấm đứng, cần quay giữa hai tấm, đầu vòng ở khe giữa hai tấm
+    console.log("\n--- neo chạm vật liệu ---");
+    {
+      const expectThrow = (label, fn, re) => {
+        try { fn(); fails.push(`${label}: không báo lỗi`); } catch (e) {
+          if (!re.test(e.message)) fails.push(`${label}: lỗi khác mong đợi: ${e.message}`);
+          else console.log(`- ${label}: ${e.message.split("\n").slice(0, 2).join(" | ").slice(0, 200)}`);
+        }
+      };
+      const Q = P("nc", "Neo chạm vật liệu");
+      boxShape(Q, "tamS", [0.01, 0.1, 0.1]);
+      boxShape(Q, "canS", [0.08, 0.02, 0.08]);
+      boxShape(Q, "chotS", [0.11, 0.01, 0.01]);
+      Q("anchor_define", { shape: "canS", name: "dau", kind: "point", origin: [0, 0, 0.04], dir: [0, 0, 1] });
+      const lech = Q("anchor_define", { shape: "canS", name: "trucLech", kind: "axis", origin: [0, 0.03, 0], dir: [1, 0, 0], up: [0, 1, 0] });
+      if (!/trucLech cách vật liệu của canS: 20\.0 mm ⚠/.test(lech)) fails.push(`anchor_define không báo neo xa vật liệu: ${lech.split("\n")[1]}`);
+      // neo của tấm trái nằm ở khe giữa hai tấm (x = 0), ngang đầu cần
+      Q("anchor_define", { shape: "tamS", name: "giua", kind: "point", origin: [0.05, 0, 0.04], dir: [0, 0, 1] });
+      Q("anchor_define", { shape: "tamS", name: "trucGiua", kind: "axis", origin: [0.05, 0, 0.04], dir: [1, 0, 0], up: [0, 1, 0] });
+      Q("anchor_define", { shape: "tamS", name: "trucCan", kind: "axis", origin: [0.05, 0, 0], dir: [1, 0, 0], up: [0, 1, 0] });
+      Q("part_add", { id: "tamL", type: "shape:tamS", place: { kind: "onto", a: "tamL.bottom", b: "ground.top", at: [-0.05, 0] } });
+      Q("part_add", { id: "tamR", type: "shape:tamS", place: { kind: "onto", a: "tamR.bottom", b: "ground.top", at: [0.05, 0] } });
+      Q("part_add", { id: "can", type: "shape:canS", place: { kind: "coaxial", a: "can.axisX", b: "tamL.trucCan" } });
+      // can nằm giữa hai tấm, cùng độ cao tâm tấm; đầu can (z = 0,04) ngang neo tamL.giua
+      const cb = /\[([-\d.e]+), ([-\d.e]+), ([-\d.e]+)\] → \[([-\d.e]+), ([-\d.e]+), ([-\d.e]+)\]/.exec(Q("measure", { kind: "bounds", target: "can" }));
+      near("can giữa hai tấm (x min)", cb ? +cb[1] : 9, -0.04, 1e-4);
+      expectThrow("khớp có trục cách cần 20 mm", () => Q("joint_add", { id: "quayLech", kind: "revolute", axis: "can.trucLech", moves: ["can"] }), /không chạm vật liệu[\s\S]*✗ khớp quayLech: trục can.trucLech ↔ cụm dẫn \(can\): 20\.0 mm/);
+      const lenient = Q("joint_add", { id: "quayLech", kind: "revolute", axis: "can.trucLech", moves: ["can"], allowAir: "thử lối thoát" });
+      if (!/cho phép: thử lối thoát/.test(lenient)) fails.push(`allowAir không ghi chú: ${lenient}`);
+      Q("joint_remove", { id: "quayLech" });
+      const ok = Q("joint_add", { id: "quay", kind: "revolute", axis: "can.axisX", moves: ["can"], limits: [-30, 30] });
+      if (!/✓ khớp quay: trục can.axisX ↔ cụm dẫn/.test(ok) || !/✓ khớp quay: trục can.axisX ↔ cụm cha \(tamL\)/.test(ok)) fails.push(`khớp quay xuyên tấm phải ✓: ${ok}`);
+      // vòng: đầu cần trùng neo ở khe giữa hai tấm, hai điểm trùng 0 mm mà không có khối
+      expectThrow("vòng có đầu ở khe giữa hai tấm", () => Q("loop_add", { id: "L", a: "can.dau", b: "tamL.giua", solves: ["quay"] }), /✗ vòng L: tamL.giua ↔ cụm tamL: 45\.0 mm/);
+      const conn0 = Q("check_connections", {});
+      if (!/✓ khớp quay/.test(conn0) || /✗ khớp/.test(conn0)) fails.push(`check_connections trước khi khép vòng: ${conn0}`);
+      // chốt ghép cứng vào tấm trái, xuyên qua cả hai tấm ở đúng chỗ đó: cụm cứng của tamL có vật liệu
+      Q("part_add", { id: "chot", type: "shape:chotS", place: { kind: "coaxial", a: "chot.axisX", b: "tamL.trucGiua" } });
+      const loop = Q("loop_add", { id: "L", a: "can.dau", b: "tamL.giua", solves: ["quay"] });
+      if (!/✓ vòng L: tamL.giua ↔ cụm tamL: 0\.0 mm \(gần nhất: chot\)/.test(loop)) fails.push(`vòng sau khi thêm chốt phải ✓ nhờ chot: ${loop}`);
+      const conn = Q("check_connections", {});
+      console.log(conn.split("\n").slice(0, 4).join("\n"));
+      if (!/✓ vòng L: tamL.giua/.test(conn) || !/✓ vòng L: can.dau/.test(conn)) fails.push(`check_connections thiếu dòng vòng: ${conn}`);
+      // hai khối đứng yên chỉ chạm nhau, cách tấm 0,3 m: không được "bảo lãnh" lẫn nhau thành vật liệu của cụm đứng yên
+      box(Q, "dao1", [0.1, 0.1, 0.1], { kind: "fixed", a: "dao1.center", b: "tamL.center", shift: [0, 0, 0.3] });
+      box(Q, "dao2", [0.1, 0.1, 0.1], { kind: "fixed", a: "dao2.center", b: "dao1.center", shift: [0, 0, 0.1] });
+      const island = Q("check_connections", {});
+      if (!/✗ không bám vào gốc cụm đứng yên: dao1, dao2/.test(island)) fails.push(`check_connections không bắt cụm đảo lơ lửng: ${island}`);
+      Q("part_remove", { id: "dao1", cascade: true });
+
+      // xi lanh nâng (lk4): cán là khối nhỏ ở đầu, không chạm xi lanh — quét phải bắt "rời cụm cha"
+      const lk = call("check_connections", { assembly: "lk4" });
+      if (!/✗ nang = [\d.]+°: khớp day, cụm dẫn \(rod\) rời cụm cha \(cyl\)/.test(lk)) fails.push(`check_connections lk4 không bắt cán rời xi lanh: ${lk}`);
+      // pose cho check_*: xi lanh và thùng xa gần khác nhau theo góc nâng
+      const g0 = call("check_clearance", { assembly: "lk4", a: "cyl", b: "tray", pose: { nang: 0 } });
+      const g1 = call("check_clearance", { assembly: "lk4", a: "cyl", b: "tray", pose: { nang: 50 } });
+      console.log(`${g0}\n${g1}`);
+      if (!/^Tư thế \{"nang":0\}/.test(g0) || !/^Tư thế \{"nang":50\}/.test(g1) || g0.replace(/^[^:]*:/, "") === g1.replace(/^[^:]*:/, "")) fails.push(`check_clearance theo pose không đổi: ${g0} / ${g1}`);
+      if (!/^Tư thế \{"nang":25\}/.test(call("check_interference", { assembly: "lk4", pose: { nang: 25 } }))) fails.push("check_interference không ghi tư thế");
+      if (!/^Tư thế \{"nang":25\}/.test(call("check_floating", { assembly: "lk4", pose: { nang: 25 } }))) fails.push("check_floating không ghi tư thế");
+      expectThrow("check_clearance pose ngoài giới hạn", () => call("check_clearance", { assembly: "lk4", a: "cyl", b: "tray", pose: { nang: 90 } }), /ngoài giới hạn/);
+      // tham số lạ bị từ chối (trước đây pose truyền vào check_clearance bị lặng lẽ bỏ qua)
+      expectThrow("tham số lạ", () => Q("measure", { kind: "bounds", foo: 1 }), /measure không có tham số foo/);
     }
 
     // dọn dẹp khi xoá: khớp ghép, động cơ, vật lý, decal; kiểm tham số
@@ -1583,6 +2265,10 @@ async function selftest() {
       if (d.decals?.length) fails.push(`part_remove còn decal: ${d.decals.map((x) => x.id)}`);
       Q("physics_setup", {}); // trước đây ném "physics.initial: không có bộ phận A"
     }
+  } catch (e) {
+    // dừng giữa chừng: in các lỗi đã gom trước đó, thường là nguyên nhân gốc
+    if (fails.length) console.log(`\nLỗi đã gom trước khi dừng (${fails.length}):\n${fails.join("\n")}`);
+    throw e;
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -1592,7 +2278,7 @@ async function selftest() {
 
 if (process.argv.includes("--selftest")) await selftest();
 else {
-  serveMcp({ server: SERVER, instructions: CLAUDE_INSTRUCTIONS, tools: TOOLS, handlers });
+  serveMcp({ server: SERVER, instructions: CLAUDE_INSTRUCTIONS, tools: TOOLS, handlers, strictArgs: true });
   // nướng sẵn lưới cho các bản đã có (lần đầu có thể mất vài chục giây với thân xe), chạy sau khi đã nhận lệnh
   setTimeout(() => {
     for (const a of readState().assemblies) {

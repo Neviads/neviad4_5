@@ -28,6 +28,14 @@ type ViewRequest = {
   quality?: "preview" | "final";
 };
 type BridgeState = { version: number; assemblies: Entry[]; view: ViewRequest | null };
+/** Kết quả giải tư thế cho thanh trượt: giá trị mọi khớp và nhóm liên động (couple, vòng kín). */
+type LinkInfo = { values: Record<string, number>; dependsOn: Record<string, string>; groups: Record<string, string>; groupDrivers: Record<string, string[]> };
+const linkOf = (view: AssemblyView): LinkInfo => ({
+  values: Object.fromEntries(view.solved.values),
+  dependsOn: Object.fromEntries(view.solved.dependsOn),
+  groups: Object.fromEntries(view.solved.groups),
+  groupDrivers: Object.fromEntries(view.solved.groupDrivers),
+});
 
 const POLL_MS = 700;
 const CAP_W = 960, CAP_H = 640;
@@ -102,6 +110,7 @@ export default function Studio() {
   const [sync, setSync] = useState<"connecting" | "online" | "offline">("connecting");
   const [picked, setPicked] = useState<string | null>(null);
   const [pose, setPose] = useState<Record<string, number>>({});
+  const [link, setLink] = useState<LinkInfo | null>(null);
   const [capturing, setCapturing] = useState<string | null>(null);
   const versionRef = useRef(-1);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -256,7 +265,12 @@ export default function Studio() {
         if (cancelled || !three.current) return;
         try {
           const view = buildAssembly(doc, t.kit);
-          view.setPose(pose);
+          try {
+            view.setPose(pose);
+          } catch (e) {
+            console.error(e); // tư thế cũ không còn hợp với bản sửa mới: giữ tư thế nghỉ
+          }
+          setLink(linkOf(view));
           t.stage.scene.add(view.root);
           t.stage.applyScene(doc.scene).catch((e) => console.error(e));
           viewRef.current = { key, view };
@@ -313,11 +327,14 @@ export default function Studio() {
   };
 
   useEffect(() => {
+    const view = viewRef.current?.view;
+    if (!view) return;
     try {
-      viewRef.current?.view.setPose(pose);
+      view.setPose(pose);
     } catch (e) {
       console.error(e);
     }
+    setLink(linkOf(view));
   }, [pose]);
 
   // Chụp ảnh cho Claude: mỗi yêu cầu xem (key) chạy một lần, bằng renderer riêng để không đụng góc nhìn của người dùng.
@@ -380,9 +397,22 @@ export default function Studio() {
     })();
   }, [state.view, state.assemblies]);
 
-  // khớp ghép (couple) tự đi theo khớp dẫn: chỉ khớp dẫn có thanh trượt và chạy được
-  const joints = (selected?.doc.joints ?? []).filter((j) => !j.couple);
-  const limitsOf = (j: (typeof joints)[number]): [number, number] => j.limits ?? (j.kind === "revolute" ? [-180, 180] : [-0.1, 0.1]);
+  // Mọi khớp có thanh trượt. Khớp phụ thuộc (ghép theo khớp khác, hoặc do vòng kín tính) hiện giá trị đã giải; kéo nó thì
+  // bộ giải suy ngược ra khớp dẫn của nhóm. "Chạy cơ cấu" chỉ chạy khớp dẫn.
+  const allJoints = selected?.doc.joints ?? [];
+  const solvedByLoop = new Set((selected?.doc.loops ?? []).flatMap((l) => l.solves));
+  const isDependent = (id: string) => (link ? id in link.dependsOn : !!allJoints.find((j) => j.id === id)?.couple || solvedByLoop.has(id));
+  const joints = allJoints.filter((j) => !isDependent(j.id));
+  const limitsOf = (j: (typeof allJoints)[number]): [number, number] => j.limits ?? (j.kind === "revolute" ? [-180, 180] : [-0.1, 0.1]);
+  const driversOf = (id: string) => (link ? link.groupDrivers[link.groups[id]] ?? [] : []);
+  /** đặt một khớp, bỏ các khớp khác cùng nhóm liên động (mỗi nhóm chỉ đặt một khớp) */
+  const setJoint = (id: string, v: number) =>
+    setPose((p) => {
+      const g = link?.groups[id];
+      const next = Object.fromEntries(Object.entries(p).filter(([k]) => k === id || !g || link!.groups[k] !== g));
+      next[id] = v;
+      return next;
+    });
 
   // "Chạy cơ cấu": mọi khớp dẫn đi từ mút dưới lên mút trên rồi về, lặp lại; khớp quay đủ một vòng (chu kỳ 0–360°)
   // thì quay một chiều, vì đầu và cuối vòng là cùng một tư thế
@@ -397,7 +427,7 @@ export default function Studio() {
       const swing = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
       const turn = phase - Math.floor(phase);
       setPose((p) => ({
-        ...p,
+        ...Object.fromEntries(Object.entries(p).filter(([k]) => !isDependent(k))),
         ...Object.fromEntries(joints.map((j) => {
           const [lo, hi] = limitsOf(j);
           return [j.id, lo + (j.kind === "revolute" && hi - lo === 360 ? turn : swing) * (hi - lo)];
@@ -461,7 +491,7 @@ export default function Studio() {
             </span>
           </div>
         )}
-        {joints.length > 0 && (
+        {allJoints.length > 0 && (
           <div className="absolute bottom-3 left-3 w-72 space-y-2 rounded-lg bg-black/55 p-3 text-[12px] backdrop-blur">
             <div className="flex items-center gap-2">
               <button type="button" className="rounded bg-white/10 px-2 py-1 hover:bg-white/20" onClick={() => setPlaying((x) => !x)}>
@@ -473,13 +503,19 @@ export default function Studio() {
                 <option value="6">6 s/chu kỳ</option>
               </select>
             </div>
-            {joints.map((j) => {
+            {allJoints.map((j) => {
               const [lo, hi] = limitsOf(j);
-              const v = pose[j.id] ?? 0;
+              const v = link?.values[j.id] ?? pose[j.id] ?? 0;
+              const dep = isDependent(j.id), drv = driversOf(j.id);
+              const readOnly = dep && drv.length !== 1;
               return (
-                <label key={j.id} className="block">
-                  <span className="flex justify-between"><span>{j.id} ({j.kind})</span><span>{j.kind === "revolute" ? `${v.toFixed(0)}°` : `${(v * 1000).toFixed(1)} mm`}</span></span>
-                  <input type="range" className="w-full" min={lo} max={hi} step={(hi - lo) / 360} value={v} onChange={(e) => setPose((p) => ({ ...p, [j.id]: Number(e.target.value) }))} />
+                <label key={j.id} className={`block ${dep ? "text-[#aab2bd]" : ""}`}>
+                  <span className="flex justify-between">
+                    <span>{j.id} ({j.kind}){dep && <span className="ml-1 text-[11px]">↻ theo {drv.join(", ") || "vòng"}</span>}</span>
+                    <span>{j.kind === "revolute" ? `${v.toFixed(0)}°` : `${(v * 1000).toFixed(1)} mm`}</span>
+                  </span>
+                  <input type="range" className="w-full" min={Math.min(lo, v)} max={Math.max(hi, v)} step={(hi - lo) / 360} value={v} disabled={readOnly}
+                    onChange={(e) => setJoint(j.id, Number(e.target.value))} />
                 </label>
               );
             })}

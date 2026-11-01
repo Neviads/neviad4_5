@@ -76,7 +76,19 @@ export function describeTree(doc: AssemblyDoc, solved: Solved, registry: Registr
   walk("ground", 1);
   if (doc.joints.length) {
     lines.push("", "## Khớp");
-    for (const j of doc.joints) lines.push(`- ${j.id}: ${j.kind} quanh ${j.axis}, giá trị ${j.value ?? 0}${j.kind === "revolute" ? "°" : " m"}${j.couple ? `, ghép theo ${j.couple.joint}${j.couple.table ? ` theo bảng ${JSON.stringify(j.couple.table)}` : j.couple.ratio !== undefined ? ` × ${j.couple.ratio}` : " (lăn)"}` : ""}${j.limits ? `, giới hạn ${JSON.stringify(j.limits)}` : ""}; kéo theo: ${(solved.clusters.get(j.id) ?? []).join(", ")}`);
+    for (const j of doc.joints) {
+      const dep = solved.dependsOn.get(j.id);
+      const role = !dep ? "khớp dẫn" : dep.startsWith("loop:") ? `do vòng ${dep.slice(5)} tính` : `ghép theo ${j.couple!.joint}${j.couple!.table ? ` theo bảng ${JSON.stringify(j.couple!.table)}` : j.couple!.ratio !== undefined ? ` × ${j.couple!.ratio}` : " (lăn)"}`;
+      const v = solved.values.get(j.id) ?? 0;
+      lines.push(`- ${j.id}: ${j.kind} quanh ${j.axis}, ${role}, giá trị ${+v.toFixed(4)}${j.kind === "revolute" ? "°" : " m"}${j.limits ? `, giới hạn ${JSON.stringify(j.limits)}` : ""}; kéo theo: ${(solved.clusters.get(j.id) ?? []).join(", ")}`);
+    }
+  }
+  if (doc.loops?.length) {
+    lines.push("", "## Vòng kín");
+    for (const l of doc.loops) {
+      const g = solved.groups.get(l.solves[0]);
+      lines.push(`- ${l.id}: ${l.a} ↔ ${l.b}, tính ${l.solves.join(", ")}; khớp dẫn ${(g && solved.groupDrivers.get(g)?.join(", ")) || "(không có)"}; hở ${((solved.loopGap.get(l.id) ?? 0) * 1000).toFixed(3)} mm`);
+    }
   }
   if (doc.routes.length) {
     lines.push("", "## Dây");

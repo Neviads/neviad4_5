@@ -6,4 +6,5 @@
 import type { AssemblyDoc } from "../core/types";
 import { keyHash } from "../shapes/bake";
 
-export const physicsKey = (doc: AssemblyDoc) => keyHash(JSON.stringify([doc.parts, doc.joints, doc.shapes, doc.types, doc.materials, doc.physics]));
+// vòng kín chỉ thêm vào khoá khi có, để khoá của tài liệu cũ không đổi
+export const physicsKey = (doc: AssemblyDoc) => keyHash(JSON.stringify([doc.parts, doc.joints, doc.shapes, doc.types, doc.materials, doc.physics, ...(doc.loops ? [doc.loops] : [])]));

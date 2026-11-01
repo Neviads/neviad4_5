@@ -1,13 +1,14 @@
 /**
  * Bộ giải vật rắn XPBD (Müller và cộng sự, "Detailed Rigid Body Simulation with Extended Position Based Dynamics",
  * 2020): mỗi bước chia substep; tích phân vị trí, chiếu ràng buộc vị trí (khớp, tiếp xúc, ma sát tĩnh), suy ra vận
- * tốc, rồi bước vận tốc (ma sát động, phục hồi, động cơ, bánh răng). Va chạm bao lồi–bao lồi theo kiểu "đỉnh trong
+ * tốc, rồi bước vận tốc (ma sát động, phục hồi, động cơ, khớp ghép). Khớp ghép (couple, gồm bánh răng) ràng buộc giá trị
+ * hai khớp ở cả mức vị trí và vận tốc, hai chiều; khớp "point" ghim hai vật tại một điểm (vòng kín). Va chạm bao lồi–bao lồi theo kiểu "đỉnh trong
  * bao lồi kia" (nhiều điểm tiếp xúc, ổn định khi nằm yên) và với mặt phẳng y = 0. Không phụ thuộc three.
  */
 
 import type { M4, V3 } from "../core/math";
 import { type M3, type Q, invInertiaWorld, m3, poseMatrix, q, v } from "./math";
-import type { BodyModel, JointModel, PhysicsModel } from "./model";
+import type { BodyModel, CoupleModel, JointModel, PhysicsModel } from "./model";
 
 interface Plane {
   n: V3;
@@ -65,6 +66,32 @@ interface JointState {
   b: Body | null;
   /** hướng tương đối ban đầu qB⁻¹·qA (khớp trượt, khớp cố định giữ nguyên) */
   qrel: Q;
+  /** giá trị khớp quay cộng dồn (rad) và góc thô ở cuối substep trước, để đếm được nhiều vòng */
+  acc: number;
+  raw: number;
+}
+
+interface CoupleState {
+  lead: JointState;
+  follow: JointState;
+  ratio?: number;
+  table?: [number, number][];
+}
+
+const wrapPi = (x: number) => x - 2 * Math.PI * Math.round(x / (2 * Math.PI));
+
+/** Nội suy bảng [[x, y], ...] và độ dốc đoạn đang ở (ngoài bảng: giữ mút, dốc 0). */
+function tableAt(t: [number, number][], x: number): { y: number; k: number } {
+  if (x <= t[0][0]) return { y: t[0][1], k: 0 };
+  for (let i = 1; i < t.length; i++) {
+    const [x1, y1] = t[i];
+    if (x <= x1) {
+      const [x0, y0] = t[i - 1];
+      const k = (y1 - y0) / (x1 - x0);
+      return { y: y0 + k * (x - x0), k };
+    }
+  }
+  return { y: t[t.length - 1][1], k: 0 };
 }
 
 const ZERO: V3 = [0, 0, 0];
@@ -156,7 +183,7 @@ export class World {
   t = 0;
   /** sự kiện tiếp xúc của bước vừa chạy */
   events: ContactEvent[] = [];
-  private gears: { a: JointState; b: JointState; ratio: number }[] = [];
+  private couples: CoupleState[] = [];
   private noCollide = new Set<string>();
 
   constructor(model: PhysicsModel) {
@@ -196,13 +223,15 @@ export class World {
     }
     for (const jm of model.joints) {
       const a = this.byId.get(jm.a)!, b = jm.b ? this.byId.get(jm.b)! : null;
-      this.joints.push({ m: jm, a, b, qrel: q.mul(q.conj(b ? b.q : q.identity()), a.q) });
+      this.joints.push({ m: jm, a, b, qrel: q.mul(q.conj(b ? b.q : q.identity()), a.q), acc: 0, raw: 0 });
       // hai vật nối bằng khớp không va chạm nhau (bánh và thân xe chồng khung bao)
       if (b) this.noCollide.add([a.id, b.id].sort().join("|"));
     }
-    for (const g of model.gears) {
-      const a = this.joints.find((j) => j.m.id === g.a), b = this.joints.find((j) => j.m.id === g.b);
-      if (a && b) this.gears.push({ a, b, ratio: g.ratio });
+    // bánh răng của mô hình bản 1 (ratio·ωa + ωb = 0) là khớp ghép b = −ratio·a
+    const couples: CoupleModel[] = [...(model.couples ?? []), ...(model.gears ?? []).map((g) => ({ id: g.id, lead: g.a, follow: g.b, ratio: -g.ratio }))];
+    for (const c of couples) {
+      const lead = this.joints.find((j) => j.m.id === c.lead), follow = this.joints.find((j) => j.m.id === c.follow);
+      if (lead && follow && lead.m.kind !== "point" && follow.m.kind !== "point") this.couples.push({ lead, follow, ratio: c.ratio, table: c.table });
     }
     for (const [id, init] of Object.entries(model.initial)) this.setVelocity(id, init.v, init.w);
   }
@@ -286,6 +315,9 @@ export class World {
     const cands = this.candidates(dt);
     const impulses = new Map<string, ContactEvent>();
     for (let s = 0; s < n; s++) {
+      // giá trị đầu substep của khớp có động cơ tốc độ: đích của phần vị trí là giá trị này + tốc độ × h
+      const speedStart = new Map<JointState, number>();
+      for (const j of this.joints) if (j.m.motor?.kind === "speed" && j.m.kind !== "point" && j.m.kind !== "fixed") speedStart.set(j, this.jointValue(j));
       // tích phân
       for (const b of this.bodies) {
         if (b.fixed) continue;
@@ -304,6 +336,8 @@ export class World {
       }
       // khớp
       for (const j of this.joints) this.solveJoint(j, h);
+      for (const c of this.couples) this.solveCouplePosition(c);
+      for (const [j, v0] of speedStart) this.solveMotorPosition(j, v0, h);
       // tiếp xúc
       const active: Contact[] = [];
       for (const c of cands) {
@@ -379,7 +413,13 @@ export class World {
       }
       // động cơ tốc độ, bánh răng (mức vận tốc)
       for (const j of this.joints) if (j.m.motor?.kind === "speed") this.solveMotor(j, h);
-      for (const g of this.gears) this.solveGear(g);
+      for (const c of this.couples) this.solveCoupleVelocity(c);
+      for (const j of this.joints) {
+        if (j.m.kind !== "revolute") continue;
+        const r = this.rawAngle(j);
+        j.acc += wrapPi(r - j.raw);
+        j.raw = r;
+      }
       this.t += h;
     }
     this.events = [...impulses.values()];
@@ -393,6 +433,11 @@ export class World {
 
   private solveJoint(j: JointState, h: number) {
     const { a, b, m } = j;
+    if (m.kind === "point") {
+      const { pa, pb, ra, rb } = this.worldPivot(j);
+      applyPositional(a, b, ra, rb, v.sub(pb, pa), 0, h);
+      return;
+    }
     if (m.kind === "revolute") {
       const a1 = q.rotate(a.q, m.axisA), a2 = b ? q.rotate(b.q, m.axisB) : m.axisB;
       applyAngular(a, b, v.cross(a1, a2));
@@ -425,29 +470,122 @@ export class World {
       if (!a.fixed) a.w = v.add(a.w, v.scale(invInertiaWorld(a.invI, a.q, ax), dl));
       if (b && !b.fixed) b.w = v.sub(b.w, v.scale(invInertiaWorld(b.invI, b.q, ax), dl));
     } else if (m.kind === "prismatic") {
-      const ax = b ? q.rotate(b.q, m.axisB) : m.axisB;
-      const { ra, rb } = this.worldPivot(j);
-      const rel = v.dot(v.sub(pointVel(a, ra), b ? pointVel(b, rb) : ZERO), ax);
-      const w = invW(a, ra, ax) + invW(b, rb, ax);
-      if (w <= 0) return;
-      let dl = (target - rel) / w;
+      const f = this.jointFrame(j);
+      const rel = this.jointRate(j, f);
+      if (f.w <= 0) return;
+      let dl = (target - rel) / f.w;
       if (m.motor!.maxForce !== undefined) dl = Math.max(-m.motor!.maxForce * h, Math.min(m.motor!.maxForce * h, dl));
-      applyImpulse(a, b, ra, rb, v.scale(ax, dl));
+      this.kickJoint(j, f, dl);
     }
   }
 
-  private solveGear(g: { a: JointState; b: JointState; ratio: number }) {
-    const omega = (j: JointState) => {
-      const ax = q.rotate(j.a.q, j.m.axisA);
-      return { ax, w: v.dot(v.sub(j.a.w, j.b ? j.b.w : ZERO), ax) };
-    };
-    const A = omega(g.a), B = omega(g.b);
-    const C = g.ratio * A.w + B.w;
-    const k = (j: JointState, ax: V3) => (j.a.fixed ? 0 : v.dot(ax, invInertiaWorld(j.a.invI, j.a.q, ax)));
-    const den = g.ratio * g.ratio * k(g.a, A.ax) + k(g.b, B.ax);
+  /** Góc thô của khớp quay quanh trục (−π, π], so với lúc t = 0. */
+  private rawAngle(j: JointState): number {
+    const rel = q.mul(q.conj(j.b ? j.b.q : q.identity()), j.a.q);
+    const dq = q.mul(rel, q.conj(j.qrel)); // phép quay tương đối trong khung của b (khung vật trùng thế giới lúc t = 0)
+    return 2 * Math.atan2(v.dot([dq[0], dq[1], dq[2]], j.m.axisB), dq[3]);
+  }
+
+  /** Giá trị khớp (rad hoặc m) so với lúc t = 0; khớp quay cộng dồn qua nhiều vòng. */
+  jointValue(j: JointState): number {
+    if (j.m.kind === "revolute") return j.acc + wrapPi(this.rawAngle(j) - j.raw);
+    const { pa, pb } = this.worldPivot(j);
+    const ax = j.b ? q.rotate(j.b.q, j.m.axisB) : j.m.axisB;
+    return v.dot(v.sub(pa, pb), ax);
+  }
+
+  /** Giá trị khớp theo id (rad hoặc m), cho selftest và trang. */
+  jointValueOf(id: string): number | undefined {
+    const j = this.joints.find((x) => x.m.id === id);
+    return j && j.m.kind !== "point" && j.m.kind !== "fixed" ? this.jointValue(j) : undefined;
+  }
+
+  /** Trục thế giới của khớp, khối lượng nghịch đảo theo toạ độ khớp, và hai cánh tay đòn (khớp trượt). */
+  private jointFrame(j: JointState): { n: V3; w: number; ra: V3; rb: V3 } {
+    if (j.m.kind === "revolute") {
+      const n = q.rotate(j.a.q, j.m.axisA);
+      const w = (j.a.fixed ? 0 : v.dot(n, invInertiaWorld(j.a.invI, j.a.q, n))) + (!j.b || j.b.fixed ? 0 : v.dot(n, invInertiaWorld(j.b.invI, j.b.q, n)));
+      return { n, w, ra: ZERO, rb: ZERO };
+    }
+    // khớp trượt: đổi toạ độ bằng tịnh tiến thuần (khoá góc của khớp giữ hai vật cùng hướng, đẩy lệch tâm chỉ sinh
+    // mô-men mà khoá góc lại phải triệt, làm khâu nhẹ rung)
+    const n = j.b ? q.rotate(j.b.q, j.m.axisB) : j.m.axisB;
+    const { ra, rb } = this.worldPivot(j);
+    return { n, w: (j.a.fixed ? 0 : j.a.invMass) + (!j.b || j.b.fixed ? 0 : j.b.invMass), ra, rb };
+  }
+
+  /** Dời toạ độ khớp theo "xung" tổng quát p ở mức vị trí: a nhận +p, vật cha b nhận −p. */
+  private shiftJoint(j: JointState, f: { n: V3; ra: V3; rb: V3 }, p: number) {
+    const { a, b } = j;
+    if (j.m.kind === "revolute") {
+      if (!a.fixed) rotateBy(a, invInertiaWorld(a.invI, a.q, v.scale(f.n, p)));
+      if (b && !b.fixed) rotateBy(b, invInertiaWorld(b.invI, b.q, v.scale(f.n, -p)));
+      return;
+    }
+    if (!a.fixed) a.x = v.addScaled(a.x, f.n, p * a.invMass);
+    if (b && !b.fixed) b.x = v.addScaled(b.x, f.n, -p * b.invMass);
+  }
+
+  /** Như shiftJoint nhưng ở mức vận tốc. */
+  private kickJoint(j: JointState, f: { n: V3; ra: V3; rb: V3 }, p: number) {
+    const { a, b } = j;
+    if (j.m.kind === "revolute") {
+      if (!a.fixed) a.w = v.add(a.w, invInertiaWorld(a.invI, a.q, v.scale(f.n, p)));
+      if (b && !b.fixed) b.w = v.sub(b.w, invInertiaWorld(b.invI, b.q, v.scale(f.n, p)));
+      return;
+    }
+    if (!a.fixed) a.v = v.addScaled(a.v, f.n, p * a.invMass);
+    if (b && !b.fixed) b.v = v.addScaled(b.v, f.n, -p * b.invMass);
+  }
+
+  private jointRate(j: JointState, f: { n: V3; ra: V3; rb: V3 }): number {
+    if (j.m.kind === "revolute") return v.dot(v.sub(j.a.w, j.b ? j.b.w : ZERO), f.n);
+    return v.dot(v.sub(pointVel(j.a, f.ra), j.b ? pointVel(j.b, f.rb) : ZERO), f.n);
+  }
+
+  /**
+   * Phần vị trí của động cơ tốc độ: kéo giá trị khớp về (đầu substep + tốc độ·h), lực giới hạn bởi maxForce (λ ≤ F·h²).
+   * Chỉ mức vận tốc thì tải nặng nối qua vòng kín (thùng trên cán piston) đè được khớp: hiệu chỉnh vị trí của chốt chia
+   * theo khối lượng nên khâu nhẹ bị đẩy lùi trước khi động cơ kịp tác dụng.
+   */
+  private solveMotorPosition(j: JointState, v0: number, h: number) {
+    const C = this.jointValue(j) - (v0 + j.m.motor!.value * h);
+    if (Math.abs(C) < 1e-12) return;
+    const f = this.jointFrame(j);
+    if (f.w <= 0) return;
+    let dl = -C / f.w;
+    const max = j.m.motor!.maxForce;
+    if (max !== undefined) dl = Math.max(-max * h * h, Math.min(max * h * h, dl));
+    this.shiftJoint(j, f, dl);
+  }
+
+  /** f(lead) và độ dốc k = df/dlead của khớp ghép. */
+  private coupleMap(c: CoupleState, lead: number): { y: number; k: number } {
+    return c.table ? tableAt(c.table, lead) : { y: (c.ratio ?? 0) * lead, k: c.ratio ?? 0 };
+  }
+
+  /** C = follow − f(lead) = 0, chiếu ở mức vị trí (XPBD, cứng tuyệt đối): đẩy khớp nào thì khớp kia cũng chạy. */
+  private solveCouplePosition(c: CoupleState) {
+    const { y, k } = this.coupleMap(c, this.jointValue(c.lead));
+    const C = this.jointValue(c.follow) - y;
+    if (Math.abs(C) < 1e-12) return;
+    const fl = this.jointFrame(c.lead), ff = this.jointFrame(c.follow);
+    const den = ff.w + k * k * fl.w;
     if (den <= 0) return;
     const dl = -C / den;
-    if (!g.a.a.fixed) g.a.a.w = v.add(g.a.a.w, v.scale(invInertiaWorld(g.a.a.invI, g.a.a.q, A.ax), g.ratio * dl));
-    if (!g.b.a.fixed) g.b.a.w = v.add(g.b.a.w, v.scale(invInertiaWorld(g.b.a.invI, g.b.a.q, B.ax), dl));
+    this.shiftJoint(c.follow, ff, dl);
+    this.shiftJoint(c.lead, fl, -k * dl);
+  }
+
+  /** rate(follow) = k·rate(lead) ở mức vận tốc, sau động cơ (vận tốc khớp đúng tỉ số ngay trong bước). */
+  private solveCoupleVelocity(c: CoupleState) {
+    const { k } = this.coupleMap(c, this.jointValue(c.lead));
+    const fl = this.jointFrame(c.lead), ff = this.jointFrame(c.follow);
+    const C = this.jointRate(c.follow, ff) - k * this.jointRate(c.lead, fl);
+    const den = ff.w + k * k * fl.w;
+    if (den <= 0 || Math.abs(C) < 1e-14) return;
+    const dl = -C / den;
+    this.kickJoint(c.follow, ff, dl);
+    this.kickJoint(c.lead, fl, -k * dl);
   }
 }

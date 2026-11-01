@@ -148,11 +148,29 @@ export interface Joint {
   axis: string; // "id.anchor" kiểu axis
   moves: string[];
   limits?: [number, number]; // revolute: độ; prismatic: mét
-  value?: number; // tư thế đang xem
-  /** Khớp ghép: giá trị = ratio × giá trị khớp `joint` (+ value). Bỏ ratio khi bánh (revolute) lăn theo khớp trượt: tự tính từ bán kính trục.
+  value?: number; // tư thế đang xem (chỉ khớp dẫn; khớp ghép và khớp do vòng tính thì bỏ qua)
+  /** Khớp ghép: giá trị = ratio × giá trị khớp `joint`. Bỏ ratio khi bánh (revolute) lăn theo khớp trượt: tự tính từ bán kính trục.
    *  table [[giá trị khớp dẫn, giá trị khớp này], ...] (tăng dần theo khớp dẫn) thay cho ratio: nội suy từng đoạn, ngoài bảng giữ giá trị mút,
-   *  cho cơ cấu chạy theo nhiều giai đoạn (cam, nòng khoá rồi mới lật). */
+   *  cho cơ cấu chạy theo nhiều giai đoạn (cam, nòng khoá rồi mới lật).
+   *  Ghép chạy HAI chiều khi đặt tư thế: pose cho khớp ghép một giá trị tuyệt đối thì bộ giải suy ngược ra khớp dẫn. */
   couple?: { joint: string; ratio?: number; table?: [number, number][] };
+  /** lý do trục khớp được phép nằm xa vật liệu (MCP joint_add kiểm trục chạm vật liệu hai phía); chỉ là ghi chú */
+  allowAir?: string;
+}
+
+/**
+ * Vòng kín của cơ cấu nhiều khâu (xi lanh nâng, tay quay–thanh truyền, bốn khâu): gốc điểm neo `a` và gốc điểm neo `b`
+ * (ở hai nhánh khác nhau của cây lắp ráp, hoặc `b` trên ground) phải trùng nhau ở mọi tư thế. Các khớp trong `solves`
+ * do bộ giải tính ra (Gauss–Newton), không đặt tay; mỗi khớp đó phải kéo theo đúng một trong hai điểm. Khớp tự do còn
+ * lại của nhóm là khớp dẫn; pose đặt khớp dẫn hoặc bất kỳ khớp nào trong nhóm (suy ngược).
+ */
+export interface Loop {
+  id: string;
+  a: string;
+  b: string;
+  solves: string[];
+  /** lý do hai đầu vòng được phép nằm xa vật liệu (MCP loop_add kiểm); chỉ là ghi chú */
+  allowAir?: string;
 }
 
 export interface Route {
@@ -250,6 +268,8 @@ export interface AssemblyDoc {
   title: string;
   parts: PartInstance[];
   joints: Joint[];
+  /** Vòng kín (loop_add). */
+  loops?: Loop[];
   routes: Route[];
   shapes?: ShapeNode[];
   materials?: Record<string, MaterialDef>;

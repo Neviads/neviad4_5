@@ -4,16 +4,17 @@
  *   trong doc.physics.free bị bỏ (vật thành tự do); bộ phận gắn ground mặc định đứng yên;
  * - khối lượng, trọng tâm, tensor quán tính: tích phân tứ diện có dấu trên lưới kín (lưới hở thì dùng bao lồi) nhân
  *   khối lượng riêng của vật liệu; doc.physics.bodies ghi đè khối lượng;
- * - va chạm: bao lồi của mỗi vật (manifold hull), giảm còn ≤ MAX_HULL đỉnh.
+ * - va chạm: bao lồi của mỗi vật (manifold hull), giảm còn ≤ MAX_HULL đỉnh;
+ * - couple của khớp → ràng buộc ghép hai chiều (CoupleModel); vòng kín (doc.loops) → khớp ghim "point" giữa hai vật.
  */
 
 import { type M4, type V3, chain, translation } from "../core/math";
-import { AssemblyError } from "../core/solve";
+import { AssemblyError, rollingRatio } from "../core/solve";
 import type { AssemblyDoc } from "../core/types";
 import { kernel, toManifold } from "../shapes/kernel";
 import { type FlatPart, flatten, materialProps, worldGeometry } from "./geometry";
 import type { M3 } from "./math";
-import type { BodyModel, JointModel, PhysicsConfig, PhysicsModel } from "./model";
+import type { BodyModel, CoupleModel, JointModel, PhysicsConfig, PhysicsModel } from "./model";
 
 const MAX_HULL = 256;
 const DEG = Math.PI / 180;
@@ -85,7 +86,7 @@ function hullMesh(flat: number[], limit = 40000): { pos: number[]; idx: number[]
 
 export function buildPhysicsModel(doc: AssemblyDoc): PhysicsModel {
   const cfg: PhysicsConfig = doc.physics ?? {};
-  const { parts, joints } = flatten(doc);
+  const { parts, joints, loops } = flatten(doc);
   const byPath = new Map(parts.map((p) => [p.path, p]));
   const free = new Set(cfg.free ?? []);
   for (const f of free) if (!joints.some((j) => j.id === f)) throw new AssemblyError(`physics.free: không có khớp "${f}". Có: ${joints.map((j) => j.id).join(", ") || "(chưa có khớp)"}.`);
@@ -187,6 +188,7 @@ export function buildPhysicsModel(doc: AssemblyDoc): PhysicsModel {
 
   // khớp: mỗi bộ phận được dẫn nối vật của nó với vật của cha
   const out: JointModel[] = [];
+  const physIds = new Map<string, string[]>();
   for (const j of joints) {
     if (free.has(j.id)) continue;
     const kind = j.joint.kind;
@@ -196,9 +198,17 @@ export function buildPhysicsModel(doc: AssemblyDoc): PhysicsModel {
       if (!a || !part) continue;
       const b = part.parent ? bodyOf.get(part.parent) ?? null : null;
       const ba = bodies.find((x) => x.id === a)!, bb = b ? bodies.find((x) => x.id === b)! : null;
-      const piv = j.origin as V3;
+      let piv = j.origin as V3;
+      if (kind === "prismatic") {
+        // điểm nào trên trục cũng giữ được khớp trượt; lấy hình chiếu trọng tâm vật được dẫn để cánh tay đòn bằng 0
+        // (trục đặt ở chân xi lanh mà cán nhẹ ở xa: hiệu chỉnh vuông góc xoay cán mạnh, khoá góc kéo lại, rung)
+        const d = j.dir as V3, t = (ba.x0[0] - piv[0]) * d[0] + (ba.x0[1] - piv[1]) * d[1] + (ba.x0[2] - piv[2]) * d[2];
+        piv = [piv[0] + d[0] * t, piv[1] + d[1] * t, piv[2] + d[2] * t];
+      }
+      const pid = j.moves.length > 1 ? `${j.id}:${m}` : j.id;
+      physIds.set(j.id, [...(physIds.get(j.id) ?? []), pid]);
       out.push({
-        id: j.moves.length > 1 ? `${j.id}:${m}` : j.id,
+        id: pid,
         kind,
         a,
         b,
@@ -211,6 +221,49 @@ export function buildPhysicsModel(doc: AssemblyDoc): PhysicsModel {
       });
     }
   }
+  // couple → ràng buộc ghép (SI: radian, mét); khớp có nhiều bộ phận được dẫn thì mỗi bản ghép theo bản đầu của khớp dẫn
+  const couples: CoupleModel[] = [];
+  const flatById = new Map(joints.map((j) => [j.id, j]));
+  const si = (kind: string) => (kind === "revolute" ? DEG : 1);
+  for (const j of joints) {
+    if (!j.lead) continue;
+    if (free.has(j.id) || free.has(j.lead)) {
+      notes.push(`khớp ${j.id} ghép theo ${j.lead}: một trong hai khớp thả tự do (physics.free), bỏ ràng buộc ghép (ma sát và va chạm lo).`);
+      continue;
+    }
+    const lead = flatById.get(j.lead), leadIds = physIds.get(j.lead), ids = physIds.get(j.id);
+    if (!lead || !leadIds?.length || !ids?.length) continue;
+    const c = j.joint.couple!;
+    let spec: { ratio: number } | { table: [number, number][] };
+    if (c.table) spec = { table: c.table.map(([x, y]) => [x * si(lead.joint.kind), y * si(j.joint.kind)] as [number, number]) };
+    else {
+      const r = c.ratio ?? rollingRatio({ d: j.dir as V3, radius: j.radius }, { d: lead.dir as V3 }, `[khớp ${j.id}]`);
+      spec = { ratio: (r * si(j.joint.kind)) / si(lead.joint.kind) };
+    }
+    for (const f of ids) couples.push({ id: `couple:${f}`, lead: leadIds[0], follow: f, ...spec });
+  }
+  // bánh răng kiểu cũ (physics.gears: ratio·ωa + ωb = 0) đi cùng đường
+  (cfg.gears ?? []).forEach((g, i) => couples.push({ id: `gear${i}`, lead: g.a, follow: g.b, ratio: -g.ratio }));
+
+  // vòng kín → khớp ghim: hai vật giữ chung một điểm
+  for (const l of loops) {
+    let a = l.a ? bodyOf.get(l.a) ?? null : null, b = l.b ? bodyOf.get(l.b) ?? null : null;
+    if (a === b) throw new AssemblyError(`[vòng ${l.id}] hai đầu thuộc cùng một vật (${a ?? "thế giới"}): khớp do vòng tính chưa tách được hai nhánh thành vật riêng.`);
+    if (!a) [a, b] = [b, null];
+    const ba = bodies.find((x) => x.id === a)!, bb = b ? bodies.find((x) => x.id === b)! : null;
+    const p = l.point;
+    out.push({
+      id: `loop:${l.id}`,
+      kind: "point",
+      a: a!,
+      b,
+      pivotA: [p[0] - ba.x0[0], p[1] - ba.x0[1], p[2] - ba.x0[2]],
+      pivotB: bb ? [p[0] - bb.x0[0], p[1] - bb.x0[1], p[2] - bb.x0[2]] : p,
+      axisA: [0, 1, 0],
+      axisB: [0, 1, 0],
+    });
+  }
+
   const initial: PhysicsModel["initial"] = {};
   for (const [path, init] of Object.entries(cfg.initial ?? {})) {
     const b = bodyOf.get(path);
@@ -218,13 +271,14 @@ export function buildPhysicsModel(doc: AssemblyDoc): PhysicsModel {
     initial[b] = { ...(init.velocity ? { v: init.velocity } : {}), ...(init.angularVelocity ? { w: init.angularVelocity.map((x) => x * DEG) as V3 } : {}) };
   }
   return {
-    version: 1,
+    version: 2,
     gravity: cfg.gravity ?? [0, -9.81, 0],
     groundPlane: cfg.groundPlane ?? true,
     substeps: cfg.substeps ?? 12,
     bodies,
     joints: out,
-    gears: (cfg.gears ?? []).map((g, i) => ({ id: `gear${i}`, a: g.a, b: g.b, ratio: g.ratio })),
+    gears: [],
+    couples,
     initial,
     notes,
   };

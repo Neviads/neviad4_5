@@ -20,7 +20,11 @@ export interface AssemblyView {
   root: THREE.Group;
   parts: Map<string, THREE.Object3D>;
   solved: Solved;
-  /** giá trị khớp; khớp trong cụm viết "<idBoPhan>/<khop>" */
+  /**
+   * giá trị khớp; khớp trong cụm viết "<idBoPhan>/<khop>". Khớp dẫn đặt thẳng; khớp ghép hoặc khớp do vòng kín tính thì
+   * bộ giải suy ngược ra khớp dẫn của nhóm (giá trị không tới được thì kẹp về gần nhất). Giá trị mọi khớp sau khi giải:
+   * `solved.values`.
+   */
   setPose(values: Record<string, number>): void;
   /** đặt ma trận thế giới cho một bộ phận ("id" hoặc "idCum/idTrong"), dùng khi bộ giải vật lý điều khiển */
   setWorld(path: string, world: number[]): void;
@@ -93,12 +97,13 @@ export function buildAssembly(doc: AssemblyDoc, kit: MaterialKit): AssemblyView 
       return solved;
     },
     setPose(values) {
-      for (const j of work.joints) j.value = values[j.id] ?? 0;
       for (const [id, child] of childOf) {
         const inner = Object.fromEntries(Object.entries(values).filter(([k]) => k.startsWith(`${id}/`)).map(([k, x]) => [k.slice(id.length + 1), x]));
         if (Object.keys(inner).length) child.setPose(inner);
       }
-      solved = solve(work, registry);
+      const own = Object.fromEntries(Object.entries(values).filter(([k]) => !k.includes("/")));
+      // lời giải trước làm điểm xuất phát cho vòng kín: cơ cấu ở yên một nhánh, chạy liền
+      solved = solve(work, registry, { pose: own, warm: solved.values, clamp: true });
       for (const [id, obj] of parts) {
         obj.matrix.fromArray(solved.parts.get(id)!.world);
         obj.matrixWorldNeedsUpdate = true;

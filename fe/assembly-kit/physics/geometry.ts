@@ -28,7 +28,19 @@ export interface FlatJoint {
   /** trục khớp ở thế giới (tư thế 0) */
   origin: [number, number, number];
   dir: [number, number, number];
+  /** bán kính trục (bánh tiện), để tính tỉ số lăn của couple */
+  radius?: number;
+  /** khớp dẫn của couple, đã thêm tiền tố cụm */
+  lead?: string;
   moves: string[];
+}
+
+/** Vòng kín đã duỗi phẳng: hai bộ phận (null = ground) và điểm ghim ở thế giới (tư thế 0, hai đầu trùng nhau). */
+export interface FlatLoop {
+  id: string;
+  a: string | null;
+  b: string | null;
+  point: [number, number, number];
 }
 
 /** Khối lượng riêng (kg/m³) theo tên vật liệu, preset hoặc vật liệu đã định nghĩa trong doc. */
@@ -85,15 +97,19 @@ function libraryGeometry(build: ((p: never, kit: unknown) => unknown) | undefine
   }
 }
 
-/** Duỗi phẳng ở tư thế mọi khớp = 0. */
-export function flatten(doc: AssemblyDoc): { parts: FlatPart[]; joints: FlatJoint[]; docs: Map<string, AssemblyDoc> } {
-  const parts: FlatPart[] = [], joints: FlatJoint[] = [];
+/**
+ * Duỗi phẳng ở tư thế mọi khớp = 0. `pose` (khớp lớp ngoài, như measure) thì bộ phận đặt theo tư thế đó; cụm lồng đi theo
+ * bộ phận chứa nó nhưng khớp bên trong vẫn ở 0. Trục khớp và điểm ghim vòng luôn ở tư thế nghỉ (mô hình vật lý dùng chúng).
+ */
+export function flatten(doc: AssemblyDoc, opts: { pose?: Record<string, number> } = {}): { parts: FlatPart[]; joints: FlatJoint[]; loops: FlatLoop[]; docs: Map<string, AssemblyDoc> } {
+  const parts: FlatPart[] = [], joints: FlatJoint[] = [], loops: FlatLoop[] = [];
   const docs = new Map<string, AssemblyDoc>();
   const walk = (d: AssemblyDoc, prefix: string, parentPath: string | null, base: M4) => {
     const work: AssemblyDoc = JSON.parse(JSON.stringify(d));
     for (const j of work.joints) delete j.value;
     const reg = registryFor(work);
-    const solved = solve(work, reg);
+    const posed = !prefix && opts.pose && Object.keys(opts.pose).length > 0;
+    const solved = solve(work, reg, posed ? { pose: opts.pose } : {});
     const shapes = buildShapes(work, usedShapeIds(work));
     const byId = new Map(work.parts.map((p) => [p.id, p]));
     const shapeMat = new Map((work.shapes ?? []).map((s) => [`${SHAPE_PREFIX}${s.id}`, s.material ?? null]));
@@ -101,7 +117,7 @@ export function flatten(doc: AssemblyDoc): { parts: FlatPart[]; joints: FlatJoin
     for (const id of solved.order) {
       const sp = solved.parts.get(id)!, inst = byId.get(id)!, pt = reg[sp.type];
       const path = prefix ? `${prefix}/${id}` : id;
-      const world = chain(base, sp.rest);
+      const world = chain(base, posed ? sp.world : sp.rest);
       const parent = sp.parent === "ground" ? parentPath : prefix ? `${prefix}/${sp.parent}` : sp.parent;
       if (pt.composite) {
         parts.push({ path, parent, world, geometry: null, material: null, composite: true });
@@ -119,11 +135,114 @@ export function flatten(doc: AssemblyDoc): { parts: FlatPart[]; joints: FlatJoin
       const W = chain(base, world);
       const o = new THREE.Vector3(...frame.origin).applyMatrix4(new THREE.Matrix4().fromArray(W));
       const dvec = new THREE.Vector3(...frame.dir).transformDirection(new THREE.Matrix4().fromArray(W));
-      joints.push({ id: prefix ? `${prefix}/${j.id}` : j.id, joint: j, origin: o.toArray(), dir: dvec.toArray(), moves: j.moves.map((m) => (prefix ? `${prefix}/${m}` : m)) });
+      const pre = (x: string) => (prefix ? `${prefix}/${x}` : x);
+      joints.push({ id: pre(j.id), joint: j, origin: o.toArray(), dir: dvec.toArray(), radius: frame.radius, lead: j.couple ? pre(j.couple.joint) : undefined, moves: j.moves.map(pre) });
+    }
+    for (const l of work.loops ?? []) {
+      // ground của tài liệu con là cụm chứa nó
+      const end = (ref: string) => {
+        const { frame, world, part } = anchorFrame(reg, solved.parts, ref, "rest");
+        const p = new THREE.Vector3(...frame.origin).applyMatrix4(new THREE.Matrix4().fromArray(chain(base, world)));
+        return { path: part ? (prefix ? `${prefix}/${part.id}` : part.id) : parentPath, point: p.toArray() as [number, number, number] };
+      };
+      const a = end(l.a), b = end(l.b);
+      loops.push({ id: prefix ? `${prefix}/${l.id}` : l.id, a: a.path, b: b.path, point: a.point });
     }
   };
   walk(doc, "", null, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  return { parts, joints, docs };
+  return { parts, joints, loops, docs };
+}
+
+// ───────── khoảng cách tới lưới (không cần lưới kín) ─────────
+
+/** Tam giác của một lưới (khung cục bộ), bỏ tam giác suy biến (lưới tiện có tam giác dẹt ở trục). Đệm theo geometry. */
+const trianglesCache = new WeakMap<THREE.BufferGeometry, THREE.Triangle[]>();
+function trianglesOf(g: THREE.BufferGeometry): THREE.Triangle[] {
+  const hit = trianglesCache.get(g);
+  if (hit) return hit;
+  const pos = g.attributes.position;
+  const idx = g.index;
+  const n = idx ? idx.count : pos.count;
+  const out: THREE.Triangle[] = [];
+  const v = (i: number) => new THREE.Vector3().fromBufferAttribute(pos, idx ? idx.getX(i) : i);
+  for (let i = 0; i + 2 < n; i += 3) {
+    const t = new THREE.Triangle(v(i), v(i + 1), v(i + 2));
+    if (t.getArea() > 1e-12) out.push(t);
+  }
+  trianglesCache.set(g, out);
+  return out;
+}
+
+const tmpClosest = new THREE.Vector3();
+function localDistance(tris: THREE.Triangle[], p: THREE.Vector3, stop = 0): number {
+  let best = Infinity;
+  for (const t of tris) {
+    t.closestPointToPoint(p, tmpClosest);
+    const d = tmpClosest.distanceTo(p);
+    if (d < best) {
+      best = d;
+      if (best <= stop) break;
+    }
+  }
+  return best;
+}
+
+/** Điểm (khung cục bộ) nằm trong khối: đếm chẵn lẻ giao cắt theo ba tia lệch nhau, lấy đa số (lưới hở vẫn ra kết quả gần đúng). */
+const RAYS = [new THREE.Vector3(1, 0.0137, 0.0071), new THREE.Vector3(-0.0113, 1, 0.0191), new THREE.Vector3(0.0157, -0.0089, -1)].map((v) => v.normalize());
+const tmpHit = new THREE.Vector3();
+function localInside(tris: THREE.Triangle[], box: THREE.Box3, p: THREE.Vector3): boolean {
+  if (!box.containsPoint(p)) return false;
+  let votes = 0;
+  for (const dir of RAYS) {
+    const ray = new THREE.Ray(p, dir);
+    let n = 0;
+    for (const t of tris) if (ray.intersectTriangle(t.a, t.b, t.c, false, tmpHit)) n++;
+    if (n % 2 === 1) votes++;
+  }
+  return votes >= 2;
+}
+
+function localBox(g: THREE.BufferGeometry): THREE.Box3 {
+  if (!g.boundingBox) g.computeBoundingBox();
+  return g.boundingBox!;
+}
+
+/**
+ * Khoảng cách (m) từ điểm thế giới tới VẬT LIỆU của bộ phận có tư thế `world`: 0 nếu điểm nằm trong khối, không thì tới
+ * bề mặt gần nhất. `ceiling`: đã biết có chỗ gần hơn thì khung bao xa hơn mức đó trả luôn cận dưới, khỏi duyệt tam giác.
+ */
+export function meshPointDistance(geometry: THREE.BufferGeometry, world: M4, point: [number, number, number], ceiling = Infinity): number {
+  const p = new THREE.Vector3(...point).applyMatrix4(new THREE.Matrix4().fromArray(invertRigid(world)));
+  const box = localBox(geometry);
+  const lower = box.distanceToPoint(p);
+  if (lower >= ceiling) return lower;
+  const tris = trianglesOf(geometry);
+  const d = localDistance(tris, p);
+  return d > 1e-6 && localInside(tris, box, p) ? 0 : d;
+}
+
+/**
+ * Khoảng cách nhỏ nhất (m) từ đoạn trục origin + t·dir, t ∈ [t0, t1] (thế giới) tới bề mặt lưới, lấy mẫu bước `step`.
+ * Trục xuyên qua vật liệu cho ~0; trục đi qua lỗ cho bán kính lỗ. `ceiling` như meshPointDistance.
+ */
+export function meshAxisDistance(geometry: THREE.BufferGeometry, world: M4, origin: [number, number, number], dir: [number, number, number], t0: number, t1: number, step = 0.002, ceiling = Infinity): number {
+  const inv = new THREE.Matrix4().fromArray(invertRigid(world));
+  const box = localBox(geometry);
+  const o = new THREE.Vector3(...origin), d = new THREE.Vector3(...dir).normalize();
+  const n = Math.max(1, Math.ceil((t1 - t0) / step));
+  let best = ceiling;
+  for (let i = 0; i <= n; i++) {
+    const p = o.clone().addScaledVector(d, t0 + ((t1 - t0) * i) / n).applyMatrix4(inv);
+    const lower = box.distanceToPoint(p);
+    if (lower >= best) continue;
+    const tris = trianglesOf(geometry);
+    const dist = localDistance(tris, p, 1e-6);
+    // mẫu nằm trong khối (trục xuyên qua chốt đặc): chạm vật liệu
+    if (dist > 1e-6 && localInside(tris, box, p)) return 0;
+    best = Math.min(best, dist);
+    if (best <= 1e-6) break;
+  }
+  return best; // = ceiling khi không mẫu nào gần hơn: người gọi lấy min nên không sai
 }
 
 /** Lưới thế giới của một bộ phận phẳng (bản sao). */

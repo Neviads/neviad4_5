@@ -20,7 +20,8 @@
 - **Khớp trong cụm:** `part_save_as_type` lưu kèm khớp; `setPose` và `assembly_view` nhận tên `cum/khop`; mô hình vật lý tự mở rộng các khớp này.
 - **Kiểm tra:** `check_interference` (giao khối manifold), `check_clearance` (`minGap`), `check_floating`, `check_physics`.
 - **Thử với hai sedan đâm nhau** (bản `va-cham-sedan` trong xưởng, chạy bằng `simulate`): chạm đúng thời điểm tính tay, bánh lăn nhờ ma sát, động lượng giữ trong khoảng 3%. Trang thí nghiệm riêng đã bỏ.
-- **Chưa làm:** bước 4–7 (lò xo, dây, vải; đại lượng ẩn như điện; dò tia; chất lỏng; tham số; chi tiết chuẩn; liếc nhanh). Bộ giải chạy trên luồng chính (Web Worker để sau). Giới hạn góc của khớp chưa áp vào bộ giải.
+- **Chưa làm:** bước 4–7 (lò xo, dây, vải; đại lượng ẩn như điện; dò tia; chất lỏng; tham số; liếc nhanh). Bộ giải chạy trên luồng chính (Web Worker để sau). Giới hạn góc của khớp chưa áp vào bộ giải; `couple` của khớp bị bỏ qua khi mô phỏng; mỗi vật chỉ có một bao lồi va chạm.
+- **Kế hoạch làm tiếp, chia giai đoạn kèm ca kiểm:** `docs/assembly-physics-roadmap.md`. Chỗ nào khác với các mục 5–9 bên dưới thì theo lộ trình đó.
 
 ## 1. Mục tiêu và ý tưởng chính
 Agent dựng **mọi vật** rồi cho nó **hoạt động**: máy móc, dụng cụ thí nghiệm, dây, vải, nước, mạch điện, thấu kính. Agent **chỉ nói quan hệ**: "trục xuyên lỗ", "treo quả nặng vào dây", "nối cực + của pin với đèn", "đổ nước tới 200 ml". Mọi con số do tool suy ra.
@@ -232,26 +233,23 @@ Mọi tool **chỉ đọc**, trả danh sách lỗi có mức độ, vị trí v
 ## 9. Tầng H: Dùng lại
 - **Cụm có tham số:** `part_save_as_type` nhận `params` và lưu **cả khớp, liên kết vật lý, cổng** của cụm. Ví dụ `banhXe(vanh, beRong, tiLe)`, `conLac(chieuDai, khoiLuong)`.
 - **Khớp và cổng trong cụm** lộ ra ngoài theo tên: `xeA/banhTruocT`, `mayPhat/cucDuong`. Bản ngoài dẫn động hoặc nối được.
-- **Chi tiết chuẩn:**
-  - Cơ khí: ốc ISO, ổ bi 6202, bánh răng theo module, lò xo, bản lề, thép hình.
-  - Điện: pin AA, điện trở theo màu.
-  - Quang: thấu kính theo tiêu cự.
-
-  Mỗi loại sinh hình bằng tham số và có sẵn cổng, khớp, khối lượng.
+- ~~**Chi tiết chuẩn**~~ (ốc ISO, ổ bi, pin AA, thấu kính theo tiêu cự…): **đã bỏ** (2026-10-31). Kit không có đồ dựng sẵn (thư viện bộ phận và preset vật liệu đã gỡ vì thành lời giải mẫu cho agent). Agent tự dựng hình và tự khai thông số thật; linh kiện điện, nguồn nhiệt chỉ là hành vi gắn lên bộ phận (xem `assembly-physics-roadmap.md`).
 
 ---
 
 ## 10. So với hiện trạng
+Cập nhật 2026-10-31 (bảng cũ viết trước bước 1–3).
+
 | Phần | Đã có | Thiếu |
 |---|---|---|
-| A. Hình | Đủ (tiện, đùn, quét, loft, boolean, bo, khắc, tách, vật liệu) | Điêu khắc và nhập mesh cho vật hữu cơ |
-| B. Tham chiếu | Điểm neo theo khung bao và phép dựng, `anchor_define` | Kế thừa từ dao cắt, `ref_find` |
-| C. Lắp ráp | 5 kiểu ghép, cây, cụm đã lưu | Kiểu ghép hướng và khoảng cách, `part_pattern` |
-| D. Bộ giải chung | Không (chỉ khớp động học và tỉ số) | Toàn bộ |
-| E. Đại lượng ẩn | Máy phát viết tay riêng (`generator-sim.ts`) | Cổng, `port_connect`, bộ phận có phương trình |
-| F. Quang | Render khúc xạ đúng | `ray_trace`, bộ phận quang có tham số |
-| G. Kiểm tra | `measure` theo khung bao | Gần như toàn bộ |
-| H. Dùng lại | Cụm cố định | Tham số, khớp và cổng trong cụm, chi tiết chuẩn |
+| A. Hình | Tiện, đùn, quét, loft, đối xứng, lặp, boolean, bo cạnh, khắc, tách vùng, hàn, đắp mối nối, mài; vật liệu tự định nghĩa | Tách khối thành panel kín, vỏ (`shell`), điêu khắc, nhập mesh |
+| B. Tham chiếu | Điểm neo theo khung bao và phép dựng, `anchor_define`, kế thừa từ dao cắt, `~m`, `[i]` | `ref_find` |
+| C. Lắp ráp | 5 kiểu ghép, cây, cụm đã lưu kèm khớp, `couple` theo tỉ số hoặc bảng | Kiểu ghép hướng và khoảng cách, `part_pattern` |
+| D. Bộ giải chung | Vật rắn XPBD, khớp quay, trượt, cố định, động cơ, bánh răng, va chạm bao lồi, ma sát | Giới hạn khớp, `couple` khi mô phỏng, vật lõm, lò xo, dây, vải, chất lỏng (lộ trình giai đoạn 1–3, 7) |
+| E. Đại lượng ẩn | Máy phát viết tay riêng (`generator-sim.ts`) | Toàn bộ (lộ trình giai đoạn 4–5) |
+| F. Quang | Render khúc xạ đúng | `ray_trace` (lộ trình giai đoạn 6) |
+| G. Kiểm tra | `check_interference`, `check_clearance`, `check_floating`, `check_physics`, `measure` | `check_motion`, `check_stability`, `check_geometry`, `check_spec`, `check_glance`; kiểm theo tư thế |
+| H. Dùng lại | Cụm đã lưu kèm khớp, khớp trong cụm `cum/khop` | Cụm có tham số |
 
 ## 11. Thứ tự làm
 1. **D lõi:** vật rắn, khớp (quay, trượt, cầu, lăn, bánh răng), va chạm bao lồi, `physics_setup`, `initial_set`, `simulate`. Làm lại thí nghiệm hai xe bằng bộ giải thật để thử.
