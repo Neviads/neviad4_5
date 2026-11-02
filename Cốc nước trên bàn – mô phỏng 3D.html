@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cốc nước trên bàn – mô phỏng 3D</title>
+<style>
+:root{color-scheme:light dark;--bg:#dfe8f1;--panel:rgba(255,255,255,.88);--fg:#16202b;--mut:#5b6b7b;--acc:#1b7fd6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161d;--panel:rgba(24,32,42,.88);--fg:#e6edf5;--mut:#9aabbc;--acc:#5db0ff}}
+:root[data-theme="dark"]{--bg:#10161d;--panel:rgba(24,32,42,.88);--fg:#e6edf5;--mut:#9aabbc;--acc:#5db0ff}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.lbl{position:fixed;display:none;transform:translateX(-50%);padding:4px 10px;border-radius:8px;background:var(--panel);font-size:12.5px;font-weight:600;white-space:nowrap;pointer-events:none}
+#stats{width:100%;margin-top:8px;border-collapse:collapse;font-size:12px}
+#stats td{padding:2px 0;color:var(--mut)}
+#stats td:last-child{text-align:right;color:var(--fg);font-variant-numeric:tabular-nums}
+#ui select{width:100%;margin-top:3px;padding:4px;font:inherit;color:inherit;background:transparent;border:1px solid var(--mut);border-radius:6px}
+#ui select option{color:#16202b;background:#fff}
+#ui{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));max-width:min(300px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;box-sizing:border-box;background:var(--panel);padding:12px 14px;border-radius:12px;backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(0,0,0,.18)}
+#ui summary{font-size:15px;font-weight:700;cursor:pointer}
+#ui p{margin:4px 0 8px;color:var(--mut);font-size:12.5px}
+#ui label{display:block;font-size:12.5px;margin-top:6px}
+#ui input[type=range]{width:100%;accent-color:var(--acc)}
+#ui button{margin-top:8px;padding:6px 14px;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;cursor:pointer}
+#st{font-weight:600}
+</style></head><body>
+<div id="ui"><details id="panel" open>
+<summary>Cốc nước trên bàn</summary>
+<p>Kéo bàn bằng chuột/ngón tay (hoặc phím mũi tên, WASD). Kéo vùng trống để xoay, cuộn để zoom. Giật bàn mạnh để nước tràn ra.</p>
+<label>Ma sát cốc–bàn: <b id="muv">0.40</b><input id="mu" type="range" min="0.05" max="1" step="0.01" value="0.4"></label>
+<div>Nước còn trong cốc: <span id="st">100%</span></div>
+<label>Cách vẽ nước:
+<select id="mode"><option value="split">So sánh song song</option><option value="ssf">Chỉ screen-space</option><option value="meta">Chỉ metaball 3D</option></select></label>
+<label>Ô lưới metaball: <b id="cellv">0.10</b><input id="cell" type="range" min="0.07" max="0.18" step="0.01" value="0.1"></label>
+<table id="stats">
+<tr><td>Khung hình mỗi giây</td><td id="sFps">–</td></tr>
+<tr><td>Metaball, tính trên CPU</td><td id="sMs">–</td></tr>
+<tr><td>Metaball, số tam giác</td><td id="sTri">–</td></tr>
+<tr><td>Screen-space, số điểm vẽ</td><td id="sPts">–</td></tr>
+</table>
+<label><input id="dbg" type="checkbox"> Hiện từng hạt (gỡ lỗi)</label>
+<button id="rs">Đặt lại</button> <button id="pause">Tạm dừng</button>
+</details></div>
+<div class="lbl" id="lblSsf">Screen-space: làm trên ảnh 2D</div>
+<div class="lbl" id="lblMeta">Metaball: bề mặt 3D thật</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- chỉ lấy bảng tam giác THREE.triTable; bộ dựng lưới bên dưới là của trang này -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/MarchingCubes.js"></script>
+<script>
+const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+const R=1,H=1.5,T=.06,rw=.08,D=.16,G=30,TX=3.2,TZ=2.2,GROUND=-4,SDT=1/180;
+let MU=.4;
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+document.body.appendChild(renderer.domElement);
+const cv=renderer.domElement;
+const scene=new THREE.Scene();scene.background=new THREE.Color(dark?0x10161d:0xdfe8f1);
+const camera=new THREE.PerspectiveCamera(45,1,.1,100);
+scene.add(new THREE.HemisphereLight(0xffffff,0x556677,.95));
+const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(4,8,5);scene.add(dl);
+
+// ground + table
+const gnd=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshPhongMaterial({color:dark?0x1d2631:0xb9c6d3}));
+gnd.rotation.x=-Math.PI/2;gnd.position.y=GROUND-.001;scene.add(gnd);
+const grid=new THREE.GridHelper(60,60,0x6c7e90,0x8a9bab);grid.position.y=GROUND;grid.material.opacity=.3;grid.material.transparent=true;scene.add(grid);
+const tableG=new THREE.Group();scene.add(tableG);
+const wood=new THREE.MeshPhongMaterial({color:0xb07a47});
+const tabletop=new THREE.Mesh(new THREE.BoxGeometry(TX*2,.25,TZ*2),wood);tabletop.position.y=-.125;tableG.add(tabletop);
+for(const sx of[-1,1])for(const sz of[-1,1]){
+  const l=new THREE.Mesh(new THREE.BoxGeometry(.25,3.75,.25),wood);
+  l.position.set(sx*(TX-.2),-2.125,sz*(TZ-.2));tableG.add(l);}
+
+// cup
+const cup=new THREE.Group();scene.add(cup);
+const glass=new THREE.MeshPhongMaterial({color:0xcfe8ff,transparent:true,opacity:.22,side:THREE.DoubleSide,shininess:100,depthWrite:false});
+const wall=new THREE.Mesh(new THREE.CylinderGeometry(R+T,R+T,H,48,1,true),glass);wall.position.y=H/2;wall.renderOrder=2;cup.add(wall);
+const base=new THREE.Mesh(new THREE.CircleGeometry(R+T,48),glass);base.rotation.x=-Math.PI/2;base.position.y=.004;base.renderOrder=2;cup.add(base);
+const rim=new THREE.Mesh(new THREE.TorusGeometry(R+T/2,T/2,8,48),new THREE.MeshPhongMaterial({color:0xe8f4ff}));rim.rotation.x=Math.PI/2;rim.position.y=H;cup.add(rim);
+
+// particles
+const init=[];
+{const rin=R-rw-.01,half=Math.ceil(rin/D)+1;
+ for(let l=0;l<11;l++){const off=(l%2)*D/2;
+  for(let i=-half;i<=half;i++)for(let k=-half;k<=half;k++){
+   const x=i*D+off,z=k*D+off;if(Math.hypot(x,z)<=rin)init.push([x,rw+.005+l*D*.82,z]);}}}
+const N=init.length;
+const X=new Float32Array(N),Y=new Float32Array(N),Z=new Float32Array(N),
+ VX=new Float32Array(N),VY=new Float32Array(N),VZ=new Float32Array(N),
+ OX=new Float32Array(N),OY=new Float32Array(N),OZ=new Float32Array(N),
+ DX=new Float32Array(N),DY=new Float32Array(N),DZ=new Float32Array(N),CT=new Uint8Array(N);
+const water=new THREE.InstancedMesh(new THREE.SphereGeometry(.095,8,6),new THREE.MeshPhongMaterial({color:0x3aa0ff,transparent:true,opacity:.82,shininess:90}),N);
+water.frustumCulled=false;water.visible=false;scene.add(water);
+
+let tx,tz,ttx,ttz,tvx,tvz,cx,cz,cy,cvx,cvz,cvy;
+function reset(){
+ tx=tz=ttx=ttz=tvx=tvz=0;cx=cz=cy=cvx=cvz=cvy=0;
+ for(let i=0;i<N;i++){X[i]=init[i][0];Y[i]=init[i][1];Z[i]=init[i][2];VX[i]=VY[i]=VZ[i]=0;}
+}
+reset();
+
+// spatial hash
+const HS=8192,head=new Int32Array(HS),nxt=new Int32Array(N),inv=1/D;
+const hh=(a,b,c)=>((a*73856093)^(b*19349663)^(c*83492791))&(HS-1);
+function build(){head.fill(-1);for(let i=0;i<N;i++){const k=hh(Math.floor(X[i]*inv),Math.floor(Y[i]*inv),Math.floor(Z[i]*inv));nxt[i]=head[k];head[k]=i;}}
+function pairs(){
+ const D2=D*D;
+ for(let i=0;i<N;i++){
+  const a=Math.floor(X[i]*inv),b=Math.floor(Y[i]*inv),c=Math.floor(Z[i]*inv);
+  for(let u=-1;u<=1;u++)for(let v=-1;v<=1;v++)for(let w=-1;w<=1;w++){
+   for(let j=head[hh(a+u,b+v,c+w)];j>=0;j=nxt[j]){
+    if(j<=i)continue;
+    const dx=X[j]-X[i],dy=Y[j]-Y[i],dz=Z[j]-Z[i],d2=dx*dx+dy*dy+dz*dz;
+    if(d2<D2&&d2>1e-12){const d=Math.sqrt(d2),s=(D-d)/d*.5;
+     X[i]-=dx*s;Y[i]-=dy*s;Z[i]-=dz*s;X[j]+=dx*s;Y[j]+=dy*s;Z[j]+=dz*s;}
+   }}}
+}
+function visc(){
+ DX.fill(0);DY.fill(0);DZ.fill(0);const D2=(D*1.4)**2;
+ for(let i=0;i<N;i++){
+  const a=Math.floor(X[i]*inv),b=Math.floor(Y[i]*inv),c=Math.floor(Z[i]*inv);
+  for(let u=-1;u<=1;u++)for(let v=-1;v<=1;v++)for(let w=-1;w<=1;w++){
+   for(let j=head[hh(a+u,b+v,c+w)];j>=0;j=nxt[j]){
+    if(j<=i)continue;
+    const dx=X[j]-X[i],dy=Y[j]-Y[i],dz=Z[j]-Z[i];
+    if(dx*dx+dy*dy+dz*dz<D2){const k=.04;
+     const ax=(VX[j]-VX[i])*k,ay=(VY[j]-VY[i])*k,az=(VZ[j]-VZ[i])*k;
+     DX[i]+=ax;DY[i]+=ay;DZ[i]+=az;DX[j]-=ax;DY[j]-=ay;DZ[j]-=az;}
+   }}}
+ for(let i=0;i<N;i++){VX[i]+=DX[i];VY[i]+=DY[i];VZ[i]+=DZ[i];}
+}
+function bounds(){
+ for(let i=0;i<N;i++){
+  let x=X[i],y=Y[i],z=Z[i];
+  const pr=Math.hypot(OX[i]-cx,OZ[i]-cz);
+  const inside=pr<R+T*.5&&OY[i]>cy-.2;
+  const dx=x-cx,dz=z-cz,r=Math.hypot(dx,dz);
+  if(y<cy+H){
+   if(inside){if(r>R-rw){const s=(R-rw)/r;x=cx+dx*s;z=cz+dz*s;}}
+   else if(r<R+T+rw&&r>1e-6){const s=(R+T+rw)/r;x=cx+dx*s;z=cz+dz*s;}
+  }
+  let fl,ct;
+  if(inside){fl=cy;ct=1;}
+  else if(Math.abs(x-tx)<TX&&Math.abs(z-tz)<TZ&&OY[i]>=-.1){fl=0;ct=2;}
+  else{fl=GROUND;ct=3;}
+  if(y<fl+rw){y=fl+rw;CT[i]=ct;}
+  X[i]=x;Y[i]=y;Z[i]=z;
+ }
+}
+function step(dt,kx,kz){
+ // table follows the pointer target
+ ttx=Math.max(-10,Math.min(10,ttx+kx*dt));ttz=Math.max(-10,Math.min(10,ttz+kz*dt));
+ const a=1-Math.exp(-dt*35),nx=tx+(ttx-tx)*a,nz=tz+(ttz-tz)*a;
+ tvx=(nx-tx)/dt;tvz=(nz-tz)/dt;tx=nx;tz=nz;
+ // cup: Coulomb friction with the table, falls when unsupported
+ const sup=Math.abs(cx-tx)<TX&&Math.abs(cz-tz)<TZ&&cy>=-.01;
+ let mu=0,rx=0,rz=0;
+ if(sup){cy=0;cvy=0;mu=MU;rx=tvx;rz=tvz;}
+ else{cvy-=G*dt;cy+=cvy*dt;if(cy<=GROUND){cy=GROUND;cvy=0;mu=.9;}}
+ if(mu>0){const ux=cvx-rx,uz=cvz-rz,u=Math.hypot(ux,uz),dv=mu*G*dt;
+  if(u<=dv){cvx=rx;cvz=rz;}else{cvx-=ux/u*dv;cvz-=uz/u*dv;}}
+ cx+=cvx*dt;cz+=cvz*dt;
+ // water
+ for(let i=0;i<N;i++){
+  CT[i]=0;VY[i]-=G*dt;OX[i]=X[i];OY[i]=Y[i];OZ[i]=Z[i];
+  X[i]+=VX[i]*dt;Y[i]+=VY[i]*dt;Z[i]+=VZ[i]*dt;}
+ build();
+ for(let it=0;it<3;it++){pairs();bounds();}
+ for(let i=0;i<N;i++){
+  let vx=(X[i]-OX[i])/dt,vy=(Y[i]-OY[i])/dt,vz=(Z[i]-OZ[i])/dt;
+  const sp=Math.hypot(vx,vy,vz);if(sp>30){const s=30/sp;vx*=s;vy*=s;vz*=s;}
+  const c=CT[i];
+  if(c){const rx2=c===1?cvx:c===2?tvx:0,rz2=c===1?cvz:c===2?tvz:0,f=Math.min(1,(c===3?20:6)*dt);
+   vx+=(rx2-vx)*f;vz+=(rz2-vz)*f;}
+  VX[i]=vx*.9995;VY[i]=vy*.9995;VZ[i]=vz*.9995;}
+ visc();
+}
+
+// ===== Vẽ nước kiểu screen-space fluid: hạt -> trường độ dày -> bề mặt =====
+const BG=dark?0x10161d:0xdfe8f1;
+const pgeo=new THREE.BufferGeometry(),ppos=new Float32Array(N*3);
+pgeo.setAttribute('position',new THREE.BufferAttribute(ppos,3));
+const rt=new THREE.WebGLRenderTarget(2,2,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,type:renderer.capabilities.isWebGL2?THREE.HalfFloatType:THREE.UnsignedByteType});
+const pointsMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{scale:{value:800}},
+vertexShader:`uniform float scale;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=scale*.52/-mv.z;gl_Position=projectionMatrix*mv;}`,
+fragmentShader:`void main(){vec2 c=gl_PointCoord*2.-1.;float r2=dot(c,c);if(r2>1.)discard;float w=1.-r2;gl_FragColor=vec4(vec3(.45*w*w),1.);}`});
+const pts=new THREE.Points(pgeo,pointsMat);pts.frustumCulled=false;
+const occScene=new THREE.Scene(),occMat=new THREE.MeshBasicMaterial({colorWrite:false}),occG=new THREE.Group();
+occScene.add(occG);occScene.add(pts);
+tableG.children.forEach(m=>{const o=new THREE.Mesh(m.geometry,occMat);o.position.copy(m.position);occG.add(o);});
+{const og=new THREE.Mesh(gnd.geometry,occMat);og.rotation.copy(gnd.rotation);og.position.copy(gnd.position);occScene.add(og);}
+// Lớp độ sâu: mỗi hạt là một quả cầu, giữ mặt gần camera nhất; làm mượt rồi suy ra pháp tuyến để mặt nước có khối thật.
+// Độ dày ở trên chỉ còn quyết định viền và độ đậm của nước.
+const useDepth=renderer.capabilities.isWebGL2;
+const rtOpt={minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,format:THREE.RGBAFormat,type:THREE.FloatType};
+const rtZ=[new THREE.WebGLRenderTarget(2,2,rtOpt),new THREE.WebGLRenderTarget(2,2,{...rtOpt,depthBuffer:false})];
+const zMat=new THREE.ShaderMaterial({uniforms:{scale:pointsMat.uniforms.scale},extensions:{fragDepth:true},
+vertexShader:`uniform float scale;varying vec3 vC;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vC=mv.xyz;gl_PointSize=scale*.52/-mv.z;gl_Position=projectionMatrix*mv;}`,
+fragmentShader:`uniform mat4 projectionMatrix;varying vec3 vC;
+void main(){vec2 c=gl_PointCoord*2.-1.;c.y=-c.y;float r2=dot(c,c);if(r2>1.)discard;
+ vec3 e=vC+vec3(c,sqrt(1.-r2))*.26;vec4 p=projectionMatrix*vec4(e,1.);
+ gl_FragDepthEXT=.5*p.z/p.w+.5;gl_FragColor=vec4(-e.z,0.,0.,1.);}`});
+const ptsZ=new THREE.Points(pgeo,zMat);ptsZ.frustumCulled=false;ptsZ.renderOrder=1;ptsZ.visible=false;occScene.add(ptsZ);
+const fsVert=`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
+// làm mượt tách hai chiều, không trộn qua chỗ độ sâu chênh lớn để giữ mép giữa các lớp nước
+const blurMat=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{tZ:{value:null},dir:{value:new THREE.Vector2()},scale:pointsMat.uniforms.scale},
+vertexShader:fsVert,
+fragmentShader:`uniform sampler2D tZ;uniform vec2 dir;uniform float scale;varying vec2 vUv;
+void main(){float z=texture2D(tZ,vUv).r;if(z<=0.){gl_FragColor=vec4(0.);return;}
+ float st=min(scale*.16/z,24.)/6.,sum=0.,ws=0.;
+ for(int i=-6;i<=6;i++){float k=float(i),s=texture2D(tZ,vUv+dir*k*st).r;if(s<=0.)continue;
+  float d=s-z,w=exp(-k*k/18.)*exp(-d*d/.04);sum+=s*w;ws+=w;}
+ gl_FragColor=vec4(sum/ws,0.,0.,1.);}`});
+const compScene=new THREE.Scene(),compCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const compMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,uniforms:{tF:{value:rt.texture},tZ:{value:rtZ[0].texture},px:{value:new THREE.Vector2(1/800,1/600)},view:{value:new THREE.Vector2(1,1)},hasZ:{value:useDepth}},
+vertexShader:fsVert,
+fragmentShader:`uniform sampler2D tF,tZ;uniform vec2 px,view;uniform bool hasZ;varying vec2 vUv;
+float F(vec2 o){return texture2D(tF,vUv+o*px).r;}
+vec3 P(vec2 uv){float z=texture2D(tZ,uv).r;return vec3((uv*2.-1.)*view*z,-z);}
+// lấy phía độ sâu liền hơn để pháp tuyến không bị kéo lệch ở mép
+vec3 D(vec3 c,vec2 o){vec2 u=vUv+o*px,v=vUv-o*px;float a=texture2D(tZ,u).r,b=texture2D(tZ,v).r;
+ if(a<=0.&&b<=0.)return vec3(0.);
+ vec3 p=P(u)-c,q=c-P(v);
+ if(a<=0.)return q;if(b<=0.)return p;
+ return abs(p.z)<abs(q.z)?p:q;}
+void main(){
+ float f=F(vec2(0.));const float th=.42;
+ float a=smoothstep(th-.04,th+.04,f);if(a<.01)discard;
+ vec3 n=vec3(0.,0.,1.),v=vec3(0.,0.,1.);
+ float z=hasZ?texture2D(tZ,vUv).r:0.;
+ if(z>0.){vec3 c=P(vUv),dx=D(c,vec2(2.,0.)),dy=D(c,vec2(0.,2.)),m=cross(dx,dy);
+  v=normalize(-c);
+  if(dot(m,m)>1e-14){n=normalize(m);if(dot(n,v)<0.)n=-n;}else n=v;}
+ else{vec2 g=vec2(F(vec2(3.,0.))-F(vec2(-3.,0.)),F(vec2(0.,3.))-F(vec2(0.,-3.)));n=normalize(vec3(-g*5.,1.));}
+ vec3 L=normalize(vec3(.4,.8,.6));
+ float dif=.55+.45*max(dot(n,L),0.);
+ // độ dày lấy trung bình vùng nhỏ và giới hạn trên, để chỗ hạt chồng nhiều không thành đốm tối
+ float m5=(f+F(vec2(5.,0.))+F(vec2(-5.,0.))+F(vec2(0.,5.))+F(vec2(0.,-5.)))*.2;
+ float ab=.82*(1.-exp(-max(m5-th,0.)*.3));
+ vec3 col=mix(vec3(.32,.68,1.),vec3(.03,.2,.55),ab)*dif;
+ float nv=max(dot(n,v),0.);
+ float sp=pow(max(dot(reflect(-L,n),v),0.),48.);
+ float fr=pow(1.-nv,2.);
+ col+=vec3(.9,.95,1.)*(sp*.8+fr*.5);
+ gl_FragColor=vec4(col,a*mix(.62,.95,ab));
+}`});
+const fsQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),compMat);fsQuad.frustumCulled=false;compScene.add(fsQuad);
+function ssfDepthPass(){
+ pts.visible=false;ptsZ.visible=true;
+ renderer.setRenderTarget(rtZ[0]);renderer.clear();renderer.render(occScene,camera);
+ pts.visible=true;ptsZ.visible=false;
+ fsQuad.material=blurMat;
+ const U=blurMat.uniforms,px=compMat.uniforms.px.value;
+ U.tZ.value=rtZ[0].texture;U.dir.value.set(px.x,0);renderer.setRenderTarget(rtZ[1]);renderer.clear();renderer.render(compScene,compCam);
+ U.tZ.value=rtZ[1].texture;U.dir.value.set(0,px.y);renderer.setRenderTarget(rtZ[0]);renderer.clear();renderer.render(compScene,compCam);
+ fsQuad.material=compMat;
+}
+
+// ===== Vẽ nước kiểu metaball: hạt -> trường 3D -> marching cubes -> lưới tam giác =====
+// Trường lưu trên lưới thưa (bảng băm) vì nước tràn ra có thể trải rất rộng so với cái cốc.
+// bán kính + ngưỡng đã đo để bề mặt nằm trong thành kính (R+T); giọt một hạt có bán kính khoảng 0,1
+const MB_RAD=.22,MB_ISO=.5,MB_R2=MB_RAD*MB_RAD,MB_MAXTRI=200000;
+let mbCell=.1;
+const CAP=1<<20,MASK=CAP-1,kKey=new Int32Array(CAP),kGen=new Uint32Array(CAP),fld=new Float32Array(CAP*4),act=new Int32Array(Math.floor(CAP*.6));
+let gen=0,nAct=0;
+function slot(key,insert){
+ let s=Math.imul(key,0x9E3779B1)>>>12;
+ for(;;){
+  if(kGen[s]!==gen){
+   if(!insert||nAct>=act.length)return -1;
+   kGen[s]=gen;kKey[s]=key;const q=s*4;fld[q]=fld[q+1]=fld[q+2]=fld[q+3]=0;act[nAct++]=s;return s;}
+  if(kKey[s]===key)return s;
+  s=(s+1)&MASK;}
+}
+const mbPos=new Float32Array(MB_MAXTRI*9),mbNor=new Float32Array(MB_MAXTRI*9);
+const mbGeo=new THREE.BufferGeometry();
+mbGeo.setAttribute('position',new THREE.BufferAttribute(mbPos,3).setUsage(THREE.DynamicDrawUsage));
+mbGeo.setAttribute('normal',new THREE.BufferAttribute(mbNor,3).setUsage(THREE.DynamicDrawUsage));
+// cùng màu, hướng sáng, phản xạ và Fresnel như shader screen-space; riêng độ đậm chỉ ước lượng theo góc nhìn vì lưới không biết độ dày
+const mbMat=new THREE.ShaderMaterial({transparent:true,
+vertexShader:`varying vec3 vN,vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalMatrix*normal;vV=-mv.xyz;gl_Position=projectionMatrix*mv;}`,
+fragmentShader:`varying vec3 vN,vV;
+void main(){
+ vec3 n=normalize(vN),v=normalize(vV);
+ vec3 L=normalize(vec3(.4,.8,.6));
+ float dif=.55+.45*max(dot(n,L),0.);
+ float nv=max(dot(n,v),0.);
+ float ab=.25+.65*nv;
+ vec3 col=mix(vec3(.32,.68,1.),vec3(.03,.2,.55),ab)*dif;
+ float sp=pow(max(dot(reflect(-L,n),v),0.),48.);
+ float fr=pow(1.-nv,2.);
+ col+=vec3(.9,.95,1.)*(sp*.8+fr*.5);
+ gl_FragColor=vec4(col,mix(.62,.95,ab));
+}`});
+const mbMesh=new THREE.Mesh(mbGeo,mbMat);mbMesh.frustumCulled=false;mbMesh.renderOrder=1;mbMesh.visible=false;scene.add(mbMesh);
+const EA=[0,1,2,3,4,5,6,7,0,1,2,3],EB=[1,2,3,0,5,6,7,4,4,5,6,7];
+const CX=[0,1,1,0,0,1,1,0],CY=[0,0,1,1,0,0,1,1],CZ=[0,0,0,0,1,1,1,1];
+const CK=CX.map((_,i)=>CX[i]+(CY[i]<<10)+(CZ[i]<<20));
+const cS=new Int32Array(8),cF=new Float32Array(8),eP=new Float32Array(36),eN=new Float32Array(36);
+let mbTris=0,mbFull=false;
+function buildMetaball(){
+ const h=mbCell,ih=1/h,reach=(MB_RAD+h*1.75)**2; // đỉnh trong tầm này mới có thể thuộc một ô bề mặt bị ảnh hưởng
+ gen++;nAct=0;
+ // 1. cộng ảnh hưởng của từng hạt vào các đỉnh lưới quanh nó (giá trị + đạo hàm để có pháp tuyến mịn)
+ for(let p=0;p<N;p++){
+  const x=X[p],y=Y[p],z=Z[p];
+  const i0=Math.floor((x-MB_RAD)*ih)-1,i1=Math.ceil((x+MB_RAD)*ih);
+  const j0=Math.floor((y-MB_RAD)*ih)-1,j1=Math.ceil((y+MB_RAD)*ih);
+  const k0=Math.floor((z-MB_RAD)*ih)-1,k1=Math.ceil((z+MB_RAD)*ih);
+  if(i0<-510||i1>510||j0<-510||j1>510||k0<-510||k1>510)continue; // hạt bay quá xa khỏi vùng lưới
+  for(let k=k0;k<=k1;k++){const dz=k*h-z;
+   for(let j=j0;j<=j1;j++){const dy=j*h-y;
+    for(let i=i0;i<=i1;i++){const dx=i*h-x;
+     const r2=dx*dx+dy*dy+dz*dz;
+     if(r2>=reach)continue;
+     const s=slot((i+512)+((j+512)<<10)+((k+512)<<20),true);
+     if(s<0)continue;
+     if(r2<MB_R2){const u=1-r2/MB_R2,g=-6*u*u/MB_R2,q=s*4;
+      fld[q]+=u*u*u;fld[q+1]+=g*dx;fld[q+2]+=g*dy;fld[q+3]+=g*dz;}
+    }}}
+ }
+ // 2. marching cubes: ô nào có đỉnh trong, đỉnh ngoài thì bề mặt đi qua ô đó
+ const tri=THREE.triTable;let v=0;const vMax=MB_MAXTRI*9;mbFull=false;
+ for(let a=0;a<nAct;a++){
+  const key=kKey[act[a]];
+  let idx=0;
+  for(let c=0;c<8;c++){
+   const s=slot(key+CK[c],false);cS[c]=s;
+   const f=s<0?0:fld[s*4];cF[c]=f;
+   if(f<MB_ISO)idx|=1<<c;}
+  if(idx===0||idx===255)continue;
+  const ix=(key&1023)-512,iy=((key>>10)&1023)-512,iz=((key>>20)&1023)-512;
+  for(let e=0;e<12;e++){
+   const ca=EA[e],cb=EB[e];
+   if((cF[ca]<MB_ISO)===(cF[cb]<MB_ISO))continue;
+   const t=(MB_ISO-cF[ca])/(cF[cb]-cF[ca]),q=e*3;
+   eP[q]=(ix+CX[ca]+(CX[cb]-CX[ca])*t)*h;
+   eP[q+1]=(iy+CY[ca]+(CY[cb]-CY[ca])*t)*h;
+   eP[q+2]=(iz+CZ[ca]+(CZ[cb]-CZ[ca])*t)*h;
+   const sa=cS[ca]*4,sb=cS[cb]*4;
+   let nx=0,ny=0,nz=0;
+   if(sa>=0){nx+=fld[sa+1]*(1-t);ny+=fld[sa+2]*(1-t);nz+=fld[sa+3]*(1-t);}
+   if(sb>=0){nx+=fld[sb+1]*t;ny+=fld[sb+2]*t;nz+=fld[sb+3]*t;}
+   const l=-1/(Math.hypot(nx,ny,nz)||1);
+   eN[q]=nx*l;eN[q+1]=ny*l;eN[q+2]=nz*l;}
+  for(let o=idx*16;tri[o]!==-1;o++){
+   if(v>=vMax){mbFull=true;break;}
+   const q=tri[o]*3;
+   mbPos[v]=eP[q];mbPos[v+1]=eP[q+1];mbPos[v+2]=eP[q+2];
+   mbNor[v]=eN[q];mbNor[v+1]=eN[q+1];mbNor[v+2]=eN[q+2];
+   v+=3;}
+  if(mbFull)break;
+ }
+ mbTris=v/9;
+ mbGeo.setDrawRange(0,v/3);
+ const ap=mbGeo.attributes.position,an=mbGeo.attributes.normal;
+ ap.updateRange.count=an.updateRange.count=v;
+ ap.needsUpdate=an.needsUpdate=true;
+}
+
+// ===== Bố cục: mỗi khung vẽ một cách, cùng bộ hạt và cùng camera =====
+let viewMode='split',panes=[];
+const panel=document.getElementById('panel');
+if(innerWidth<900)panel.open=false;
+panel.addEventListener('toggle',()=>layout());
+const lblSsf=document.getElementById('lblSsf'),lblMeta=document.getElementById('lblMeta');
+function layout(){
+ const w=innerWidth,h=innerHeight,debug=water.visible;
+ // khi chia đôi trên màn hình rộng, chừa cột trái cho bảng điều khiển để nó không che cốc ở khung trái
+ const left=!debug&&viewMode==='split'&&w>=900&&panel.open?324:0,aw=w-left;
+ if(debug||viewMode!=='split')panes=[{kind:debug?'particles':viewMode,x:0,y:0,w,h}];
+ else if(aw>=h*.9){const pw=Math.floor((aw-2)/2);panes=[{kind:'ssf',x:left,y:0,w:pw,h},{kind:'meta',x:w-pw,y:0,w:pw,h}];}
+ else{const ph=Math.floor((h-2)/2);panes=[{kind:'ssf',x:left,y:0,w:aw,h:ph},{kind:'meta',x:left,y:h-ph,w:aw,h:ph}];}
+ renderer.setSize(w,h);
+ const P=panes[0];camera.aspect=P.w/P.h;camera.updateProjectionMatrix();
+ const pr=renderer.getPixelRatio(),bw=Math.floor(P.w*pr),bh=Math.floor(P.h*pr);
+ rt.setSize(bw,bh);rtZ[0].setSize(bw,bh);rtZ[1].setSize(bw,bh);pointsMat.uniforms.scale.value=bh/(2*Math.tan(camera.fov*Math.PI/360));compMat.uniforms.px.value.set(1/bw,1/bh);
+ const tanV=Math.tan(camera.fov*Math.PI/360);compMat.uniforms.view.value.set(tanV*camera.aspect,tanV);
+ for(const [el,kind] of [[lblSsf,'ssf'],[lblMeta,'meta']]){
+  const q=panes.find(o=>o.kind===kind);
+  el.style.display=q?'block':'none';
+  if(q){el.style.left=(q.x+q.w/2)+'px';el.style.top=(q.y+q.h-36)+'px';}}
+}
+document.getElementById('dbg').onchange=e=>{water.visible=e.target.checked;layout();};
+document.getElementById('mode').onchange=e=>{viewMode=e.target.value;mbDirty=true;layout();};
+document.getElementById('cell').oninput=e=>{mbCell=+e.target.value;document.getElementById('cellv').textContent=mbCell.toFixed(2);mbDirty=true;};
+
+// camera + input
+let yaw=.6,pitch=.5,dist=11;const tgt=new THREE.Vector3(0,-.6,0);
+function placeCam(){camera.position.set(tgt.x+dist*Math.sin(yaw)*Math.cos(pitch),tgt.y+dist*Math.sin(pitch),tgt.z+dist*Math.cos(yaw)*Math.cos(pitch));camera.lookAt(tgt);}
+addEventListener('resize',layout);layout();
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+let mode=null,offx=0,offz=0,lx=0,ly=0;
+function aim(e){const r=panes.find(o=>e.clientX>=o.x&&e.clientX<o.x+o.w&&e.clientY>=o.y&&e.clientY<o.y+o.h)||panes[0];ndc.set((e.clientX-r.x)/r.w*2-1,-((e.clientY-r.y)/r.h)*2+1);ray.setFromCamera(ndc,camera);}
+function hit(){const p=new THREE.Vector3();return ray.ray.intersectPlane(plane,p)?p:null;}
+cv.addEventListener('pointerdown',e=>{
+ aim(e);lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId);
+ if(ray.intersectObjects([tableG,cup],true).length){const p=hit();if(p){mode='table';offx=p.x-ttx;offz=p.z-ttz;return;}}
+ mode='orbit';});
+cv.addEventListener('pointermove',e=>{
+ if(mode==='table'){aim(e);const p=hit();if(p){ttx=Math.max(-10,Math.min(10,p.x-offx));ttz=Math.max(-10,Math.min(10,p.z-offz));}}
+ else if(mode==='orbit'){yaw-=(e.clientX-lx)*.006;pitch=Math.max(.1,Math.min(1.45,pitch+(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY;}});
+const up=()=>{mode=null;};cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(6,Math.min(22,dist*Math.exp(e.deltaY*.001)));},{passive:false});
+const keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;});addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
+const K=(...n)=>n.some(k=>keys[k])?1:0;
+document.getElementById('mu').oninput=e=>{MU=+e.target.value;document.getElementById('muv').textContent=MU.toFixed(2);};
+document.getElementById('rs').onclick=()=>{reset();mbDirty=true;};
+let paused=false;
+document.getElementById('pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'Chạy tiếp':'Tạm dừng';};
+
+const dummy=new THREE.Object3D(),st=document.getElementById('st');
+const sFps=document.getElementById('sFps'),sMs=document.getElementById('sMs'),sTri=document.getElementById('sTri'),sPts=document.getElementById('sPts');
+sPts.textContent=N.toLocaleString('vi-VN');
+renderer.autoClear=false;
+function drawPane(P){
+ renderer.setRenderTarget(null);
+ renderer.setViewport(P.x,innerHeight-P.y-P.h,P.w,P.h);
+ renderer.setScissor(P.x,innerHeight-P.y-P.h,P.w,P.h);
+ renderer.setScissorTest(true);
+ if(P.kind==='ssf'){
+  renderer.setRenderTarget(rt);renderer.setClearColor(0,0);renderer.clear();renderer.render(occScene,camera);
+  if(useDepth)ssfDepthPass();
+  renderer.setRenderTarget(null);}
+ mbMesh.visible=P.kind==='meta';
+ renderer.setClearColor(BG,1);renderer.clear();
+ renderer.render(scene,camera);
+ if(P.kind==='ssf')renderer.render(compScene,compCam);
+}
+let mbDirty=true,mbMs=0,fpsAvg=60;
+let last=performance.now(),acc=0,fr=0;
+function loop(now){
+ requestAnimationFrame(loop);
+ const dt=Math.min(.05,(now-last)/1000),rawDt=(now-last)/1000;last=now;if(!paused)acc+=dt;
+ if(rawDt>0)fpsAvg+=(1/rawDt-fpsAvg)*.05;
+ const rgt=K('arrowright','d')-K('arrowleft','a'),fwd=K('arrowup','w')-K('arrowdown','s');
+ const sp=7,kx=(Math.cos(yaw)*rgt-Math.sin(yaw)*fwd)*sp,kz=(-Math.sin(yaw)*rgt-Math.cos(yaw)*fwd)*sp;
+ let n=0;while(acc>=SDT&&n<8){step(SDT,kx,kz);acc-=SDT;n++;}
+ if(n===8)acc=0;
+ if(n>0)mbDirty=true;
+ tableG.position.set(tx,0,tz);cup.position.set(cx,cy,cz);
+ for(let i=0;i<N;i++){ppos[i*3]=X[i];ppos[i*3+1]=Y[i];ppos[i*3+2]=Z[i];if(water.visible){dummy.position.set(X[i],Y[i],Z[i]);dummy.updateMatrix();water.setMatrixAt(i,dummy.matrix);}}pgeo.attributes.position.needsUpdate=true;
+ water.instanceMatrix.needsUpdate=true;
+ if(mbDirty&&panes.some(o=>o.kind==='meta')){const t0=performance.now();buildMetaball();mbMs+=(performance.now()-t0-mbMs)*.1;mbDirty=false;}
+ if(++fr%15===0){let c=0;for(let i=0;i<N;i++)if(Math.hypot(X[i]-cx,Z[i]-cz)<R&&Y[i]>cy-.1&&Y[i]<cy+H+.4)c++;st.textContent=Math.round(c/N*100)+'%';
+  const on=panes.some(o=>o.kind==='meta');
+  sFps.textContent=fpsAvg.toFixed(0);
+  sMs.textContent=on?mbMs.toFixed(1)+' ms':'tắt';
+  sTri.textContent=on?mbTris.toLocaleString('vi-VN')+(mbFull?' (chạm trần)':''):'tắt';}
+ placeCam();occG.position.set(tx,0,tz);
+ renderer.setRenderTarget(null);renderer.setScissorTest(false);renderer.setClearColor(BG,1);renderer.clear(); // nền cho cột bảng điều khiển và khe giữa hai khung
+ for(const P of panes)drawPane(P);
+}
+requestAnimationFrame(loop);
+</script></body></html>
